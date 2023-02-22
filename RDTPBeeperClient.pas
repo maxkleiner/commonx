@@ -13,7 +13,7 @@ interface
 
 
 uses
-  packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -78,7 +78,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.Beep(freq:integer; duration:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -107,7 +107,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.Beep_Async(freq:integer; duration:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -129,7 +129,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.Beep_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -145,7 +145,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.BeepForget(freq:integer; duration:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -171,7 +171,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.BeepForget_Async(freq:integer; duration:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -193,7 +193,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestInteger(a:integer; b:integer):integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -222,7 +222,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.TestInteger_Async(a:integer; b:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -244,7 +244,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestInteger_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -260,7 +260,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestInt64(a:Int64; b:Int64):Int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -289,7 +289,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.TestInt64_Async(a:Int64; b:Int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -311,7 +311,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestInt64_Response():Int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -327,7 +327,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestString(a:string; b:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -356,7 +356,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.TestString_Async(a:string; b:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -378,7 +378,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.TestString_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -394,7 +394,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.HelloTroy(ErectPenis:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -422,7 +422,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.HelloTroy_Async(ErectPenis:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -443,7 +443,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.HelloTroy_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -459,7 +459,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.HelloIvana(WriteToLog:string; freq:integer; duration:integer; attack:integer; release:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -491,7 +491,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBeeperClient.HelloIvana_Async(WriteToLog:string; freq:integer; duration:integer; attack:integer; release:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -516,7 +516,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBeeperClient.HelloIvana_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

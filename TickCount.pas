@@ -32,15 +32,15 @@ type
   end;
 
 function GetThreadTime(thrid: NativeUint): TThreadTimes;
-function GetTicker: ticker;
+function GetTicker: ticker;inline;
 function GetHighResTicker: ticker;
 function Get100NanoTicker: ticker;
 function hr2us(t:ticker): ticker;inline;
 function hr2ms(t:ticker): ticker;inline;
 
-function GetTimeSInce(tmNow, tmSince: ticker): ticker;inline;overload;
-function GetTimeSInce(tmSince: ticker): ticker;inline;overload;
-function GetTimeSInceHR(tmSince: ticker): ticker;
+function GetTimeSince  (const tmNow, tmSince: ticker): ticker;inline;overload;
+function GetTimeSince  (const tmSince       : ticker): ticker;inline;overload;
+function GetTimeSinceHR(const tmSince       : ticker): ticker;inline;
 
 procedure Sleep(tm: ticker);
 procedure SleepEx(tm: ticker; bAlertable: boolean = true);
@@ -85,9 +85,13 @@ function GetThreadTime(thrid: NativeUint): TThreadTimes;
 var
   creation, exit, user, kernel: _FILETIME;
 begin
-  windows.GetThreadTimes(thrid, creation, exit, kernel, user);
-  RESULT.user := (int64(user.dwHighDateTime) shl 32)+user.dwLowDateTime;
-  RESULT.kernel := (int64(kernel.dwHighDateTime) shl 32)+kernel.dwLowDateTime;
+  if windows.GetThreadTimes(thrid, creation, exit, kernel, user) then begin
+    RESULT.user := (int64(user.dwHighDateTime) shl 32)+user.dwLowDateTime;
+    RESULT.kernel := (int64(kernel.dwHighDateTime) shl 32)+kernel.dwLowDateTime;
+  end else begin
+    result.user := 0;
+    result.kernel := 0;
+  end;
 
 
 
@@ -123,17 +127,17 @@ end;
 {$ENDIF}
 
 
-function GetTimeSInce(tmSince: ticker): ticker;
+function GetTimeSince(const tmSince: ticker): ticker;
 begin
   result := GetTimeSince(GetTicker, tmSince);
 end;
 
-function GetTimeSInceHR(tmSince: ticker): ticker;
+function GetTimeSinceHR(const tmSince: ticker): ticker;
 begin
   result := GetTimeSince(GetHighResTicker, tmSince);
 end;
 
-function GetTimeSince(tmNow, tmSince: ticker): ticker;
+function GetTimeSince(const tmNow, tmSince: ticker): ticker;
 begin
   if tmNow >= tmSince then begin
     result:= tmNow-tmSince
@@ -147,7 +151,8 @@ end;
 
 procedure oinit;
 begin
-
+//  if assigned(GTC) then
+//    exit;   //its a record
   GTC := TStopWatch.Create;
   GTC.Start;
 //  UTF.RegisterClass(TUT_TickCount);

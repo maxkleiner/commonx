@@ -33,7 +33,7 @@ type
   end;
 
 var
-  ns: TNoSleeper;
+  ns: TNoSleeper =nil;
 
 implementation
 

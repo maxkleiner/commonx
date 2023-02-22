@@ -179,8 +179,8 @@ begin
         nugap.Start := iStart;
         nugap.Length := iLength;
       end;
-  //    if nugap.Beyond > Length then
-  //      Length := nugap.Beyond;
+      if nugap.Beyond > Length then
+        Length := nugap.Beyond;
 
       gap := FGaps.SearchLeft(nugap.start, nugap.Beyond, gcSpanning);
       if gap = nil then begin
@@ -246,7 +246,7 @@ var
   res: TBTreeItem;
 begin
   lock;
-  try
+   try
     res := nil;
     result.Start := -1;
     result.length := 0;
@@ -495,6 +495,8 @@ begin
   lock;
   try
 
+
+
     if value = FLength then exit;
 
     if value < FLength then begin
@@ -520,6 +522,7 @@ begin
         Debug.Log(self, self.GEtDebugConsumed);
         Debug.Log(self, self.GEtDebugGAps);
         Debug.Log(self, '**GAP CRASH!!**');
+        halt;
         raise ECritical.create('Gap at end of file '+last.debugstring+' is not large enough to reduce size to '+inttohex(value,1)+' debug consumed:'+self.GEtDebugConsumed+NEWLINE+self.GEtDebugGAps);
       end;
 

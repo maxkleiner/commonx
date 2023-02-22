@@ -10,7 +10,7 @@ interface
 
 
 uses
-  classes, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  classes, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -70,7 +70,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseClick(x:integer; y:integer; button:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -100,7 +100,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRemoteControlClient.MouseClick_Async(x:integer; y:integer; button:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -123,7 +123,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseClick_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -139,7 +139,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseDown(x:integer; y:integer; button:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -169,7 +169,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRemoteControlClient.MouseDown_Async(x:integer; y:integer; button:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -192,7 +192,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseDown_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -208,7 +208,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseMove(x:integer; y:integer; button:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -238,7 +238,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRemoteControlClient.MouseMove_Async(x:integer; y:integer; button:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -261,7 +261,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseMove_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -277,7 +277,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseUp(x:integer; y:integer; button:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -307,7 +307,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRemoteControlClient.MouseUp_Async(x:integer; y:integer; button:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -330,7 +330,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.MouseUp_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -346,7 +346,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.ScreenShot():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -373,7 +373,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRemoteControlClient.ScreenShot_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -393,7 +393,7 @@ end;
 //------------------------------------------------------------------------------
 function TRemoteControlClient.ScreenShot_Response():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

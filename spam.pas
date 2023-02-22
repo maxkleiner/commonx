@@ -123,7 +123,7 @@ type
   end;
 
 var
-  BLCache: TBLCache;
+  BLCache: TBLCache = nil;
 
 implementation
 
@@ -1765,12 +1765,13 @@ end;
 
 procedure oinit;
 begin
-BLCAche := TBlCache.create;
+  BLCAche := TBlCache.create;
 end;
 
 procedure ofinal;
 begin
-BLCache.free;
+  if assigned(BLCache) then
+    BLCache.free;
 
 
 end;

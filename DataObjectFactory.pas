@@ -54,7 +54,7 @@ type
   end;
 
 var
-  DOCF: TDataObjectFactory;
+  DOCF: TDataObjectFactory = nil;
 
 implementation
 
@@ -181,6 +181,9 @@ end;
 function TDataObjectFactory.GetKeycountForClass(
   cClass: TDataObjectClass): nativeint;
 begin
+  if cClass = nil then
+    raise ECritical.create('cannot call GetKeycountForClass() when cClass is nil');
+
   result := XRefPool.GetPrimaryKeyCountForClass(cClass);
 end;
 
@@ -206,6 +209,10 @@ var
 begin
   xRef := XrefPool.FindXRefByString(sName);
   result := TDataObjectClass(xRef.cClass);
+
+  if (sName <> '') and ((xRef = nil) or (xref.cclass=nil)) then
+    raise ECritical.create('Data Object Class Not Found '+sName);
+
 end;
 
 //------------------------------------------------------------------------------

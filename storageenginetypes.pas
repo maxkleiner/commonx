@@ -1,4 +1,5 @@
 ﻿unit StorageEngineTypes;
+{$D-}//causes wierd hiccups in debugger
 //DONE: add mysql type for text
 //DONE 1: Allow TSERowset to navigate using alternate indexes
 //TODO 2: Return boolleans from database properly
@@ -7,7 +8,7 @@
 interface
 
 uses
-  debug, betterobject, sqlexpr, sysutils, DB, classes, stringx, systemx, variants, typex, MultiBufferMemoryFileStream, helpers_stream, numbers, btree, JSONHelpers, mysqlstoragestring, mssqlStorageString;
+  globalMultiQueue,anoncommand, commandprocessor,debug, betterobject, sqlexpr, sysutils, DB, classes, stringx, systemx, variants, typex, MultiBufferMemoryFileStream, helpers_stream, numbers, btree, JSONHelpers, mysqlstoragestring, mssqlStorageString, better_collections;
 
 const
   SYSTEM_FIELD_COUNT = 1;
@@ -18,7 +19,21 @@ type
   TAnonRecFilter = reference to procedure (rs: TSERowSet; out accept: boolean; var bbreak: boolean);
 
   TSECell = variant;
-  TSERow = array of TSECell;
+  TSERowVals = array of TSECell;
+  TSERow = record
+    vals: TSERowVals;
+    mods: TTightFlags;
+    deletepending: boolean;
+    appended: boolean;
+    modded: boolean;
+  public
+    procedure SetWidth(w: ni);
+    function GetWidth: ni;
+    property width: ni read GetWidth write SetWidth;
+    procedure Reset;
+    procedure Init;
+  end;
+  PSERow = ^TSeRow;
 
   Tbti_Row = class(TBTreeItem)
   protected
@@ -70,9 +85,19 @@ type
   end;
 
 
+  TRowAction = (raNone, raChange, raDelete);
+  TPendingChange = record
+    field: string;
+    val: variant;
+  end;
+
+  TPendingRowAction = record
+    action: TRowAction;
+    changes: Tarray<TPendingChange>;
+  end;
 
 
-  TSERowSet = class(TBetterObject)
+  TSERowSet = class(TSharedObject)
   private
     FBoundToTable: string;
     procedure SetCurRecordFields(sFieldName: string; const Value: variant);
@@ -86,8 +111,14 @@ type
     function GetFieldDef(idx: integer): PSERowsetFieldDef;
     function GetValues(x, y: integer): variant;
     procedure SetValues(x, y: integer; const Value: variant);
+    function GetValuesByFieldName(fld: string; y: integer): variant;
+    procedure SetValuesByFieldName(fld: string; y: integer; const Value: variant);
+
+
+
   protected
-    FRowset: array of TSERow;
+    inMTIterator: boolean;
+    FRowset: TArray<TSERow>;
     FFieldDefs: array of TSERowsetFieldDef;
     FCursor: nativeint;
     FIndexValues: array of array of int64;
@@ -105,22 +136,36 @@ type
 
     function IndexOfField(sName: string): integer;
     function FindValue(sField: string; vValue: variant): ni;
+    function FindValue_Presorted(sField: string; vValue: variant): ni;
+    function FindValues(aFields: TArray<string>; aValues: TArray<variant>): ni;
+    function FindValuesMT(aFields: TArray<string>; aValues: TArray<variant>): ni;
+    function FindValueMT(sField: string; vValue: variant): ni;
+    function FindValueAfter(iAfterRow: int64; sField: string;
+      vValue: variant): ni;
+
+
     function SeekValue(sField: string; vValue: variant): boolean;
-    function Lookup(sLookupField: string; vLookupValue: variant; sReturnField: string): variant;
+    function Lookup(sLookupField: string; vLookupValue: variant; sReturnField: string; bNoExceptions: boolean = false): variant;
 
 
+
+    procedure Reset(nodelete: boolean);
     procedure SetFieldCount(iCount: integer);
     procedure SetRowCount(iCount: integer);
 
     property Values[x,y: integer]: variant read GetValues write SetValues;
+    property ValuesN[fld: string; y: integer]: variant read GetValuesByFieldName write SetValuesByFieldName;
     property CurRecordFields[sFieldName: string]: variant read GetCurRecordFields write SetCurRecordFields;default;
+    property Cur[sFieldName: string]: variant read GetCurRecordFields write SetCurRecordFields;
     property f[sFieldName: string]: variant read GetCurRecordFields write SetCurRecordFields;
     property CurRecordFieldsByIdx[idx: integer]: variant read GetCurRecordFieldsByIdx write SetCurRecordFieldsByIdx;
+    property CurI[idx: integer]: variant read GetCurRecordFieldsByIdx write SetCurRecordFieldsByIdx;
 
     procedure CopyFromDAtaSet(ds: TCustomSQLDataset; bAppend: boolean = false);
     function AddRow: integer;
     function AddRowFirst: integer;
     procedure CancelRow;
+    procedure DeleteRow(n: nativeint);
 
     property FieldDefs[idx: integer]: PSERowsetFieldDef read GEtFieldDefs;
     property FieldValues[iRow: nativeint; sName: string]: variant read GetfieldValue;
@@ -134,6 +179,7 @@ type
     procedure Next;
     procedure Previous;
     property EOF:boolean read GetEOF;
+    procedure ApplyRowACtions(a:TArray<TPendingRowAction>);
 
     function AddBlankIndex(sName: string): integer;
     procedure BuildIndex(sName: string; sFields: string);overload;
@@ -184,7 +230,42 @@ type
     function GetFieldList: IHolder<TStringlist>;
     function GetValueArray(fields: TDynStringArray): TDynVariantArray;
     function GetValueStringArray(fields: TDynStringArray): TDynStringArray;
-    procedure Iterate(p: TProc);
+    procedure Iterate(p: TProc);overload;
+      //iterate through records, single threaded
+    procedure IterateReverse(p: TProc);overload;
+      //iterate through records, reverse order, single threaded
+    procedure Iterate(p: TProc<int64>);overload;
+      //iterate through records, single threaded, but with row number passed as parameter
+    procedure IterateMT(iMinBatchSize: ni; p: TProc<int64>; opts: TForXOptions = []);overload;
+      //iterate Multi-threaded
+    procedure IterateMT(iMinBatchSize, iMaxBatchSize: ni; p: TProc<int64>; opts: TForXOptions = []);overload;
+      //iterate Multi-threaded, min and max batch size options
+    procedure IterateAC(p, commit: TProc<TStringList>; commitThreshold: int64 = 10000);
+      //iterate Single-threaded.. Accumulate, commit
+    procedure IterateMTAC(iMinBatchSize, iMaxBatchSize: ni; p: TProc<int64, TSharedStringList>; p2: TProc<TSharedStringList>; opts: TForXOptions = []);overload;
+      //iterate Multi-threaded.. Accumulate, commit
+    procedure IterateMTFAKE(iMinBatchSize: ni; p: TProc<int64>; opts: TForXOptions = []);overload;
+      //iterate Single-Threaded, but with the same params as multi-threaded... useful for debugging, or if MT breaks
+    procedure IterateMTFAKE(iMinBatchSize, iMaxBatchSize: ni; p: TProc<int64>; opts: TForXOptions = []);overload;
+      //iterate Single-Threaded, but with the same params as multi-threaded... useful for debugging, or if MT breaks
+    procedure IterateMTQI(iMinBatchSize: ni; p: TProc<int64>; StopPtr: PByte = nil);overload;
+      //iterate Multi-threaded, using Queue instead of commands... more efficient for simpler operations
+    procedure IterateMTQI(iMinBatchSize,iMaxBatchSize: ni; p: TProc<int64>;opts: TForXOptions = []; StopPtr: PByte = nil);overload;
+      //iterate Multi-threaded, using Queue instead of commands... more efficient for simpler operations
+    procedure IterateMTQIFAKE(iMinBatchSize,iMaxBatchSize: ni; p: TProc<int64>;opts: TForXOptions = []);overload;
+      //iterate fake version of MTQI
+    procedure IterateDelete(p: TFunc<boolean>);
+      //iterate Sigle-threaded.. return of TRUE causes delete
+    procedure IterateDeleteFWD(p: TFunc<boolean>);
+      //iterate Sigle-threaded.. forward order (not as efficient, but sometimes necessary)... return of TRUE causes delete
+    function ToHTMLTable: IHolder<TStringList>;
+    function SortAnon(CompareProc_1_meansAisGreaterThanB: TFunc<TSERow, TSERow, ni>): boolean;
+    procedure SortVariant(sField: string);
+    function SortAnon_Bubble(CompareProc_1isAgtB: TFunc<TSERow, TSERow, ni>): boolean;
+    procedure SortAnon_Quick(CompareProc_1isAgtB: TFunc<TSERow,TSERow,ni>;iLo,iHi: ni);
+    procedure SumDuplicatesAndDelete(sCompareField, sSumField: string);
+    function GetRowStruct(row: ni): PSERow;
+    procedure FlagForDelete(row: ni);
 
   end;
 
@@ -202,10 +283,16 @@ procedure FreeArrayOfRowsets(a: array of TSERowSet);
 
 function DatasetToString(ds: TCustomSQLDAtaSet; destroyit: boolean = false): string;
 function RowsetToString(ds: TSERowSet; destroyit: boolean = false): string;
-function RowsetToValues(ds: TSERowset; bIncludeSEFields: boolean): string;
+function RowsetToValues(ds: TSERowset; bIncludeSEFields: boolean; bTrim: boolean = true): string;
+function RowToValues_NoParens(ds: TSERowset; y: int64; bIncludeSEFields: boolean; bTrim: boolean): string;overload;
+function RowToValues_NoParens(ds: TSERowset; bIncludeSEFields: boolean; bTrim: boolean = true): string;overload;
 function RowsetToSETStatement(ds: TSERowset): string;
 function stringToFieldType(s: string): TFieldType;
 function DatasetToRowset(var ds: TCustomSQLDAtaset; bDestroy: boolean = true): TSERowSet;
+
+
+
+function FieldClassToRSfieldType(fc: TfieldClass): TFieldType;
 
 
 implementation
@@ -420,7 +507,8 @@ begin
   result.vType := ftUnknown;
   if RowCount > 0 then begin
     for t:= 0 to RowCount-1 do begin
-      SetLength(self.FRowset[t], length(FFieldDEfs));
+      FRowSet[t].setwidth(length(FFieldDEfs));
+//      SetLength(self.FRowset[t], length(FFieldDEfs));
     end;
   end;
 end;
@@ -430,6 +518,7 @@ begin
   self.SetRowCount(length(FRowset)+1);
   result := length(FRowset)-1;
   FCursor := result;
+  self.FRowSet[result].appended := true;
 end;
 
 function TSERowSet.AddRowFirst: integer;
@@ -445,6 +534,7 @@ begin
     end;
   end;
   FCursor := result;
+  self.FRowSet[result].appended := true;
 end;
 
 procedure TSERowSet.AddrowFromString(s: string);
@@ -476,11 +566,17 @@ begin
     rs.CopyFieldDefsTo(self);
   end;
   rs.first;
+  var intoRow: int64 := RowCount;
+  SEtRowCount(RowCount + rs.rowcount);
+  for t := intoRow to RowCount-1 do begin
+    FRowset[t].appended := true;
+  end;
+
   while not rs.EOF do begin
-    AddRow;
     for t:= 0 to fieldcount-1 do begin
-      CurRecordFieldsByIdx[t] := rs.CurRecordFieldsByIdx[t];
+      values[t,intoRow] := rs.CurRecordFieldsByIdx[t];
     end;
+    inc(intoRow);
 //    Debug.Log('Append #'+inttostr(rs.cursor)+': '+rs.RowToString);
     rs.Next;
   end;
@@ -502,6 +598,39 @@ begin
   for t:= 0 to fieldcount-1 do begin
     values[t,cursor] := rs.values[t,iRow];
   end;
+end;
+
+procedure TSERowSet.ApplyRowACtions(a: TArray<TPendingRowAction>);
+begin
+  Lock;
+  try
+  if length(a) <> rowcount then
+    raise Ecritical.create('rowcount/array mismatch');
+
+
+  var newRows: TArray<TSERow>;
+  setlength(newRows,length(FRowset));
+  var outidx: nativeint := 0;
+  for var t := 0 to high(FRowSet) do begin
+
+    if a[t].action = raDelete then continue;
+    newRows[outIdx] := Frowset[t];
+    if a[t].action = raChange then begin
+      for var u := 0 to high(a[t].changes) do begin
+        var fidx :=Self.IndexOfField(a[t].changes[u].field);
+        if fidx >=0 then
+          newRows[outIdx].vals[fidx] := a[t].changes[u].val;
+      end;
+    end;
+    inc(outIDx);
+
+  end;
+  setlength(newRows, outidx);
+  FRowset := newRows;
+  finally
+    Unlock;
+  end;
+
 end;
 
 procedure TSERowSet.BuildIndex(sName, sFields: string);
@@ -827,10 +956,30 @@ begin
 
 end;
 
+procedure TSERowSet.DeleteRow(n: nativeint);
+begin
+  if n < 0 then
+    exit;
+  if n > high(Frowset) then
+    exit;
+
+  for var t:= n+1 to high(Frowset) do
+    FRowset[t-1] := FRowset[t];
+
+  setlength(Frowset,length(FRowset)-1);
+
+
+end;
+
 procedure TSERowSet.First;
 begin
   FCursor := 0
 
+end;
+
+procedure TSERowSet.FlagForDelete(row: ni);
+begin
+  FRowset[row].deletepending := true;
 end;
 
 procedure TSERowSet.FromCSV(csv, separator: string);
@@ -875,10 +1024,14 @@ function TSERowSet.GetCurRecordFields(sFieldName: string): variant;
 var
   idx: integer;
 begin
+  if inMTIterator then
+    raise ECritical.create('you cannot call a cursor operation because you''re in a multi-threaded iterator');
+
   idx := self.IndexOfField(sFieldName);
 
   if idx < 0 then
     raise ECritical.create('Field '+sFieldName+' not found in rowset.');
+
   result:= values[idx, FCursor];
 
 
@@ -888,6 +1041,9 @@ begin
 
 function TSERowSet.GetCurRecordFieldsByIdx(idx: integer): variant;
 begin
+  if inMTIterator then
+    raise ECritical.create('you cannot called a cursor operation because you''re in a multi-threaded iterator');
+
   try
     result := values[idx, FCursor];
   except
@@ -984,6 +1140,12 @@ begin
   result := length(FRowset);
 end;
 
+function TSERowSet.GetRowStruct(row: ni): PSERow;
+begin
+  result := @FRowSet[row];
+
+end;
+
 function TSERowSet.GetValueArray(fields: TDynStringArray): TDynVariantArray;
 var
   t: ni;
@@ -998,15 +1160,25 @@ function TSERowSet.GetValues(x, y: integer): variant;
 var
   iRow: integer;
 begin
+
   if x < 0 then
     raise ECritical.create('negative column number '+x.tostring);
   if x >= fieldcount then
     raise ECritical.Create('trying to read column '+x.tostring+' which is >= column count '+fieldcount.tostring);
   iRow := GetIndexedRow(y);
-  if length(FRowSet[iRow]) <> fieldCount then
-    SetLength(FRowset[iRow], fieldcount);
+  if FRowSet[iRow].width <> fieldCount then
+    FRowSet[iRow].width := fieldcount;
+//    SetLength(FRowset[iRow], fieldcount);
 
-  result := FRowset[iRow][x];
+  result := FRowset[iRow].vals[x];
+end;
+
+function TSERowSet.GetValuesByFieldName(fld: string; y: integer): variant;
+begin
+  var idx := IndexOfField(fld);
+  if idx < 0 then
+    raise Ecritical.create('field '+fld+' not found in rowset');
+  result := values[idx,y];
 end;
 
 function TSERowSet.GetValueStringArray(
@@ -1033,19 +1205,189 @@ begin
   sName := lowercase(sName);
   result := -1;
   for t:= 0 to FieldCount-1 do begin
-    if lowercase(self.Fields[t].sName) = sName then begin
+
+    var lc := lowercase(self.Fields[t].sName);
+
+
+
+    if lc=sName then begin
       result := t;
       break;
     end;
+
+    var dotted := '.'+sName;
+
+    if endsWithnocase(lc, dotted) then begin
+      result := t;
+      break;
+    end;
+
   end;
 end;
 
 procedure TSERowSet.Iterate(p: TProc);
 begin
   for var t := 0 to rowcount-1 do begin
+    SetCommandProgress(t,rowcount-1);
     cursor := t;
     p();
   end;
+end;
+
+procedure TSERowSet.IterateAC(p: TProc<TStringList>; commit: TProc<TStringList>; commitThreshold: int64 = 10000);
+//                                     ^Acquire                     ^Commit
+begin
+  var slh := NewStringListH;
+  for var t := 0 to rowcount-1 do begin
+    SetCommandProgress(t,rowcount-1);
+    cursor := t;
+    p(slh.o);//<<<<<-----------MAIN PROC
+
+    //if accumulated a bunch then
+    if slh.o.Count>=commitThreshold then begin
+      commit(slh.o);//<<<<<---------call the commit anon proc<> to commit the accumulation
+      slh.o.Clear;
+    end;
+  end;
+
+  if slh.o.Count > 0 then
+    commit(slh.o);//<<<<<------final commit if anything is left
+end;
+
+
+procedure TSERowSet.IterateDelete(p: TFunc<boolean>);
+begin
+  for var t := rowcount-1 downto 0 do begin
+    cursor := t;
+    if p() then begin
+      DeleteRow(t);
+    end;
+  end;
+end;
+
+procedure TSERowSet.IterateDeleteFWD(p: TFunc<boolean>);
+begin
+  var t: int64 := 0;
+  while t < rowcount do begin
+    cursor := t;
+    if p() then begin
+      DeleteRow(t);
+    end else
+      inc(t);
+  end;
+end;
+
+procedure TSERowSet.Iterate(p: TProc<int64>);
+begin
+  var t: int64 := 0;
+  var len: int64 := rowcount;
+  while t < len do begin
+    SetCommandProgress(t,len-1);
+    p(t);
+    inc(t);
+  end;
+end;
+
+
+procedure TSERowSet.IterateMT(iMinBatchSize: ni; p: TProc<int64>;
+  opts: TForXOptions);
+begin
+  inMTIterator := true;
+  try
+    ForX(0,rowcount, iMinBatchSize, 64, p, opts);
+  finally
+    inMTIterator := false;
+  end;
+end;
+
+procedure TSERowSet.IterateMT(iMinBatchSize, iMaxBatchSize: ni; p: TProc<int64>;
+  opts: TForXOptions);
+begin
+  inMTIterator := true;
+  try
+    ForX(0,rowcount, iMinBatchSize, iMaxBatchSize, p, opts);
+  finally
+    inMTIterator := false;
+  end;
+
+end;
+
+procedure TSERowSet.IterateMTAC(iMinBatchSize, iMaxBatchSize: ni;
+  p: TProc<int64, TSharedStringList>; p2: TProc<TSharedStringList>;
+  opts: TForXOptions);
+begin
+  inMTIterator := true;
+  try
+    var sl := TSharedStringList.create;
+    try
+      var pp :TProc<int64> := procedure (idx: int64) begin
+        p(idx,sl);
+        sl.lock;
+        try
+          if sl.count > 1000 then begin
+            p2(sl);
+            sl.clear;
+          end;
+        finally
+          sl.unlock;
+        end;
+      end;
+
+
+      ForX(0,rowcount, iMinBatchSize, iMaxBatchSize, pp, opts);
+
+      if sl.count >0 then
+        p2(sl);
+
+    finally
+      sl.free;
+    end;
+  finally
+    inMTIterator := false;
+  end;
+
+end;
+
+procedure TSERowSet.IterateMTFAKE(iMinBatchSize, iMaxBatchSize: ni;
+  p: TProc<int64>; opts: TForXOptions);
+begin
+  iterate(p);
+end;
+
+procedure TSERowSet.IterateMTFAKE(iMinBatchSize: ni; p: TProc<int64>;
+  opts: TForXOptions);
+begin
+  iterate(p);
+end;
+
+procedure TSERowSet.IterateMTQI(iMinBatchSize, iMaxBatchSize: ni;
+  p: TProc<int64>;opts: TForXOptions = []; StopPtr: PByte = nil);
+begin
+
+  ForX_QI(0, rowcount, iMinBatchSize, iMaxBatchSize, p,opts, StopPtr);
+
+end;
+
+procedure TSERowSet.IterateMTQIFAKE(iMinBatchSize, iMaxBatchSize: ni;
+  p: TProc<int64>; opts: TForXOptions);
+begin
+  ForXFAKE(0, rowcount, iMinBatchSize, iMaxBatchSize, p,opts);
+
+end;
+
+procedure TSERowSet.IterateMTQI(iMinBatchSize: ni; p: TProc<int64>; StopPtr: Pbyte = nil);
+begin
+  ForX_QI(0, rowcount, iMinBatchSize, p,[], StopPtr);
+
+end;
+
+procedure TSERowSet.IterateReverse(p: TProc);
+begin
+  for var t := rowcount-1 downto 0 do begin
+    cursor := t;
+    p();
+  end;
+
 end;
 
 procedure TSERowSet.LAst;
@@ -1170,7 +1512,7 @@ end;
 
 
 function TSERowSet.Lookup(sLookupField: string; vLookupValue: variant;
-  sReturnField: string): variant;
+  sReturnField: string; bNoExceptions: boolean = false): variant;
 var
   r: ni;
   f: ni;
@@ -1178,8 +1520,13 @@ begin
   result := null;
   r := FindValue(sLookupField, vLookupValue);
   f := indexoffield(sReturnfield);
-  if f < 0 then
-    raise ECritical.create('Return field '+sReturnField+' not found.');
+
+  if f < 0 then begin
+    if bNoExceptions then
+      exit(null)
+    else
+      raise ECritical.create('Return field '+sReturnField+' not found.');
+  end;
 
   if r >=0 then
     result := values[f,r];
@@ -1223,6 +1570,11 @@ begin
 end;
 
 function TSERowSet.FindValue(sField: string; vValue: variant): ni;
+begin
+  result := FindValueAfter(-1,sField, vValue);
+end;
+
+function TSERowSet.FindValueAfter(iAfterRow: int64; sField: string; vValue: variant): ni;
 var
   t: ni;
   f: ni;
@@ -1233,7 +1585,7 @@ begin
   if f< 0 then
     raise ECritical.create('Rowset does not have field '+sField);
 
-  for t:= 0 to rowcount-1 do begin
+  for t:= (iAfterRow+1) to rowcount-1 do begin
     v := values[f,t];
     if varType(v) = varString then begin
       if comparetext(values[f,t], vValue) = 0 then begin
@@ -1243,8 +1595,171 @@ begin
       if Values[f,t] = vValue then
         exit(t);
     end;
-
   end;
+
+end;
+
+function TSERowSet.FindValueMT(sField: string; vValue: variant): ni;
+begin
+  result := FindValuesMT([sfield],[vValue]);
+end;
+
+function TSERowSet.FindValues(aFields: TArray<string>;
+  aValues: TArray<variant>): ni;
+var
+  t: ni;
+  fs: TArray<nativeint>;
+  f1,f2: ni;
+  vv: variant;
+begin
+  result := -1;
+  if length(aFields) <> length(aValues) then
+    raise ECritical.create('FindValues requires two arrays of equal length');
+  setlength(fs,length(aFields));
+
+
+  for var v := low(aFields) to high(aFields) do begin
+    fs[v] := self.IndexOfField(aFields[v]);
+//    debug.log(aFields[v]+' is at '+inttostr(fs[v]));
+    if fs[v] < 0 then
+      raise ECritical.create('field '+aFields[v]+' not found in TSERowSet');
+  end;
+
+  for t:= 0 to rowcount-1 do begin
+    var bGood := true;
+
+    for var v := low(aFields) to high(aFields) do begin
+      var vValue := aValues[v];
+      vv := values[fs[v],t];
+      if varType(vv) = varString then begin
+        if comparetext(vv, vValue) <> 0 then begin
+          bGood := false;
+          break;
+        end
+      end else begin
+        if v <> vValue then begin
+          bGood := false;
+          break;
+        end;
+      end;
+    end;
+
+    if bGood then exit(t);
+  end;
+
+
+end;
+
+function TSERowSet.FindValuesMT(aFields: TArray<string>;
+  aValues: TArray<variant>): ni;
+var
+  t: ni;
+  fs: TArray<nativeint>;
+  f1,f2: ni;
+  vv: variant;
+begin
+  var sectAtomResult: TCLXCriticalSection;
+  ics(sectAtomResult);
+  try
+  result := -1;
+  var resultIdx: int64 := -1;
+  if length(aFields) <> length(aValues) then
+    raise ECritical.create('FindValuesMT requires two arrays of equal length');
+  setlength(fs,length(aFields));
+
+
+  for var v := low(aFields) to high(aFields) do begin
+    fs[v] := self.IndexOfField(aFields[v]);
+//    debug.log(aFields[v]+' is at '+inttostr(fs[v]));
+    if fs[v] < 0 then
+      raise ECritical.create('field '+aFields[v]+' not found in TSERowSet');
+  end;
+
+  var stop: byte := 0;
+  ForX_QI(0,rowcount,SIMPLE_BATCH_SIZE, procedure (t: int64) begin
+    var bGood := true;
+
+    for var v := low(aFields) to high(aFields) do begin
+      var vValue := aValues[v];
+      vv := values[fs[v],t];
+      if varType(vv) = varString then begin
+        if comparetext(vv, vValue) <> 0 then begin
+          bGood := false;
+          break;
+        end
+      end else begin
+        if v <> vValue then begin
+          bGood := false;
+          break;
+        end;
+      end;
+    end;
+
+    if bGood then begin
+      ecs(sectAtomresult);
+      stop := 1;//this is monitored by the QueueItem (passed by pointer below)
+      resultIdx := t;//TODO 1: Not Atomic on 32-bit systems
+      lcs(sectAtomresult);
+    end;
+  end, [], @stop {pointer allows iterator to be stopped when a match is found});
+
+  result := resultIdx;
+  finally
+    dcs(sectAtomResult);
+  end;
+end;
+
+function TSERowSet.FindValue_Presorted(sField: string; vValue: variant): ni;
+var
+  ipos: nativeint;
+  finalIdx, testIdx: int64;
+  iTemp: nativeint;
+begin
+  iPos := 63;
+  ipos := 0;
+  var cnt := rowcount;
+  testIdx := 0;
+  finalIdx := 0;
+
+  for iPos := 63 downto 0 do begin
+    testIdx := finalIdx or (1 shl iPos);//propose to add a bit to the index
+
+    //if index in range
+    if testIdx < cnt then begin //Never put a 1 in for indexes greater than the count
+      //if search > testcase, keep value
+      var testV := valuesn[sField,testIDx];
+      if vValue < testV then
+        iTemp := -1
+      else if vValue > testV then
+        iTemp := 1
+      else
+        iTemp := 0;
+      if itemp >= 0 then
+        finalIdx := testIdx;
+
+      if itemp = 0 then
+        exit(finalIdx);
+
+
+    end;
+  end;
+
+  testIDX := 0;
+
+  var testV := valuesn[sField,testIDx];
+
+  if vValue < testV then
+    iTemp := -1
+  else if vValue > testV then
+    iTemp := 1
+  else
+    iTemp := 0;
+
+
+  if iTemp = 0 then
+    exit(finalIdx);
+
+  exit(-1);
 
 end;
 
@@ -1292,14 +1807,27 @@ begin
   dec(FCursor);
 end;
 
+procedure TSERowSet.Reset(nodelete: boolean);
+begin
+
+  for var t:= high(FRowset) downto 0 do begin
+    if (not nodelete) and FRowset[t].deletepending then begin
+      self.deleterow(t);
+    end else
+      FRowset[t].reset;
+  end;
+
+
+end;
+
 function TSERowSet.RowToMSSQLValues(r: TSERow): string;
 var
   t: ni;
   cell: TSECell;
 begin
   result := '(';
-  for t:= 0 to high(r) do begin
-    cell := r[t];
+  for t:= 0 to high(r.vals) do begin
+    cell := r.vals[t];
     case vartype(cell) of
       varString, varUString, varOleStr:
       begin
@@ -1324,8 +1852,8 @@ var
   fdef: PSERowsetFieldDef;
 begin
   result := '(';
-  for t:= 0 to high(r) do begin
-    cell := r[t];
+  for t:= 0 to high(r.vals) do begin
+    cell := r.vals[t];
     case vartype(cell) of
       varString, varUString, varOleStr:
       begin
@@ -1370,7 +1898,7 @@ end;
 procedure TSERowSet.SavetoCSV(f: string);
 begin
 
-  raise ECritical.create('unimplemented');
+  raise ECritical.create('unimplemented because it is database specific... look in mysqlstoragestring.pas');
 //TODO -cunimplemented: unimplemented block
 end;
 
@@ -1498,7 +2026,167 @@ begin
   if x >= FieldCount then
     raise ECritical.create(classname+' does not have field #'+inttostr(x));
 
-  FRowset[y][x] := value;
+  FRowset[y].vals[x] := value;
+  FRowset[y].mods[x] := true;
+  FRowset[y].modded := true;
+
+end;
+
+procedure TSERowSet.SetValuesByFieldName(fld: string; y: integer;
+  const Value: variant);
+begin
+  values[IndexOfField(fld),y] := value;
+end;
+
+function TSERowSet.SortAnon(
+  CompareProc_1_meansAisGreaterThanB: TFunc<TSERow, TSERow, ni>): boolean;
+begin
+{$IFDEF BUBBLE_SORT}
+  result := SortAnon_Bubble(CompareProc_1isAgtB);
+{$ELSE}
+  SortAnon_Quick(CompareProc_1_meansAisGreaterThanB,0,rowcount-1);
+  result := true;
+{$ENDIF}
+end;
+
+function TSERowSet.SortAnon_Bubble(
+  CompareProc_1isAgtB: TFunc<TSERow, TSERow, ni>): boolean;
+//returns TRUE if anything changed, else FALSE if already sorted
+var
+  solved: boolean;
+begin
+  result := false;
+  repeat
+    solved := true;
+
+    for var t:= 0 to high(FRowset)-1 do begin
+      var comp := CompareProc_1isAgtB(FRowset[t], FRowset[t+1]);
+      if comp > 0 then begin
+        var c := FRowset[t];
+        FRowset[t] := FRowset[t+1];
+        FRowset[t+1] := c;
+        solved := false;
+        result := true;
+      end;
+    end;
+
+  until solved;
+
+end;
+
+procedure TSERowSet.SortAnon_Quick(
+  CompareProc_1isAgtB: TFunc<TSERow, TSERow, ni>; iLo, iHi: ni);
+var
+  Lo, Hi: ni;
+  TT,Pivot: TSERow;
+begin
+   Lo := iLo;
+   Hi := iHi;
+   var pvtIDX := (Lo + Hi) shr 1;
+   if pvtIDX > (rowcount-1) then
+    exit;
+   Pivot := FRowset[pvtIDX];
+   repeat
+      while CompareProc_1isAgtB(FRowset[lo],pivot) < 0 do
+        begin
+          inc(lo);
+          if lo >= (rowcount) then break;
+        end;
+      while CompareProc_1isAgtB(FRowset[hi],pivot) > 0 do
+        begin
+          dec(hi);
+          if hi < 0 then break;
+        end;
+      if Lo <= Hi then
+      begin
+        TT := FRowset[Lo];
+        FRowset[Lo] := FRowset[Hi];
+        FRowset[Hi] := TT;
+        Inc(Lo) ;
+        Dec(Hi) ;
+      end;
+   until Lo > Hi;
+   if Hi > iLo then SortAnon_Quick(CompareProc_1isAgtB, iLo, Hi) ;
+   if Lo < iHi then SortAnon_Quick(CompareProc_1isAgtB, Lo, iHi) ;
+end;
+
+procedure TSERowSet.SortVariant(sField: string);
+begin
+  var af := IndexOfField(sField);
+  if af < 0 then
+    raise Ecritical.create('cannot sort on field '+sField+' because it doesn''t exist in TSERowset');
+  SortAnon(function (a,b: TSERow): nativeint begin
+    if a.vals[af] < b.vals[af] then
+      exit(-1);
+    if a.vals[af] > b.vals[af] then
+      exit(1);
+    exit(0);
+  end);
+
+end;
+
+procedure TSERowSet.SumDuplicatesAndDelete(sCompareField, sSumField: string);
+begin
+  IterateMTFake(1,procedure (idx: int64) begin
+    if self.valuesN[sCompareField,idx] = 'If It Hadn''t Been For Love' then
+      debug.log('checking '+vartostr(self.valuesN[sCompareField,idx])+' '+vartostr(self.valuesN[sSumField,idx]));
+    for var idx2 := idx to rowcount-1 do begin
+      //debug.log(idx.tostring+' '+idx2.tostring);
+      if idx = idx2 then
+        exit;
+      if self.valuesN[sCompareField,idx2] = self.valuesN[sCompareField,idx] then begin
+        var a: int64 := self.valuesN[sSumField,idx];
+        var b: int64 := self.valuesN[sSumField,idx2];
+        
+        if self.valuesN[sCompareField,idx] = 'If It Hadn''t Been For Love' then begin
+          debug.log('checking '+vartostr(self.valuesN[sCompareField,idx])+' '+vartostr(self.valuesN[sSumField,idx]));
+          debug.log('adding '+a.tostring+' + '+b.tostring);
+        end;
+        self.valuesN[sSumField,idx] := a+b;
+        self.valuesN[sSumField,idx2] := 0;
+        if self.valuesN[sCompareField,idx] = 'If It Hadn''t Been For Love' then
+          debug.log('checking '+vartostr(self.valuesN[sCompareField,idx])+' '+vartostr(self.valuesN[sSumField,idx]));
+
+      end;
+    end;
+  end);
+
+  for var t:= rowcount-1 downto 0 do begin
+    if self.valuesN[sSumField,t] = 0 then begin
+      self.DeleteRow(t);
+    end;
+  end;
+  
+  var f := self.IndexOfField(sSumField);
+
+  SortAnon(function (a,b: TSERow): nativeint begin
+    if b.vals[f] > a.vals[f] then
+      exit(1);
+    if a.vals[f] > b.vals[f] then
+      exit(-1);
+    exit(0);
+    
+  end);
+end;
+
+function TSERowSet.ToHTMLTable: IHolder<TStringList>;
+begin
+  result := NewStringListH;
+  var oo := result.o;
+  oo.add('<table>');
+  oo.add('<tr>');
+  for var t := 0 to fieldcount-1 do begin
+    oo.add('<th>'+fielddefs[t].sname+'<th>');
+  end;
+  oo.add('</tr>');
+  Iterate(procedure begin
+    oo.add('<tr>');
+    for var t := 0 to fieldcount-1 do begin
+      oo.add('<td>'+self.values[t,cursor]+'<td>');
+    end;
+    oo.add('</tr>');
+  end);
+  oo.add('</table>');
 end;
 
 function TSERowSet.ToJSONh: IHolder<TJSON>;
@@ -1598,7 +2286,10 @@ var
 begin
   i := length(self.FFieldDefs);
   for t := low(FRowSet)+iOldCount to high(FRowset) do begin
-    SetLength(FRowset[t], i);
+    SetLength(FRowset[t].vals, i);
+    FRowSet[t].init;
+    FRowset[t].mods.FlagCount := i;
+
   end;
 
 end;
@@ -1701,35 +2392,64 @@ begin
   result := s;
 
 end;
-function RowsetToValues(ds: TSERowset; bIncludeSEFields: boolean): string;
+function RowsetToValues(ds: TSERowset; bIncludeSEFields: boolean; bTrim: boolean): string;
+begin
+  result := '';
+  result := '('+RowToValues_NoParens(ds, bIncludeSEFields, bTrim)+')';
+
+end;
+
+
+function RowToValues_NoParens(ds: TSERowset; y: int64; bIncludeSEFields: boolean; bTrim: boolean): string;
 var
-  x,y: integer;
+  x: integer;
   v: variant;
   sRow: string;
 begin
   result := '';
-  for y:= 0 to ds.RowCount-1 do begin
+//  for y:= 0 to ds.RowCount-1 do begin
     sRow := '';
     for x:= 0 to ds.FieldCount-1 do begin
       if x > 0 then
         sRow := sRow+','+mysqlstoragestring.gvs(ds.Values[x,y])
       else begin
         if bIncludeSEFields then
-          sRow := '(0,'+mysqlstoragestring.gvs(ds.Values[x,y])
+          sRow := '0,'+mysqlstoragestring.gvs(ds.Values[x,y])
         else
-          sRow := '('+mysqlstoragestring.gvs(ds.Values[x,y])
+          sRow := ''+mysqlstoragestring.gvs(ds.Values[x,y])
       end;
     end;
 
-
-    if y> 0 then
-      result := result + ','+sRow+')'
-    else
-      result := result + sRow+')';
-  end;
+  result := sRow;
 
 
 end;
+
+function RowToValues_NoParens(ds: TSERowset; bIncludeSEFields: boolean; bTrim: boolean): string;
+var
+  x: integer;
+  v: variant;
+  sRow: string;
+begin
+  result := '';
+//  for y:= 0 to ds.RowCount-1 do begin
+    sRow := '';
+    for x:= 0 to ds.FieldCount-1 do begin
+      if x > 0 then
+        sRow := sRow+','+mysqlstoragestring.gvs(ds.Values[x,ds.cursor])
+      else begin
+        if bIncludeSEFields then
+          sRow := '0,'+mysqlstoragestring.gvs(ds.Values[x,ds.cursor])
+        else
+          sRow := ''+mysqlstoragestring.gvs(ds.Values[x,ds.cursor])
+      end;
+    end;
+
+  result := sRow;
+
+
+end;
+
 
 function RowsetToSETStatement(ds: TSERowset): string;
 var
@@ -1771,8 +2491,8 @@ function StringToFieldValue(s: string; fv: TFieldType): variant;
     raise ECritical.create('unsupported type');
   end;
 begin
-  s := trim(s);
-  case fv of
+//  s := trim(s);  NO!
+  case  fv of
     ftUnknown: unsupported;
     ftString: exit(s);
     ftSmallint:exit(strtoint(s));
@@ -1908,19 +2628,74 @@ begin
   for t:= low(indexfieldIndexes) to high(indexfieldIndexes) do begin
     f := indexfieldIndexes[t];
     if desc[t] then begin
-      if other.row[f] > row[f] then
+      if other.row.vals[f] > row.vals[f] then
         exit(-1);
-      if other.row[f] < row[f] then
+      if other.row.vals[f] < row.vals[f] then
         exit(1);
     end else begin
-      if other.row[f] < row[f] then
+      if other.row.vals[f] < row.vals[f] then
         exit(-1);
-      if other.row[f] > row[f] then
+      if other.row.vals[f] > row.vals[f] then
         exit(1);
     end;
   end;
 
   exit(0);
+
+end;
+
+function FieldClassToRSfieldType(fc: TfieldClass): TFieldType;
+begin
+  if fc = DB.TIntegerField then
+    exit(TFieldType.ftInteger);
+  if fc = DB.TLargeintField then
+    exit(TFieldType.ftLargeint);
+  if fc = DB.TSmallintField then
+    exit(TFieldType.ftSmallint);
+  if fc = DB.TStringField then
+    exit(TFieldType.ftString);
+  if fc = TFloatField then
+    exit(ftFloat);
+  if fc = TBooleanField then
+    exit(ftBoolean);
+  if fc = TDateTimeField then
+    exit(ftDateTime);
+  if fc = TLongWordField then
+    exit(TFieldType.ftLongWord);
+
+  raise ECritical.create('unhandled field class '+fc.ClassName);
+
+
+end;
+
+{ TSERow }
+
+function TSERow.GetWidth: ni;
+begin
+  result := lesserof(length(vals),mods.FlagCount);
+
+end;
+
+procedure TSERow.Init;
+begin
+  reset;
+  deletepending := false;
+end;
+
+procedure TSERow.Reset;
+begin
+  //deletepending := false;  !! Deliberately do not reset deletepending, can still be used to ignore record
+  //                         !! should we choose to skip deleting the record from the array (potentially slow)
+  mods.reset;
+  modded := false;
+  appended := false;
+
+end;
+
+procedure TSERow.SetWidth(w: ni);
+begin
+  setlength(vals,w);
+  mods.flagcount := w;
 
 end;
 

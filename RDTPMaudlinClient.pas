@@ -11,7 +11,7 @@ interface
 
 
 uses
-  packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 

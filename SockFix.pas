@@ -9,7 +9,7 @@ unit sockfix;
 interface
 {$IFDEF ENABLETHIS}
 {$IFDEF MSWINDOWS}
-uses Winapi.Windows, Winapi.WinSock, System.SysUtils, System.Classes, activex;
+uses Winapi.Windows, Winapi.WinSock, System.SysUtils, System.Classes, activex, debug;
 
 type
   TSocketDomain = (pfUnspec, pfUnix, pfInet,
@@ -1152,7 +1152,11 @@ begin
         if not Assigned(T) then
           T := AddClientSocketThread;
         if Assigned(T) then
-          T.Resume;
+          T.Resume
+        else begin
+          Debug.log('sockfix, threadpool returned no thread, Threadpool is probably full');
+          sleep(1000);
+        end;
         Sleep(0);
       end;
   end;
@@ -1166,7 +1170,7 @@ end;
 function TServerSocketThread.AddClientSocketThread: TClientSocketThread;
 begin
   Result := nil;
-  if Assigned(FServerSocket) and (FThreadPool.Count < FThreadCacheSize) then
+  if Assigned(FServerSocket) and (FThreadPool.Count < (FThreadCacheSize*100)) then
   begin
     if Assigned(FOnGetThread) then
       FOnGetThread(Self, Result);

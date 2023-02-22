@@ -424,8 +424,9 @@ end;
 
 procedure TVideoParser3.Detach;
 begin
-  inherited;
   CloseMedia;
+  inherited;
+
 
 end;
 

@@ -7,9 +7,9 @@ interface
 uses
 {$IFDEF MSWINDOWS}
     {$DEFINE USE_COPY_FILE_EX}
-  windows,
+  windows, exe,
 {$ENDIF}
-  dirfile, commandprocessor, typex,classes, systemx, tickcount, commandicons, ioutils, debug, numbers, orderlyinit, stringx;
+  unicodeart, sysutils, types, betterobject, dirfile, commandprocessor, typex,classes, systemx, tickcount, commandicons, ioutils, debug, numbers, orderlyinit, stringx, dir, managedthread;
 
 
 
@@ -36,6 +36,8 @@ type
     FStatFrom: TResourceHealthData;
     FStatTo: TResourceHealthData;
     FWakingUp: boolean;
+    FNoAutoExpense: boolean;
+    FThrottleRate: int64;
     procedure RecalculateExpense;
     procedure SetDest(const Value: string);
     procedure SetSource(const Value: string);
@@ -46,6 +48,9 @@ type
     procedure SetFileOp(const Value: TfileOp);
   public
     constructor Create;override;
+    property noAutoExpense: boolean read FNoAutoExpense write FNoAutoExpense;
+
+    property ThrottleRate: int64 read FThrottleRate write FthrottleRate;
 
     property WakingUp: boolean read FWakingUp write FWakingUp;
     property Source: string read FSource write SetSource;
@@ -64,6 +69,7 @@ type
   public
     constructor Create;override;
     class function BeginMoveFile(sSource, sTarget: string): TfileMoveCommand;
+    class function CreateMoveFile(sSource, sTarget: string): TfileMoveCommand;
 
 
   end;
@@ -77,6 +83,27 @@ type
     property FileToDelete: string read FFile write FFile;
   end;
 
+  TDrainFolderThread = class(TManagedThread)
+  private
+    sources: IHolder<TStringList>;
+  public
+    dst: string;
+    idx: ni;
+    filespec: string;
+    recurse: boolean;
+    submount: boolean;
+    ThrottleRate: int64;
+    cleanDstFileSpec: string;
+    cleanDstOlderThan: TDateTime;
+    procDebug: TProc<string>;
+    function ShouldPause: boolean;virtual;
+    procedure AddSource(s: string);
+    procedure DoExecute;override;
+    procedure InitFromPool; override;
+
+  end;
+
+
 
 function CopyProgressRoutine(
     TotalFileSize, TotalBytesTransferred, StreamSize,StreamBytesTransferred: int64;
@@ -87,8 +114,11 @@ function CopyProgressRoutine(
 
 
 function UniquefileName(sFileName: string): string;
-
-
+{$IFDEF MSWINDOWS}
+procedure forcePermissions(sFileSpec: string; u: string= 'everyone'; p: string ='F');
+function forcePermissions_begin(sFileSpec: string; u: string= 'everyone'; p: string ='F'): Tcmd_RunExe;
+procedure forcePermissions_end(c: Tcmd_RunExe);
+{$ENDIF}
 
 
 
@@ -99,8 +129,7 @@ var
 
 implementation
 
-uses
-  sysutils;
+
 
 function UniquefileName(sFileName: string): string;
 var
@@ -138,10 +167,7 @@ end;
 class function TFileMovecommand.BeginMoveFile(sSource,
   sTarget: string): TfileMoveCommand;
 begin
-  result := TfileMovecommand.create;
-  result.Source := sSource;
-  result.Destination := sTarget;
-  result.FileOp := fomove;
+  result := CreateMoveFile(sSource,sTarget);
   result.start;
 
 
@@ -252,7 +278,7 @@ begin
         self.CResult := false;
       end;
     end else begin
-      Debug.Log(self,'Start move of '+FSource, 'filecopy');
+      Debug.Log(self,'Start move of '+FSource+' to '+FDest, 'filecopy');
       {$IFDEF ALLOW_COMPRESSION}
       if Compress and (TfileAttribute.faCompressed in TFile.GetAttributes(FSource)) then begin
         Resources.SetResourceUsage(ExtractNetworkRoot(FSource),1.0);
@@ -328,6 +354,9 @@ var
   r: real;
   r2: real;
 begin
+  if NoAutoExpense then
+    exit;
+
   Lock;
   REsources.Lock;
   try
@@ -396,8 +425,8 @@ begin
 //      Debug.Log('Destination: '+GetDrive(Destination),'filecopy');
 
 
-      Resources.SetResourceUsage(ExtractNetworkroot(Source), Resources.GetResourceUsage(ExtractNetworkroot(Source))+(r));
-      Resources.SetResourceUsage(ExtractNetworkroot(Destination), Resources.GetResourceUsage(ExtractNetworkroot(Destination))+(r));
+      Resources.SetResourceUsage(ExtractNetworkroot(Source), Resources.GetResourceUsage(ExtractNetworkroot(Source)).Usage+(r));
+      Resources.SetResourceUsage(ExtractNetworkroot(Destination), Resources.GetResourceUsage(ExtractNetworkroot(Destination)).Usage+(r));
 
       AssignStats;
 
@@ -472,6 +501,23 @@ begin
   TransferDelta := TotalTransferred- FLastTransfer;
   FLastTransfer := TotalTransferred;
   FLastTime := tm;
+
+  if ThrottleRate > 0 then begin
+    if TotalTransferred > 0 then begin
+      var since := gettimesince(FStartTime) /1000;
+      if since > 0 then begin
+        var actualrate := TotalTransferred / since;
+        if actualrate > ThrottleRate then begin
+          var targettime: int64 := round(since * ThrottleRate);
+          var intofuture := gettimesince(targettime,getticker());
+          if intofuture < 0 then
+            intofuture := 0;
+          sleep(lesserof(4000, intofuture));
+        end;
+      end;
+    end;
+  end;
+
 
   if tmDelta = 0 then exit;
   if self.WakingUp then begin
@@ -554,6 +600,16 @@ end;
 
 
 
+class function TfileMoveCommand.CreateMoveFile(sSource,
+  sTarget: string): TfileMoveCommand;
+begin
+  result := TfileMovecommand.create;
+  result.Source := sSource;
+  result.Destination := sTarget;
+  result.FileOp := fomove;
+
+end;
+
 { TFileCopyLookupTable }
 
 
@@ -603,6 +659,210 @@ begin
   inherited;
   CPUExpense := 0.0;
 end;
+
+
+function MoveFolderUntilEmpty(sSource,sDest: string; sFileSpec: string; iLimit: nativeint; ThrottleRate: int64; bRecurse: boolean; bKeepSourceFolder: boolean = true; c: TCommand = nil; p: PProgress = nil; dbg: TProc<string> = nil): nativeint;
+begin
+  result := 0;
+  if brecurse and (sfilespec<>'*') then
+    raise ECritical.create('cannot use recurse with filespec other than *');
+    //^ this is because removing the sub-folders will end up deleting files outside the filespec
+
+  var fi: TFileInformation := nil;
+  var dirh: IHolder<TDirectory> := nil;
+  repeat
+    dirh := Tdirectory.CreateH(sSource, sfilespec, 0,0, false, false, false);
+
+    if brecurse then
+    while dirh.o.GetNextFolder(fi) do begin
+      try
+        inc(result, MoveFolderUntilEmpty(fi.FullName, slash(sDest)+fi.Name, sFilespec, iLimit-result, ThrottleRate, bRecurse, false, c, p));
+        if (iLimit > 0) and (result >= iLimit) then
+          exit;
+      except
+        on E:exception do begin
+          debug.log('error moving folder '+sSource+' to '+sDest+' -- '+e.message);
+          sleep(4000);
+          exit;
+        end;
+      end;
+    end;
+
+    while dirh.o.GetNextFile(fi) do begin
+      var s := fi.fullname;
+      var d := slash(sDest)+fi.name;
+      var cc := TfileMoveCommand.CreateMoveFile(s, d);
+      try
+        cc.RaiseExceptions := false;
+        cc.NoAutoExpense := true;
+        cc.Resources.SetResourceUsage(d, 1.0);
+        cc.MemoryExpense := 0;
+        cc.CPUExpense := 0;
+//        cc.NetworkExpense := 1.0;
+        cc.ThrottleRate := ThrottleRate;
+
+        cc.start;
+
+        while not cc.WaitFor(250) do begin
+          if p <> nil then begin
+            p^ := cc.volatile_progress;
+          end;
+          if assigned(dbg) then begin
+            dbg(RenderProgressText(cc.volatile_progress)+cc.Destination);
+          end;
+        end;
+
+        if cc.ErrorMessage <> '' then begin
+          debug.log('error moving file '+s+' to '+d+' -- '+cc.errormessage);
+          exit;
+        end;
+
+        inc(result,1);
+        if (iLimit > 0) and (result >= iLimit) then
+          exit;
+
+
+      finally
+        cc.free;
+      end;
+    end;
+
+    if not bKeepSourceFolder then
+    if (dirh.o.filecount = 0) and (dirh.o.Foldercount = 0) then  begin
+      try
+        RemoveDir(sSource);
+      except
+        on e: exception do begin
+          debug.log('error removing dir '+sSource+' -- '+e.message);
+          exit;
+        end;
+
+      end;
+    end;
+
+  until (dirh = nil) or (dirh.o=nil) or ((dirh.o.filecount=0) and (dirh.o.foldercount=0));
+
+
+
+end;
+
+
+
+{ TDrainFolderThread }
+
+procedure TDrainFolderThread.AddSource(s: string);
+begin
+  var ilock :=LockI;
+  for var t:= 0 to sources.o.count-1 do begin
+    if (comparetext(sources.o[t],s)=0) then
+      exit;
+  end;
+
+  sources.o.Add(s);
+
+end;
+
+procedure TDrainFolderThread.DoExecute;
+begin
+  inherited;
+  try
+    runhot := false;
+    try
+    var src := '';
+    //briefly lock just we can get a source folder
+    begin
+      var lck := Locki;
+
+      if sources.o.count=0 then
+        exit;
+
+      if idx >= sources.o.count then
+        idx := 0;
+
+      src := sources.o[idx];
+    end;
+
+    var deleted:  ni := 0;
+    var cnt := 0;
+    for var t := 0 to sources.o.count-1 do begin
+      try
+       inc(cnt, GetFileCount(sources.o[t], '*.plot'));
+      except
+      end;
+    end;
+
+
+    if cnt > 0 then begin
+      if cleanDstFileSpec <> '' then begin
+        DeletefileSpecEx(dst, '*.plot',cleanDstOlderThan, deleted, 1);
+      end;
+    end;
+
+
+    var bestdest := dst;
+    var mnt := GetBestMount(dst,procedure (s: string) begin
+
+      Debug.Log(s);
+    end);
+    if mnt <> nil then
+      bestDest := mnt.o.path;
+      if ShouldPause then begin
+        runhot := false;
+        exit;
+      end;
+
+
+    MoveFolderUntilEmpty(src, bestDest, filespec, 1, ThrottleRate, recurse, true, nil, nil, procDebug);
+    except
+      on e: exception do begin
+        Debug.Log('Error in '+Classname+': '+e.message);
+      end;
+    end;
+  finally
+    inc(idx);
+  end;
+end;
+
+procedure TDrainFolderThread.InitFromPool;
+begin
+  inherited;
+  Loop := true;
+  ColdRunInterval := 10000;
+  RunHot := false;
+  filespec := '*';
+  recurse := true;
+  sources := stringToStringListH('');
+  dst := '';
+end;
+
+function TDrainFolderThread.ShouldPause: boolean;
+begin
+  result := false;
+end;
+
+{$IFDEF MSWINDOWS}
+procedure forcePermissions(sFileSpec: string; u: string= 'everyone'; p: string ='F');
+begin
+  forcePermissions_end(forcePermissions_begin(sFileSpec, u,p));
+end;
+function forcePermissions_begin(sFileSpec: string; u: string= 'everyone'; p: string ='F'): Tcmd_RunExe;
+begin
+  result := nil;
+    result := Tcmd_RunExe.create();
+    result.Prog := 'cacls';
+    result.Params := quote(sFileSpec)+' /e /p '+u+':'+p;
+    result.CaptureConsoleoutput := true;
+    result.WorkingDir := extractfilepath(result.prog);
+    result.RaiseExceptions := false;
+    result.Start;
+end;
+procedure forcePermissions_end(c: Tcmd_RunExe);
+begin
+  c.WaitFor;
+  c.Free;
+end;
+{$ENDIF}
+
 
 initialization
   orderlyinit.init.RegisterProcs('commands_file', oinit, ofinal, 'Debug,ManagedThread,CommandProcessor');

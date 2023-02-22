@@ -49,6 +49,7 @@ type
     function GetItem(sName: string): TNameValuePair;
   public
     constructor Create; reintroduce; virtual;
+    class function CreateH(sFileName: string): IHolder<TNameValuePairList>;
     destructor Destroy; override;
     function Add(sName: string; sValue: string): integer;
     function IndexOf(sName: string): integer;
@@ -160,13 +161,22 @@ begin
   FList := TSTringList.Create;
   FList.sorted := true;
   FList.Duplicates := dupIgnore;
+  AutoAdd := true;
+
+end;
+
+class function TNameValuePairList.CreateH(
+  sFileName: string): IHolder<TNameValuePairList>;
+begin
+  result := THolder<TNameValuePairList>.Create(Create);
+  result.o.LoadFromFile(sFileName);
 
 end;
 
 destructor TNameValuePairList.Destroy;
 // Standard.
 begin
-  if SAveOnFree then
+  if SAveOnFree and changed then
     SaveToFile;
   Clear;
   FList.Clear;
@@ -393,7 +403,7 @@ begin
           .Value);
     end;
 
-    sl.SaveTofile(sFile);
+    sl.SaveTofile(sFile, TEncoding.UTF8);
     FFileName := sFile;
     Changed := false;
   finally

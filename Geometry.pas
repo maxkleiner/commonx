@@ -94,6 +94,8 @@ function HerbivoreCurve(rPercent0to1: nativefloat; rSharpnessExponent: nativeflo
 procedure GetCenterOfTriangle(x1,y1,x2,y2,x3,y3: single; out rx,ry: single);overload;
 procedure GetCenterOfTriangle(x1,y1,x2,y2,x3,y3: double; out rx,ry: double);overload;
 function GetTriangleFlops(x,y: nativefloat; x1,y1,x2,y2,x3,y3: nativefloat): integer;
+function Interpolate_Logit(r: nativefloat): nativefloat;
+function Interpolate_SINOut(r:  nativefloat): nativefloat;
 function Interpolate_SIN(position,
                           iTargetStart,
                           iTargetEnd,
@@ -236,6 +238,29 @@ begin
   end;
 
 end;
+
+function Interpolate_SINOut(r:  nativefloat): nativefloat;
+begin
+  result := (((SIN(r*3.14)+1.0)/2));
+end;
+function Interpolate_Logit(r: nativefloat): nativefloat;
+begin
+  if r < 0.0 then r := 0;
+  if r > 1.0 then r := 1.0;
+  if (r > 0.5) then begin
+    var rr := r-0.5;
+    result := 0.5+(1.0-((COS(rr*3.14)+1.0)/2));
+  end else begin
+    var rr := r;
+
+    result := (((SIN(rr*3.14)+1.0)/4));
+
+  end;
+
+  debug.log(floatprecision(result,2));
+
+end;
+
 
 function Interpolate_SIN(position, iTargetStart,
   iTargetEnd, iSourceStart, iSourceEnd: nativefloat): nativefloat;
@@ -615,6 +640,12 @@ var
 begin
   result.x := 0;
   result.y := 0;
+
+  order(ax1,ax2);
+  order(bx1,bx2);
+  order(ay1,ay2);
+  order(by1,by2);
+
   if ax2 < bx1 then begin
     exit;
   end;
@@ -627,17 +658,13 @@ begin
     exit;
   end;
 
-  if ax2 < bx1 then begin
+  if by2 < ay1 then begin
     exit;
   end;
 
-  order(ax1,ax2);
-  order(bx1,bx2);
-  order(ay1,ay2);
-  order(by1,by2);
 
-  w := lesserof(ax2,bx2)-greaterof(ax1,ax2);
-  h := lesserof(ay2,by2)-greaterof(ay1,ay2);
+  w := lesserof(ax2,bx2)-greaterof(ax1,bx1);
+  h := lesserof(ay2,by2)-greaterof(ay1,by1);
 
   result.x := w;
   result.y := h;

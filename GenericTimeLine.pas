@@ -5,7 +5,7 @@ interface
 uses
   tickcount, typex,windows, beeper,dialogs,messages, sysutils, classes, advancedgraphics_DX, advancedgraphics, graphics, forms,
   generics.Collections.fixed, betterobject, ColorConversion, easyimage, numbers, colorblending,
-  stringx, systemx, controls, types, direct3d9_jedi, generics.defaults, geometry, debug;
+  stringx, systemx, controls, types, direct3d9_jedi, generics.defaults, geometry, graphicsx;
 
 
 const
@@ -22,7 +22,7 @@ const
   POINT_INNER_X_RADIUS = 8;
   POINT_GLOW_SCALE = 20;
   POINT_GLOW_YSCALE = 6;
-  BUTTON_COLORS : array [0..4] of TColor = (clLime,clRed,clYellow,clBlue, clorange);
+  BUTTON_COLORS : array [0..4] of TColor = (clLime,clRed,clYellow,clBlue, clOrange);
 
 type
   TmouseOpmode = (momNone, momDragScroll, momPoint, momDragSelect,

@@ -264,8 +264,8 @@ begin
   bestAckTime := 200;
   self.ThreadedEvent := true;
 
-  ics(lck);
-  ics(lckin);
+  ics(lck, classname+'-lck');
+  ics(lckin, classname+'-lckIn');
   setlength(fPendingLogs, 0);
   Bindings.DefaultPort := 0;
   Port := 0;
@@ -406,6 +406,7 @@ begin
   except
     on e:exception do begin
       thr.status := e.message;
+      sleep(8000);
     end;
   end;
 

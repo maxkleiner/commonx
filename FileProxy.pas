@@ -18,9 +18,12 @@ const
 
 
 
-function FileReadPx(ats: PAlignedTempSpace; Handle: THandle; var Buffer; Count: LongWord): Integer;inline;
-function FileWritePx(ats: PAlignedTempSpace; Handle: THandle; const Buffer; Count: LongWord): Integer;inline;
-function FileSeekPx(Handle: THandle; const Offset: Int64; Origin: Integer): Int64;inline;
+function FileReadPx(ats: PAlignedTempSpace; const Handle: THandle; var Buffer; const Count: LongWord): Integer;inline;
+function FileWritePx(ats: PAlignedTempSpace; const Handle: THandle; const Buffer; const Count: LongWord): Integer;inline;
+function FileSeekPx(const Handle: THandle; const Offset: Int64; const Origin: Integer): Int64;inline;
+function FileReadPx_BlockAlign(const addr: int64; const handle: THandle; var Buffer; const count: longword): integer;
+function FileGuaranteeReadPx(const handle: THandle; buffer: PByte; const count: longword): integer;
+
 
 
 {$IFDEF BAD_PATTERN_CHECK}
@@ -32,13 +35,13 @@ const
 implementation
 
 {$IFDEF MSWINDOWS}
-function FileReadPx(ats: PAlignedTempSpace; Handle: THandle; var Buffer; Count: LongWord): Integer;inline;
+function FileReadPx(ats: PAlignedTempSpace; const Handle: THandle; var Buffer; const Count: LongWord): Integer;inline;
 var
   chunk: ni;
 begin
   chunk := lesserof(count,MAX_SINGLE_OP);
 {$IFNDEF ATS}
-  ats := nil;
+//  ats := nil;
 {$ENDIF}
   if ats = nil then begin
     result := FileRead(Handle, buffer, chunk);
@@ -51,9 +54,53 @@ begin
   end;
 end;
 
-function FileWritePx(ats: PAlignedTempSpace; Handle: THandle; const Buffer; Count: LongWord): Integer;inline;
-var
-  chunk: ni;
+function FileGuaranteeReadPx(const handle: THandle; buffer: PByte; const count: longword): integer;
+begin
+  result := 0;
+  var cx := count;
+  var idxp : Pbyte := buffer;
+  while cx > 0 do begin
+    var just := FileRead(handle, idxp^, cx);
+    inc(idxp, just);
+    dec(cx, just);
+    inc(result, just);
+  end;
+end;
+
+function FileReadPx_BlockAlign(const addr: int64; const handle: THandle; var Buffer; const count: longword): integer;
+begin
+  Debug.Log('Addr = '+inttohex(addr,1));
+
+  var aligned := addr and $FFFFFFFFFFFFFE00;
+  Debug.Log('Aligned Addr = '+inttohex(aligned,1));
+
+  var offset := addr and $1ff;
+  Debug.Log('Offset Addr = '+inttohex(offset,1));
+  aligned := addr - offset;
+  Debug.Log('Aligned Addr = '+inttohex(aligned,1));
+
+
+  var alignedsz := (((count -1) shr 9)+1) shl 9;
+  FileSeek64(handle, aligned, 0);
+  //if the target buffer has aligned sizes and addresses we can
+  //read directly into it
+  if (aligned = addr) and (alignedsz = count) then begin
+    result := FileGuaranteeReadPx(handle, @buffer, count);
+  end
+  //else we have to read into temp space, then copy
+  else begin
+    var a: TDynByteArray;
+    setlength(a, alignedsz);
+    result := FileGuaranteeReadPx(handle, @a[0], alignedsz);
+   //var offset := addr and $1FF;
+    Movemem32(@buffer, @a[offset], count);
+    result := count;
+  end;
+
+
+end;
+
+function FileWritePx(ats: PAlignedTempSpace; const Handle: THandle; const Buffer; const Count: LongWord): Integer;inline;
 begin
 {$IFNDEF ATS}
   ats := nil;
@@ -77,7 +124,7 @@ begin
     Debug.Log('WRITES ARE DISABLED: '+memorytohex(pbyte(@buffer), lesserof(count, 64)));
     result := count;
   {$ELSE}
-    chunk := lesserof(count,MAX_SINGLE_OP);
+    var chunk := lesserof(count,MAX_SINGLE_OP);
     Movemem32(ats.aligned,@buffer, chunk);
     result := fileWrite(Handle, ats.aligned^, chunk);
   {$ENDIF}
@@ -85,7 +132,7 @@ begin
 
 end;
 
-function FileSeekPx(Handle: THandle; const Offset: Int64; Origin: Integer): Int64;inline;
+function FileSeekPx(const Handle: THandle; const Offset: Int64; const Origin: Integer): Int64;inline;
 begin
   {$IFDEF PX_DEBUG}
     Debug.Log('FileSeekPx 0x'+inttohex(offset, 16));

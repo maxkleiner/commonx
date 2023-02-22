@@ -1,7 +1,7 @@
 unit MotherShipTelnetDebug;
 
 interface
-
+{$IFDEF ENABLE}
 uses
   telnetprocessor, classes, sysutils;
 
@@ -20,9 +20,9 @@ type
 
   end;
 
-
+{$ENDIF}
 implementation
-
+{$IFDEF ENABLE}
 uses RequestInfo, REquestManager, systemx, stringx, typex;
 
 { TMotherShipDebugTelnetProcessor }
@@ -128,4 +128,5 @@ begin
 
 end;
 
+{$ENDIF}
 end.

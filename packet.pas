@@ -15,7 +15,7 @@ unit Packet;
 {x$INLINE AUTO}
 {$DEFINE VERBOSE_PACKET_LOGGING}
 interface
-uses SysUtils, betterobject, dtnetconst, NetworkBuffer, typex, Classes, stringx, variants, debug, ExceptionsX, systemx, numbers, zip;
+uses SysUtils, betterobject, dtnetconst, NetworkBuffer, typex, Classes, stringx, variants, debug, ExceptionsX, systemx, numbers, zip, system.zlib, packetabstract;
 
 const
   CK : array of byte =
@@ -30,16 +30,7 @@ const
 //  PACKET_ADDRESS_CRC = 12;
 //  PACKET_ADDRESS_ENCRYPTION = 16;
 //  PACKET_ADDRESS_USERDATA = 18;
-  PACKET_INDEX_RESPONSE_TYPE = 0;
-  PACKET_INDEX_SESSION = 1;
-  PACKET_INDEX_RESULT = 2;
-  PACKET_INDEX_ERROR_CODE = 3;
-  PACKET_INDEX_MESSAGE = 4;
-  PACKET_INDEX_RESULT_DETAILS = 5;
 
-  PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION = 1;
-  ENCRYPT_VERBATIM = 0;//PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION xor 1;
-  ENCRYPT_RLE = 1;//PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION;
 
 type
   TRDTPPacket = class;//forward
@@ -67,49 +58,40 @@ type
 
 
 
-  TRDTPDataType = byte;
-  TPacketOrigin = (poClient, poServer);
+
+
 //----------------------------------------------------------------------------
-  TRDTPPacket = class(TBetterObject)
+  TRDTPPacket = class(TRDTPPacketAbstract)
   private
-    FOrigin: TPacketOrigin;
-    FPlatformOptions: cardinal;
-    function GetBufferLength: integer;
+    function GetBufferLength: int64;
   protected
-    iSeqReadPos: integer;
-    FBuffer: TNetworkBuffer;
+    iSeqReadPos: int64;
     FCRCUpdated: boolean;
-    FEncrypted: boolean;
-    iLastSearchIndex: integer;
+    iLastSearchIndex: int64;
     iLastSearchPointer: integer;
     bDataCountOutOfDate: boolean;
-    FDataCountCache: integer;
-    fPreviousGetDataType: integer;
-    FPreviousGetDataCountType: integer;
-    FPreviousGetinsertionpoinType: integer;
-    iInsertionPoint: integer; //keeps dibs on where the next UserData value is inserted
+    FDataCountCache: int64;
+    fPreviousGetDataType: int64;
+    FPreviousGetDataCountType: int64;
+    FPreviousGetinsertionpoinType: int64;
+    iInsertionPoint: int64; //keeps dibs on where the next UserData value is inserted
     //Property-related functions
-    function GetMarker: integer;inline;
-    procedure SetMarker(l: integer);inline;
-    function GetPackedLength: integer;inline;
-    function GetUnPackedLength: integer;inline;
-    function GetPacketType: byte;inline;
-    procedure SetPacketType(l: byte);inline;
-    function GetEncryption: byte;inline;
-    procedure SetEncryption(i:byte);inline;
-    function GetDataType(idx: integer): TRDTPDataType;inline;
-    function GetNextDataType: TRDTPDataType;inline;
-    function GetSessionID: integer;inline;
-    function GetCRC: cardinal;inline;
-    function GetData(idx: integer): variant;inline;
-    function GetDataCount: integer;inline;
-    function GetResponseType: smallint;inline;
-    function GetIsResponse: boolean;inline;
-    function GetResult: boolean;inline;
-    function GetErrorCode: smallint;inline;
-    function GetMessage: string;inline;
-    function GetEncryptedBuffer: TNetworkBuffer;inline;
-    function GetDecryptedBuffer: TNetworkBuffer;inline;
+    function GetMarker: integer;override;
+    procedure SetMarker(l: integer);override;
+    function GetPackedLength: int64;override;
+    function GetUnPackedLength: int64;override;
+    function GetPacketType: byte;override;
+    procedure SetPacketType(l: byte);override;
+    function GetDataType(idx: int64): TRDTPDataType;override;
+    function GetNextDataType: TRDTPDataType;override;
+    function GetSessionID: int64;override;
+    function GetCRC: cardinal;override;
+    function GetData(idx: int64): variant;override;
+    function GetDataCount: int64;override;
+    function GetResponseType: smallint;override;
+    function GetResult: boolean;override;
+    function GetErrorCode: smallint;override;
+    function GetMessage: string;override;
     function GetDebugMessage2: string;
    //These calls must be used to mark the beginnings and ends of changes and
     //reads, to make sure the packet is in the correct state for reading/writing/etc.
@@ -127,97 +109,60 @@ type
     function GetPointerToData(idx: integer): integer;inline;
     function GetLengthFromDataPointer(ptr: integer): integer;inline;
     function ComputeCRC: cardinal;inline;
+    function GetEncryption: byte;override;
+    procedure SetEncryption(i:byte);override;
 
   public
     constructor Create;override;
     destructor Destroy; override;
-    procedure Initialize;
-    procedure Clear;
+    procedure Initialize;override;
+    procedure Clear;override;
 
     //Debugging functions
     procedure ShowDebugMessage;
-    function GetDebugMessage: string;
+    function GetDebugMessage: string;override;
 
-    //Packet definition functions
-    property DecryptedBuffer: TNetworkBuffer read GetDecryptedBuffer;
-    property EncryptedBuffer: TNetworkBuffer read GetEncryptedBuffer;
-      //This is the buffer in which the raw packet data is stored;
-    property Marker: integer read GetMarker write SetMarker;
-      //The marker should always be the same
-    property UnPackedLength: integer read GetUnPackedLength;
-    property PackedLength: integer read GetPackedLength;
-      //The length of the packet... as reported by the packet header.
-      //When building packets, the packet header is automatically updated.
-    property PacketType: byte read GetPacketType write SetPacketType;
-      //Packet type... almost always 1... will default to 1
-    property CRC: cardinal read GetCRC;
-      //The CRC Reported by packet header
-    property CRCUpdated: boolean read FCRCUpdated;
-    property Encryption: byte read GetEncryption write SetEncryption;
-      //The encryption method as reported by packet header
-    property Encrypted: boolean read FEncrypted;
-      //Tells whether or not the Packet data is encrypted currently
-    property DataCount: integer read GetDataCount;
-      //The number of items in the UserData porton of the packet.
-    property Data[idx: integer]: variant read GetData;  default;
-      //An index of shorts, strings, longs, and byte types included in the
-      //UserData portion of the packet.
-    property DataType[idx: integer]: TRDTPDataType read GetDataType;
 
     //Extended data reading
     procedure DecodeObjectHeader(index: integer; OUT iObjectType, iKeys,
         iFields, iAssociates, iObjects: cardinal);
 
     //Packet Buidling Rountines
-    procedure Addlong(l: integer);
-    procedure AddShort(i: smallint);
-    procedure AddDouble(d: double);
-    procedure AddNull;
-    procedure AddBoolean(b: boolean);
-    procedure AddString(s: string);
-    procedure AddDateTime(d: TDateTime);
-
-    ///	<summary>
-    ///	  Adds bytes to the packet..
-    ///	</summary>
-    ///	<param name="pc">
-    ///	  Function does NOT take ownership of memory.
-    ///	</param>
-    procedure AddBytes(pc: PByte; iLength: int64);
-    procedure AddObject(iObjectType, iKeys, iFields, iAssociates, iObjects: integer);
-    procedure AddShortObject(iObjectType, iKeys, iFields, iAssociates, iObjects: integer);
-    procedure AddLongObject(iObjectType, iKeys, iFields, iAssociates, iObjects: integer);
-    procedure UpdateLongObject(iPos: integer; iObjectType, iKeys, iFields, iAssociates, iObjects: integer);
-    procedure AddLongLong(int: int64);
-    procedure AddFlexInt(int: int64);
-    procedure AddInt(i: int64);
-    function AddVariant(v: variant): boolean;
+    procedure Addlong(l: integer);override;
+    procedure AddShort(i: smallint);override;
+    procedure AddDouble(d: double);override;
+    procedure AddNull;override;
+    procedure AddBoolean(b: boolean);override;
+    procedure AddString(s: string);override;
+    procedure AddDateTime(d: TDateTime);override;
+    procedure AddBytes(pc: PByte; iLength: int64);override;
+    procedure AddObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddShortObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddLongObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure UpdateLongObject(iPos: int64; iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddLongLong(int: int64);override;
+    procedure AddFlexInt(int: int64);override;
+    procedure AddInt(i: int64);override;
+    function AddVariant(v: variant): boolean;override;
 
     //Sequetial reading function
     procedure SeqDecodeObjectHeader(OUT iObjectType, iKeys,
-        iFields, iAssociates, iObjects: cardinal);
+        iFields, iAssociates, iObjects: cardinal);override;
 
-    function SeqRead: variant;
-    procedure SeqSeek(iPos: integer);
-    function SeqReadBytes(out iLength: int64): PByte;overload;
-    function SeqReadBytes: TDynByteArray;overload;
+    function SeqRead: variant;override;
+    procedure SeqSeek(iPos: int64);override;
+    function SeqReadBytes(out iLength: int64): PByte;overload;override;
+    function SeqReadBytes: TDynByteArray;overload;override;
 
-    function Eof: boolean;
+    function Eof: boolean;override;
 
-    procedure Encrypt;
-    procedure Decrypt;
+    procedure Encrypt;override;
+    procedure Decrypt;override;
 
     function GetBufferAsString: string;
     property BufferAsString: string read GetBufferAsString;
 
 
-    //These definitions are standard for response packets.
-    //They cannot be accessed unless the packet was recieved from the network.
-    property ResponseType: smallint read GetResponseType;
-    property Result: boolean read GetResult;
-    property SessionID: integer read GetSessionID;
-    property ErrorCode: smallint read GetErrorCode;
-    property Message: string read GetMessage;
 
     //Packet Integrity Checking
     function IsMarkerValid: boolean;
@@ -227,18 +172,16 @@ type
     function IsValid: boolean;
       //Combines marker and CRC check in one call
 
-    //Additional Packet Attributes
-    property IsResponse: boolean read GetIsResponse;
+
       //tells whether or not the packet is intended for sending or recieving
-    property SeqReadPos: integer read iSeqReadPos write iSeqReadPos;
+    property SeqReadPos: int64 read iSeqReadPos write iSeqReadPos;
     property NextDataType: TRDTPDataType read GetNextDataType;
-    property Origin: TPacketOrigin read FOrigin write FOrigin;
-    property SeqWritePos: integer read iInsertionPOint write iInsertionPOint;
-    property BufferLength: integer read GetBufferLength;
+
+    property SeqWritePos: int64 read iInsertionPOint write iInsertionPOint;
+    property BufferLength: int64 read GetBufferLength;
 
     procedure ReturnError(sMessage: string);
-    property PlatformOptions: cardinal read FPlatformOptions write FPlatformOptions;
-    procedure AssignBuffer(p: pbyte; l: ni);
+
   end;
 
 //Supplemental functions
@@ -266,10 +209,6 @@ begin
   inherited;
   bDataCountOutOfDate  := true;
 
-  //Allocate the maximum possible size for the packet in memory
-  FBuffer := TNetworkBuffer.create(MAX_PACKET_SIZE);
-
-  FOrigin := poClient;
 
   //Initialize default packet values
   initialize;
@@ -289,7 +228,6 @@ begin
     PokeByte($0000,         PACKET_ADDRESS_ENCRYPTION);
 
   end;
-  FEncrypted := false;
   FCRCUpdated := false;
   iInsertionPoint:=PACKET_ADDRESS_USERDATA;
   iLastSearchIndex := 0;
@@ -318,13 +256,13 @@ begin
   FBuffer.PokeLong(l, PACKET_ADDRESS_MARKER);
 end;
 //----------------------------------------------------------------------------
-function TRDTPPacket.GetPackedLength: integer;
+function TRDTPPacket.GetPackedLength: int64;
 begin
   if Fbuffer = nil then
     raise ECritical.create('packet has no Fbuffer');
   result := FBuffer.PeekLong(PACKET_ADDRESS_PACKED_LENGTH);
 end;
-function TRDTPPacket.GetUnPackedLength: integer;
+function TRDTPPacket.GetUnPackedLength: int64;
 begin
   if Fbuffer = nil then
     raise ECritical.create('packet has no Fbuffer');
@@ -350,7 +288,7 @@ begin
   result := cardinal(FBuffer.PeekLong(PACKET_ADDRESS_CRC));
 end;
 //----------------------------------------------------------------------------
-function TRDTPPacket.GetDataType(idx: integer): TRDTPDataType;
+function TRDTPPacket.GetDataType(idx: int64): TRDTPDataType;
 var
   idxSearchPointer: integer;
 begin
@@ -359,7 +297,7 @@ begin
   result := DecryptedBuffer.PeekByte(idxSearchPointer);
 end;
 //----------------------------------------------------------------------------
-function TRDTPPacket.GetData(idx: integer): variant;
+function TRDTPPacket.GetData(idx: int64): variant;
 //This function is wierd
 var
   idxSearchPointer: integer;
@@ -428,7 +366,7 @@ begin
   FPreviousGetDataType := iDataType;
 end;
 //----------------------------------------------------------------------------
-function TRDTPPacket.GetDataCount: integer;
+function TRDTPPacket.GetDataCount: int64;
 var
   idxSearchPointer: int64;
   iDataType: TRDTPDataType;
@@ -641,11 +579,6 @@ begin
   end;
 end;
 
-procedure TRDTPPacket.AssignBuffer(p: pbyte; l: ni);
-begin
-  FEncrypted := true;
-  FBuffer.AssignBuffer(p,l);
-end;
 
 //---------------------------------------------------------------------------
 function TRDTPPacket.IsMarkerVAlid;
@@ -729,14 +662,6 @@ begin
 
 end;
 //---------------------------------------------------------------------------
-function TRDTPPacket.GetIsResponse : boolean;
-begin
-  if self = nil then
-    raise exception.create('self is nil');
-  result := Origin = poServer;
-
-end;
-//---------------------------------------------------------------------------
 function TRDTPPacket.GetLengthFromDataPointer(ptr: integer): integer;
 begin
   BeginPacketRead;
@@ -750,20 +675,6 @@ begin
 //  BeginPacketChange;
   FBuffer.PokeByte(i, PACKET_ADDRESS_ENCRYPTION);
 //  EndPacketChange;
-end;
-//---------------------------------------------------------------------------
-function TRDTPPacket.GetEncryptedBuffer: TNetworkBuffer;
-begin
-  if not Encrypted then Encrypt;
-  result := Fbuffer;
-
-end;
-//---------------------------------------------------------------------------
-function TRDTPPacket.GetDecryptedBuffer: TNetworkBuffer;
-begin
-  if Encrypted then Decrypt;
-  result := Fbuffer;
-
 end;
 
 //---------------------------------------------------------------------------
@@ -876,7 +787,7 @@ begin
       raise ETransportError.create('cannot encrypt a packet that is '+inttostr(szFrom)+' length.');
     pto := GetMemory(szFrom);
     //zip ram starting BEYOND header
-    szto := zip.ZipRam(@pFrom[sizeof(TRDTPHEader)], @pTo[sizeof(TRDTPHEader)], szFrom-sizeof(TRDTPHEADER), szFrom-sizeof(TRDTPHEADER), nil);
+    szto := zip.ZipRam(@pFrom[sizeof(TRDTPHEader)], @pTo[sizeof(TRDTPHEader)], szFrom-sizeof(TRDTPHEADER), szFrom-sizeof(TRDTPHEADER), nil, clFastest);
     //if compression successful
     if szto > 0 then begin
       //move header
@@ -1133,7 +1044,7 @@ begin
 end;
 
 //---------------------------------------------------------------------------
-procedure TRDTPPacket.SeqSeek(iPos: integer);
+procedure TRDTPPacket.SeqSeek(iPos: int64);
 begin
   iSeqReadPos := iPos;
 end;
@@ -1187,7 +1098,7 @@ begin
 end;
 //----------------------------------------------------------------------------
 procedure TRDTPPacket.AddObject(iObjectType, iKeys, iFields, iAssociates,
-  iObjects: integer);
+  iObjects: int64);
 var
   bUseLong: boolean;
 begin
@@ -1245,7 +1156,7 @@ begin
 end;
 //----------------------------------------------------------------------------
 procedure TRDTPPacket.AddShortObject(iObjectType, iKeys, iFields,
-  iAssociates, iObjects: integer);
+  iAssociates, iObjects: int64);
 //Description: Adds a header to mark the beginning of a Data object mashalled
 //into the packet in SHORT form.  See docuement "Marshall or UnMarshall".
 //NOTE:
@@ -1284,7 +1195,7 @@ begin
 end;
 //----------------------------------------------------------------------------
 procedure TRDTPPacket.AddLongObject(iObjectType, iKeys, iFields,
-  iAssociates, iObjects: integer);
+  iAssociates, iObjects: int64);
 //Description: Adds a header to mark the beginning of a Data object mashalled
 //into the packet in LONG form.  See docuement "Marshall or UnMarshall".
 //NOTE:
@@ -1424,7 +1335,7 @@ begin
 
 end;
 
-function TRDTPPacket.GetSessionID: integer;
+function TRDTPPacket.GetSessionID: int64;
 begin
   BeginPacketRead;
   if not IsResponse then
@@ -1464,7 +1375,7 @@ begin
 end;
 
 
-function TRDTPPacket.GetBufferLength: integer;
+function TRDTPPacket.GetBufferLength: int64;
 begin
 
   result := self.FBuffer.FSize;
@@ -1596,7 +1507,7 @@ begin
 end;
 
 procedure TRDTPPacket.UpdateLongObject(iPos, iObjectType, iKeys, iFields,
-  iAssociates, iObjects: integer);
+  iAssociates, iObjects: int64);
 begin
   //put packet into change state
   BeginPacketChange;

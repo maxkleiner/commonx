@@ -1257,7 +1257,7 @@ var
   s: string;
   l: nativeint;
 begin
-  s := UTF8Encode(ss);
+  s := string(UTF8Encode(ss));
   s := s + #13#10;
   Seek(0, soEnd);
 //  if not IndexBuilt then

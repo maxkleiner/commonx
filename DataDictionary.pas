@@ -35,7 +35,7 @@ type
   end;
 
 var
-  dict: TDataDictionary;
+  dict: TDataDictionary = nil;
 
 implementation
 
@@ -92,7 +92,8 @@ initialization
   dict := TDatadictionary.create;
 
 finalization
-  dict.free;
+  if assigned(dict) then
+    dict.free;
 
 
 

@@ -1,6 +1,6 @@
 unit rudp1;
 {xDEFINE USE_FIBERS}
-{$INLINE AUTO}
+{x$INLINE AUTO}
 {$DEFINE USE_SHARED_QUEUES}
 {$DEFINE SHARED_MULTIQUEUES}
 {$DEFINE ENDPOINT_REFERENCES}
@@ -11,11 +11,11 @@ unit rudp1;
 {x$DEFINE VERBOSE_REFERENCES}
 {x$DEFINE USE_REGISTERED_MEMORY}
 {$IFNDEF MSWINDOWS}
-{$DEFINE SMALL_MTU}
-{$DEFINE FORCE_SMALL_MTU}
+  {$DEFINE SMALL_MTU}
+  {$DEFINE FORCE_SMALL_MTU}
 {$ENDIF}
 
-//{$Message Error 'I forgot... definition of LOOP changed.  I still need to be able to handle "one shot" threads.... the definition of LOOP is going to be all squirley... fuck!'}
+//{$Message Error 'I forgot... definition of LOOP changed.  I still need to be able to handle "one shot" threads.... the definition of LOOP is going to be all squirley... !@#$!'}
 //todo 1: Since ChangeConnID is sent without requiring ACK, who is to say if it isn't lost?  Special case, retrans?
 //todo 1: OnData... separate out immediate queue from regular queue.
 
@@ -43,14 +43,14 @@ unit rudp1;
 
 
 {x$DEFINE BEEPS}
-{x$DEFINE ALLOW_IMMEDIATE_RETRANS}
+{$DEFINE ALLOW_IMMEDIATE_RETRANS}
 {x$DEFINE SLOW_ACK}
 {x$DEFINE SEND_RECEIVE_DEBUG}
 {x$DEFINE PERIODIC}
 {x$DEFINE STALL_EMPHASIS}
 {x$DEFINE ALWAYS_USE_SENDTXLOGS}
 {x$DEFINE INTERVAL_SPIN}
-{x$DEFINE ALLOW_PACKET_MERGE}
+{$DEFINE ALLOW_PACKET_MERGE}
 {$DEFINE QUEUE_INCOMING_UDP}
 {$DEFINE STRUCTURED_INCOMING_UDP}
 {x$DEFINE DEBUG_RETRANS}
@@ -63,14 +63,14 @@ unit rudp1;
 {x$DEFINE MORE_REFS}
 {x$DEFINE MORE_REFS2}
 {x$DEFINE USE_FEC}
-{$DEFINE FUTURE_ACKS} //causes Internal error C2359 in 32-bit!
+{x$DEFINE FUTURE_ACKS} //causes Internal error C2359 in 32-bit!
 {x$DEFINE NEVER_WALK_DOWN_MTU}
 {$DEFINE DUMB}
 {x$DEFINE CLEAR_DEBUG}
 {$DEFINE OUT_QUEUE}
 {$DEFINE HIGH_PRIORITY_QUEUES}
 {x$DEFINE ALWAYS_SPLIT_ASS}
-{x$DEFINE PACKET_COMBINATION}
+{$DEFINE PACKET_COMBINATION}
 {x$INLINE AUTO}
 {x$DEFINE SEND_RESETS}
 {x$DEFINE RESPOND_TO_RESETS}
@@ -142,25 +142,25 @@ const
   MTU_TEST_PING_REQ: array of ni=[99990,9999,  15,   14,   13,  9,    8,     7,     7,     6,    5,    4,    3,    2,    1];
 
 
-  FLOODED_AT_MIN = 4;
-  FLOODED_AT_MAX = 40;
+  FLOODED_AT_MIN = 4000;
+  FLOODED_AT_MAX = 4000;
   MTU_TEST_COUNT = 15;//<-----------^
   MTU_TEST_EXPIRATION_TIME = 90000;
-  MTU_RETEST_TIME = 10000;
-  STALE_RETRANS_TIME = 200;
-  MAX_STALE_RETRANS_TIME = 500;
-  INITIAL_PACKET_WRITE_AHEAD = 0;
+  MTU_RETEST_TIME = 90000;
+  STALE_RETRANS_TIME = 2000;
+  MAX_STALE_RETRANS_TIME = 5000;
+  INITIAL_PACKET_WRITE_AHEAD = 75;
   STALL_WALK_INC = 0.5;
   STALL_WALK_DEC = 0.5;
   WA_SHIFT = 5;
-  MIN_PACKET_WRITE_AHEAD = 4; //
-  MAX_PACKET_WRITE_AHEAD = 20; //
+  MIN_PACKET_WRITE_AHEAD = 1; //
+  MAX_PACKET_WRITE_AHEAD = 750; //
   MAX_OUTSTANDING_PACKETS = MAX_PACKET_WRITE_AHEAD+1;//this should probably be low because, setting it too high will make changes to the MTU size less responsive
-  DEFAULT_RETRANS_TIMEOUT = 200;
+  DEFAULT_RETRANS_TIMEOUT = 500;
   MIN_MTU = 1400;//<<--only used for FEC stuff, cutting into parts
   SINGLE_RETRANS_TIMEOUT = 500;
   WRITE_AHEAD_PING_DIVISOR = 1;
-  WRITE_AHEAD_MULTIPLIER = 30;
+  WRITE_AHEAD_MULTIPLIER = 1;
   RETRIES_BEFORE_SPLIT = 8;
 {$IFDEF USE_FEC}
   PAYLOAD_LIMIT = 400*8;
@@ -823,6 +823,7 @@ type
     destructor Destroy;override;//todo 1:translate
     procedure DoDisconnect; override;//todo 1:translate
     property cli: TReliableUDPClientEndpoint read FCli write SetCli;
+    function GetUniqueID: int64;override;
 
   end;
 
@@ -842,6 +843,8 @@ type
     procedure DebugTagUpdated(s: string);override;
     function DoConnect: boolean; override;
     procedure DoDisconnect; override;
+    function GetUniqueID: Int64; override;
+
 
   end;
 
@@ -1310,8 +1313,8 @@ var
 begin
 //  if GetTimeSince(LastAckTime) < 5 then exit;
 
-  if DisableAcks then
-    exit;
+//  if DisableAcks then
+//    exit;
 
   if SmartLock then
   try
@@ -1324,7 +1327,7 @@ begin
     h.Flag_Command := true;
     h.sequencenumber := -1;//0 because there's no ack coming back
     h.expected_sequencenumber := _nextexpectedSequenceNumber;
-    {$IFDEF DUMB}h.SendersBackLog := txLog.count;{lesserof(_nextsequencenumber - _unclearedsequencenumber, 255);}{$ENDIF}
+    {$IFDEF DUMB}h.SendersBackLog := lesserof(_nextsequencenumber - _unclearedsequencenumber, 255);{$ENDIF}
     h.argument := specific_packet;
     if h.argument < (rxAckedLast-1) then
       exit;
@@ -1882,16 +1885,18 @@ begin
             r.ReleasePacketRef();
           end;
           ti := TtreeItem_ReliableUDPPacketLogRecord(txLog.FirstItem);
-          EvalFloodSignal;
           net_stats_clear_rate_tx.Accumulate(1);
-
+//          EvalFloodSignal;
         end;
+
+
 
       end else
         break;
     end;
   finally
     Unlock;
+    EvalFloodSignal;
   end;
 
 end;
@@ -2762,9 +2767,6 @@ begin
     if (ifo.h.sequencenumber < _nextexpectedSequenceNumber) then begin
 {$IFDEF UDP_DEBUG}      Debug.Log(self,'xxxx NOT Added (old) xxxx '+inttostr(ifo.h.sequencenumber)+' < '+inttostr(_nextexpectedSequenceNumber));{$ENDIF}
 //{$IFDEF UDP_DEBUG}      //NOT TRUE UDPDebug('packet out of order, so send immediate ack '+inttostr(ifo.h.sequencenumber)+' < '+inttostr(_nextexpectedSequenceNumber));{$ENDIF}
-{$IFDEF SLOW_ACK}
-      if txLog.count = 0 then
-{$ENDIF}
 //      ACkIncoming(false);
       latent_ack := true;//force a ack to be send when receiver becomes idle
 
@@ -2783,9 +2785,6 @@ begin
         //account when deciding what order to process the information
         //ProcessPacketQueue();
         SystemThreadSignal := true;
-{$IFDEF SLOW_ACK}
-      if txLog.count = 0 then
-{$ENDIF}
         latent_ack := true;
         ACkIncoming(false);
 
@@ -3023,7 +3022,7 @@ var
   bYes: boolean;
 begin
   //bYes := (txLog.count < greaterof(lesserof(bestAckTime,FLOODED_AT_MAX),FLOODED_AT_MIN)) or (CloseState <> csnotClosed);
-  bYes := (txLog.count < greaterof(lesserof((bestAckTime*10)/(FlexMTU/1250),FLOODED_AT_MAX),FLOODED_AT_MIN)) or (CloseState <> csnotClosed);
+  bYes := (txLog.count < Self.WalkingAverage ) or (CloseState <> csnotClosed);
 //  if not byes then
 //    debug.consolelog('flood');
   Signal(evNotFlooded, bYes);
@@ -3616,8 +3615,8 @@ begin
     workingset := walkingaverage;
     //if bimmediate then wa := wa shr 1;
     cx := workingset+2;
-//    if not bOnlyUnsent then
-//      cx := 1;
+    if not bOnlyUnsent then
+      cx := 1;
 
 
     rt := FlexRetransTime;
@@ -3692,7 +3691,7 @@ begin
                 {$IFDEF DUMB}l.h.SendersBackLog := lesserof(_nextsequencenumber - _unclearedsequencenumber, 255);{$ENDIF}
               end;
               if (l.retranscount >= RETRIES_BEFORE_SPLIT) or (l.payload_length > fmtu) then begin
-                {$ifndef  ALWAYS_SPLIT_ASS}
+                {$ifndef ALWAYS_SPLIT_ASS}
                 for tt := high(mtu_test_results) downto 1 do begin
                   mtu_test_results[tt].REset;
                   if mtu_test_results[tt].sz < (greaterof(l.payload_length, fmtu)) then
@@ -3757,7 +3756,7 @@ begin
             if self.Multiplexer.stufftodo then begin
 
     //          walkingaveragefine := sent shl 4;
-              ANeedStop := true;
+//              ANeedStop := true;
               //exit; //do not push packets out if there are packets waiting to be processed
             end;
 
@@ -4406,7 +4405,8 @@ begin
     end;
     thr.slept := false;
 {$else}
-    sleep(st);
+    if st > 0 then
+      sleep(st);
 {$ENDIF}
   end;
 
@@ -5064,6 +5064,11 @@ begin
 
 end;
 
+
+function TSimpleReliableUDPClient.GetUniqueID: int64;
+begin
+  result := FCli.FLocalPort;
+end;
 
 procedure TSimpleReliableUDPClient.OnDataAvailable(const sender: TObject);
 begin
@@ -5921,8 +5926,9 @@ begin
 
   end;
 
-//  WAlkingAverageFine := 4 shl WA_SHIFT;
-  WalkingAverageFine := lesserof(MAX_PACKET_WRITE_AHEAD div BigPacketDivisor,((bestAckTime * WRITE_AHEAD_MULTIPLIER) div GREATEROF(1,(FlexMTU div mtu_test_sizes[0]))) shl WA_SHIFT);
+  WAlkingAverageFine := 4 shl WA_SHIFT;
+
+//  WalkingAverageFine := lesserof(MAX_PACKET_WRITE_AHEAD div BigPacketDivisor,((bestAckTime * WRITE_AHEAD_MULTIPLIER) div GREATEROF(1,(FlexMTU div mtu_test_sizes[0]))) shl WA_SHIFT);
 //  WAlkingAverageFine := WalkingAverageFine div (((round(rsAckTime.PeriodicAverage)+1) div (bestAckTime+1))+1);
 
 
@@ -7004,6 +7010,12 @@ begin
 
 end;
 
+function TSimpleReliablePrivateServerEndpoint.GetUniqueID: Int64;
+begin
+  result := self.cli.FLocalPort;
+
+end;
+
 function TSimpleReliablePrivateServerEndpoint.DoWaitForData(
   timeout: cardinal): boolean;
 begin
@@ -7068,6 +7080,8 @@ end;
 
 procedure ofinal;
 begin
+  if not assigned(rsMon) then
+    exit;
   rsMon.UnregisterRingStat(net_stats_clear_rate_tx);
   net_stats_clear_rate_tx.DetachAndfree;
   rsMon.UnregisterRingStat(net_stats_clear_rate_rx);

@@ -13,7 +13,7 @@ unit commands_string;
 interface
 
 uses
-  commandprocessor, typex, classes, generics.collections, sysutils, debug, numbers, simplequeue,
+  commandprocessor, typex, classes, generics.collections, sysutils, debug, numbers, simplequeue, systemx,
 {$ifDEF USE_MULTI_QUEUE}
   globalmultiqueue,
 {$endif}
@@ -266,33 +266,44 @@ begin
     c := Tcmd_ParseString.create;
     c.INput := sInput;
     c.Delimiter := sDelimiter;
+    c.cpuexpense := 1.0;
     cl.add(c);
 
-    while length(cl[0].INput) > iThreadSplitSize do begin
+    iThreadSplitSize := lesserof(2000000,length(cl[0].input) div GetEnabledCPUCount);
+
+    begin
       t := 0;
-      while t < cl.count do begin
+      while true do begin
         c := cl[t];
-        iSplitAt := length(c.Input) div 2;
+        //
+        iSplitAt := iThreadsplitSize;
+        //start with splits at predictable location
         s1 := zcopy(c.Input, 0, iSplitAt);
         s2 := zcopy(c.Input, iSplitAt, length(c.Input));
+        //look for a better split to the right
         if not SplitString(s2, sDelimiter, s3,s4) then begin
+          //if no better split, continue with command as originally composed
           bStop := true;
           break;
         end;
+        //else this round, use s1+s3
         s1 := s1 + s3;
-        s2 := s4;
         c.Input := s1;
-        c := Tcmd_ParseString.create;
+        //in future rounds, use s2
+        s2 := s4;
+        //--make a new command with s2 (or s4)
+        c.start;
+        c := Tcmd_ParseString.create;//<----- additional commands needed
         c.Input := s2;
         c.Delimiter := sDelimiter;
-        cl.Insert(t+1, c);
-        inc(t,2);
+        cl.add(c);
+        inc(t,1);
       end;
-      if bStop then break;
     end;
 
     for t:= 0 to cl.count-1 do begin
-      cl[t].start;
+      if not cl[t].Started then
+        cl[t].start;
     end;
 
     for t:= 0 to cl.count-1 do begin

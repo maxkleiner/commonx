@@ -835,12 +835,13 @@ end;
 
 procedure TGamePackageManager.Detach;
 begin
-  inherited;
+
   if detached then
     exit;
   UnloadAllPackages;
   Flist.free;
   FList := nil;
+  inherited;
 end;
 
 function TGamePackageManager.GEtAssetStream(sAssetName: string): TStream;
@@ -2647,8 +2648,8 @@ end;
 
 procedure TGameScene.Detach;
 begin
-  inherited;
   FColliders.free;
+  inherited;
 end;
 
 procedure TGameScene.DoDraw(cam: TCamera);
@@ -2702,7 +2703,7 @@ end;
 procedure TGameScene.DoSceneFinish;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

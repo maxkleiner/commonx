@@ -3,7 +3,7 @@ unit helpers.chart;
 interface
 
 uses
-  stringx, typex, classes, sysutils, debug,
+  stringx, typex, classes, sysutils, debug, numbers, geometry, graphicsx,
   VclTee.TeeGDIPlus, VCLTee.TeEngine, jsonhelpers,
   VCLTee.Series, VCLTee.TeeProcs, VCLTee.Chart;
 
@@ -20,9 +20,19 @@ procedure JSONToSeries(j: TJSON; s: TChartSeries; xField,yField: string);
 procedure JSONToSeriesXTime(j: TJSON; s: TChartSeries; xField,yField: string);
 procedure chart_SyncSeriesCount(c: Tchart; iCount: ni);
 Function chart_CloneChartSeries(ASeries:TChartSeries; AOwner:TComponent; AChart:TCustomAxisPanel):TChartSeries;
+function chart_GetSeriesFromLabel(c: TChart; sLabel: string): TChartSeries;
 
 
 implementation
+
+function chart_GetSeriesFromLabel(c: TChart; sLabel: string): TChartSeries;
+begin
+  for var t := 0 to c.SeriesCount-1 do begin
+    if comparetext(c[t].Title,sLabel) = 0 then
+      exit(c[t]);
+  end;
+  exit(nil);
+end;
 
 
 procedure chart_SyncSeriesCount(c: Tchart; iCount: ni);
@@ -33,9 +43,17 @@ begin
     chart_CloneChartSeries(c.Series[0],c.Owner,c);
   end;
 
+
   while c.seriescount > iCount do begin
     c.SeriesList.Delete(c.seriescount-1);
   end;
+
+  for var t := 0 to c.seriescount-1 do begin
+    var max := high(chart_colors);
+    c.series[t].Color := chart_colors[round(geometry.Interpolate(t,0,max,0,c.seriescount))];
+  end;
+
+
 end;
 
 Function chart_CloneChartSeries(ASeries:TChartSeries; AOwner:TComponent; AChart:TCustomAxisPanel):TChartSeries;

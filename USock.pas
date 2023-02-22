@@ -123,17 +123,17 @@ Begin
           // Get the IP address
           pAddrIP                  := Buffer[i].iiAddress.AddressIn;
           pIPString                := inet_ntoa (pAddrIP.Sin_Addr);
-          AddrIP                   := pIPString;
+          AddrIP                   := string(pIPString);
 
           // Get the subnet mask
           pAddrSubnetMask          := Buffer[i].iiNetMask.AddressIn;
           pSubnetMaskString        := inet_ntoa (pAddrSubnetMask.Sin_Addr);
-          SubnetMask               := pSubnetMaskString;
+          SubnetMask               := string(pSubnetMaskString);
 
           // Get the limited broadcast address
           pAddrBroadcast           := Buffer[i].iiBroadCastAddress.AddressIn;
           pLimBroadcastString      := inet_ntoa (pAddrBroadcast.Sin_Addr);
-          AddrLimitedBroadcast     := pLimBroadcastString;
+          AddrLimitedBroadcast     := string(pLimBroadcastString);
 
           // Calculate the net and the directed broadcast address
           NetAddrDummy.S_addr      := Buffer[i].iiAddress.AddressIn.Sin_Addr.S_Addr;
@@ -141,10 +141,10 @@ Begin
           DirBroadcastDummy.S_addr := NetAddrDummy.S_addr Or Not Buffer[i].iiNetMask.AddressIn.Sin_Addr.S_Addr;
 
           pNetAddrString           := inet_ntoa ((NetAddrDummy));
-          AddrNet                  := pNetAddrString;
+          AddrNet                  := string(pNetAddrString);
 
           pDirBroadcastString      := inet_ntoa ((DirBroadcastDummy));
-          AddrDirectedBroadcast    := pDirBroadcastString;
+          AddrDirectedBroadcast    := string(pDirBroadcastString);
 
           // From the evaluation of the Flags we receive more information
           InterfaceFlags           := Buffer[i].iiFlags;

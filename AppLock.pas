@@ -19,7 +19,7 @@ type
   end;
 
 var
-  AL: TappLock;
+  AL: TappLock = nil;
 
 
 implementation
@@ -42,6 +42,7 @@ initialization
   AL := TAppLock.create;
 
 finalization
-  AL.free;
+  if assigned(AL) then
+    AL.free;
 
 end.

@@ -1,5 +1,5 @@
 unit ColorBlending;
-
+{$R-}
 
 interface
 

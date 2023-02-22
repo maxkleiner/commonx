@@ -1,0 +1,19 @@
+object frmDataAware: TfrmDataAware
+  Left = 0
+  Top = 0
+  Caption = 'Properties'
+  ClientHeight = 798
+  ClientWidth = 1278
+  Color = clBtnFace
+  DoubleBuffered = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -17
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  GlassFrame.Enabled = True
+  GlassFrame.Bottom = 40
+  OnCreate = FormCreate
+  PixelsPerInch = 144
+  TextHeight = 21
+end

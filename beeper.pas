@@ -218,11 +218,13 @@ end;
 
 procedure Beep(freq: integer; duration: integer; attack: integer=10; release: integer=1000);
 begin
+{$IFDEF BEEP_ALLOWED}
   {$IFNDEF DISABLE_SOUND}
 {$IFDEF PLATFORM_ALLOWED}
   Tcmd_Beep.BeepWait(freq, duration, attack, release, 1);
 {$ENDIF}
   {$ENDIF}
+{$ENDIF}
 
 end;
 

@@ -360,7 +360,7 @@ begin
   op := position;
   try
     result := false;
-    if StartsWith(sMaster, sWord) then begin
+    if StartsWithNoCase(sMaster, sWord) then begin
 
       MoveThroughWord;
       MoveThroughWhiteSpace;
@@ -472,7 +472,7 @@ var
   s: ansistring;
 begin
   result := false;
-  if StartsWith(sMaster, sWord) then begin
+  if StartsWithNoCase(sMaster, sWord) then begin
     s := copy(sMaster, length(sWord)+1, 1);
     if length(s) > 0 then begin
       result := (s[1] in WhiteSpaces) or (s[1] in symbols);

@@ -3400,14 +3400,14 @@ end;
 procedure TSymbolStack.PopFree;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
 procedure TSymbolStack.PushNew;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

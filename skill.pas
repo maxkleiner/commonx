@@ -106,7 +106,8 @@ end;
 
 procedure ofinal;
 begin
-  Skills.free;
+  if assigned(Skills) then
+    Skills.free;
 end;
 
 class operator TSkillInfo.equal(a, b: TSkillInfo): boolean;
@@ -272,6 +273,7 @@ begin
   var l:= LockI;
   for var t:= 0 to FList.count-1 do begin
     if (comparetext(FList[t].info.name,sType)=0)
+    and (FList[t].IsValid)
     and ((protocol='') or ((comparetext(Flist[t].info.protocol,protocol)=0)))
     then begin
       setlength(result,length(result)+1);
@@ -357,9 +359,9 @@ var
   skcheck: TSkillInfo;
   sk: TSkillInfo;
 begin
-  skcheck.FromString(s);
+  skcheck.FromString(string(s));
 
-  s := ansistring(zcopy(s,0,length(s)-2));
+  s := ansistring(zcopy(string(s),0,length(s)-2));
   result := -1;
   Lock;
   try
@@ -386,7 +388,7 @@ begin
   try
     i :=  IndexOf(sk, byIP);
     if i < 0 then begin
-      self.RegisterSkill(sk, peerip, peerport);
+      self.RegisterSkill(string(sk), peerip, peerport);
       i :=  IndexOf(sk, byIP);
       if i<0 then
         exit;

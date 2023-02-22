@@ -241,6 +241,16 @@ begin
         SplitString(s2, '"', s1, s2);
         rqInfo.request.addParam(sName, s1, pcHeader);
       end;
+      if copy(slBody[t], 1, 5) = '<![cookie]' then begin
+        s := slBody[t];
+        SplitString(s, '[cookie]', s1,s2);
+        SplitString(s2, '=', sName, s2);
+        SplitString(s2, '"', s1, s2);
+        SplitString(s2, '"', s1, s2);
+        rqInfo.Response.AddCookie(s1,s2);
+        rqInfo.request.addParam(sName, s1, pcHeader);
+      end;
+
       if (copy(slBody[t], 1, 11) = '<![postcut]') and (sSnippet = '')  then begin
         for u := slbody.count-1 downto t do begin
           slBody.delete(u);

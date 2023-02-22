@@ -92,7 +92,7 @@ begin
 
   self.ThreadedEvent := true;
   inherited create;
-  ics(lck);
+  ics(lck, classname);
 
 end;
 

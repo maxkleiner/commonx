@@ -2,9 +2,11 @@ unit ApplicationParams;
 {$I DelphiDefs.inc}
 interface
 {$DEFINE CACHEPARAMS}
-
+{$IFDEF DESKTOP}
+//not a desktop
+{$ENDIF}
 uses
-  NameValuePair, systemx,  classes,
+  NameValuePair, systemx,  classes, stringx,
   {$IFNDEF FPC}
   System.IOUtils,
   {$ELSE}
@@ -60,6 +62,9 @@ procedure UPEnd;
 
 
 implementation
+
+uses
+  debug;
 
 var
   cachedGAP: TAppParams = nil;
@@ -230,16 +235,26 @@ function GetApplicationParamsfileName: string;
 begin
 {$IFDEF WINDOWS}
   result := changefileext(DLLName,'.params');
+  {$IFDEF USE_PARAMS_FROM_WORKING_DIRECTORY}
+    result := slash(GetCurrentDir)+ExtractFileName(result);
+  {$ENDIF}
   if not fileexists(result) then
     result := changefileext(DLLName,'.ini');
-  {$IFDEF USE_PARAMS_FROM_WORKING_DIRECTORY}
-    result := ExtractFileName(result);
-  {$ENDIF}
+
 {$ELSE}
 //  result := System.IOUtils.TPath.GetHomePath;
   result := System.IOUtils.TPath.GetDocumentsPath+'app.params';
 //  result := GetTempPath+'app.params';
 {$ENDIF}
+  while copy(extractfilenamepart(result),high(result),1)='_' do begin
+    var fnp := extractfilenamepart(result);
+    fnp := zcopy(fnp,0,length(fnp)-1);
+    var pth := extractfilepath(result);
+    var ext := extractfileext(result);
+    result := slash(fnp)+fnp+ext;
+
+
+  end;
 end;
 
 function GetUserPAramsFileName: string;
@@ -332,6 +347,9 @@ begin
   ics(applock);
   apcount := 0;
   upcount := 0;
+
+  Debug.DebugLog.LogFileDays := round(APGet('LogFileDays',60.0));
+
 
 end;
 

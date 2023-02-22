@@ -32,7 +32,7 @@ type
   end;
 
 var
-  GNC: TNamedCommandList;
+  GNC: TNamedCommandList = nil;
 
 implementation
 
@@ -201,7 +201,8 @@ end;
 
 procedure ofinal;
 begin
-  GNC.Free;
+  if assigned(GNC) then
+    GNC.Free;
   GNC := nil;
 
 

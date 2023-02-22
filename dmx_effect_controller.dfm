@@ -1,60 +1,89 @@
 object DMXEffectController: TDMXEffectController
   Left = 0
   Top = 0
-  Width = 1021
-  Height = 445
+  Width = 1532
+  Height = 668
+  Margins.Left = 5
+  Margins.Top = 5
+  Margins.Right = 5
+  Margins.Bottom = 5
   TabOrder = 0
+  PixelsPerInch = 144
   object lbEffectList: TListBox
     Left = 0
     Top = 0
-    Width = 201
-    Height = 392
+    Width = 302
+    Height = 588
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
     Align = alLeft
-    ItemHeight = 13
+    ItemHeight = 20
     TabOrder = 0
     OnDblClick = lbEffectListDblClick
   end
   object lbEffectStack: TListBox
-    Left = 201
+    Left = 302
     Top = 0
-    Width = 184
-    Height = 392
+    Width = 276
+    Height = 588
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
     Align = alLeft
-    ItemHeight = 13
+    ItemHeight = 20
     TabOrder = 1
     OnClick = lbEffectStackClick
   end
   object lbGroupList: TListBox
-    Left = 385
+    Left = 578
     Top = 0
-    Width = 121
-    Height = 392
+    Width = 181
+    Height = 588
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
     Align = alLeft
-    ItemHeight = 13
+    ItemHeight = 20
     MultiSelect = True
     TabOrder = 2
     OnClick = lbGroupListClick
   end
   object Panel1: TPanel
-    Left = 506
+    Left = 759
     Top = 0
-    Width = 515
-    Height = 392
+    Width = 773
+    Height = 588
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
     Align = alClient
     TabOrder = 3
   end
   object Panel2: TPanel
     Left = 0
-    Top = 392
-    Width = 1021
-    Height = 53
+    Top = 588
+    Width = 1532
+    Height = 80
+    Margins.Left = 5
+    Margins.Top = 5
+    Margins.Right = 5
+    Margins.Bottom = 5
     Align = alBottom
     TabOrder = 4
     object Button1: TButton
-      Left = 16
-      Top = 16
-      Width = 75
-      Height = 25
+      Left = 24
+      Top = 24
+      Width = 113
+      Height = 38
+      Margins.Left = 5
+      Margins.Top = 5
+      Margins.Right = 5
+      Margins.Bottom = 5
       Caption = 'ReFresh'
       TabOrder = 0
       OnClick = Button1Click

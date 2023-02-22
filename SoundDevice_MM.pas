@@ -8,7 +8,7 @@ uses
 {$IFDEF MSWINDOWS}
   winapi.mmsystem,
 {$ENDIF}
-  msacm, soundtools, typex, soundinterfaces, sysutils, classes, signals, ringbuffer, systemx, windows, soundsample, managedthread;
+  debug,msacm, soundtools, typex, soundinterfaces, sysutils, classes, signals, ringbuffer, systemx, windows, soundsample, managedthread;
 
 type
   TSoundDevice_MM = class(TAbstractSoundDevice, ISoundOscillatorRenderer)
@@ -25,6 +25,8 @@ type
     procedure SetupWave;override;
     procedure CleanupWave;override;
     function GetSamplePosition: int64;
+    function GEtSampleRate: NativeInt;override;
+
 
     property SampleRate: ni read FSampleRate write FSampleRate;
     procedure AudioLoop;override;
@@ -162,6 +164,7 @@ begin
               Oscillators[t].Fill(fillptr, mtBeginWindow, ss, 0);
             end;
 
+            //fillptr := 0;
             iFillcount := 0;
             tmEndWall := ring_subtract(targetTm, FBufferSize, 1);
             tmEndWall := tmEndWAll mod FBufferSize;
@@ -246,8 +249,11 @@ begin
 
         FFrequency := GetTimeSince(tmMeasure);
         tmMeasure := GetTicker;
+        WaitForSingleObject(self.handle,10);
+//        WaitForSingleObject(self.handle,round(1000*(buffersize/samplerate)) shr 4);
 
-        WaitForSingleObject(self.handle, 10);
+//        if WaitForSingleObject(self.handle, 4000)<>0 then
+//          Debug.log('timed out waiting for sound thread handle');
 // sleepex(10,true);
 
       until StopRequested;
@@ -287,6 +293,11 @@ end;
 function TSoundDevice_MM.GetSamplePosition: int64;
 begin
   result:= 0;
+end;
+
+function TSoundDevice_MM.GEtSampleRate: NativeInt;
+begin
+  result := FSampleRate;
 end;
 
 procedure TSoundDevice_MM.Init;

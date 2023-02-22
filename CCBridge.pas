@@ -7,7 +7,7 @@ unit CCBridge;
 interface
 
 uses
-  https, debug, orderlyinit, stringx, systemx, typex, sysutils, betterobject, better_collections, commandprocessor, exe, simplewinsock, better_telnet, idglobal, jsonhelpers, sharedobject, fileserviceclient;
+  https, debug, orderlyinit, stringx, systemx, typex, sysutils, betterobject, better_collections, commandprocessor, exe, simplewinsock, better_telnet, idglobal, jsonhelpers, sharedobject, fileserviceclient, httptypes;
 
 type
   TTransactionReference = string;
@@ -134,7 +134,7 @@ function BTCOutputFile: string;
 
 
 var
-  wallets: TWallets;
+  wallets: TWallets = nil;
 
 
 
@@ -446,7 +446,7 @@ function TZECAccount.CheckTransactionStatus(
   sReferenceInfo: TTransactionReference): TTransactionStatus;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
@@ -474,7 +474,7 @@ end;
 function TZECAccount.Send(toAddr: string; amount: Double; memo: string): string;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

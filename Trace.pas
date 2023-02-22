@@ -277,7 +277,8 @@ begin
 end;
 procedure ofinal;
 begin
-  GTraceLog.free;
+  if assigned(GTraceLog) then
+    GTraceLog.free;
   GTraceLog := nil;
 
 end;

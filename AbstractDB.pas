@@ -8,7 +8,7 @@ uses
 type
   TAbstractDBCursor = class;//forward
 
-  TAbstractdb = class(TBetterObject)
+  TAbstractdb = class(TObjectWithContext)
   private
     function GetAge: ticker;
   protected
@@ -31,25 +31,32 @@ type
     procedure Connect(sHost: string; sDatabase: string; sUser: string; sPAssword: string; sPort: string = '')overload;
 {$ENDIF}
     function ReadQueryDBC(sQuery: string): TAbstractDBCursor;overload;virtual;
+    function ReadQueryDBCh(sQuery: string): IHolder<TAbstractDBCursor>;overload;virtual;
+
     function ReadQueryNVPL(sQuery: string): TNameValuePairList;
+
+    //ABSTRACTS
     function ReadQuery(sQuery: string): TSERowSet;overload;virtual;abstract;
+    function FunctionQuery(sQuery: string; sDefault: int64): int64;overload;virtual;abstract;
+    function FunctionQuery(sQuery: string; rDefault: double): double;overload;virtual;abstract;
+    function FunctionQuery(sQuery: string; sDefault: string): string;overload;virtual;abstract;
+    function GetNextID(sType: string; iCount:int64 = 1): Int64; virtual;abstract;
+    function SetNextID(sType: string; id: int64): boolean;virtual;abstract;
+    function Connected: boolean;virtual;abstract;
+    //--------------------------------------------
+
+
     function ReadQueryH(sQuery: string): IHolder<TSERowSet>;overload;
     procedure WriteQuery(sQuery: string);virtual;
     procedure Writebehind(sQuery: string; bDontLog: boolean = false);virtual;
 //    property conn: TSQLConnection read Fconn;
-    function FunctionQuery(sQuery: string; sDefault: int64): int64;overload;virtual;abstract;
-    function FunctionQuery(sQuery: string; rDefault: double): double;overload;virtual;abstract;
-    function FunctionQuery(sQuery: string; sDefault: string): string;overload;virtual;abstract;
     function FunctionQuery_Cached(sQuery: string; iDefault: int64): int64;overload;
     function FunctionQuery_Cached(sQuery: string; rDefault: double): double;overload;
     function FunctionQuery_Cached(sQuery: string; sDefault: string): string;overload;
     procedure ClearQueryCache;
-    function Connected: boolean;virtual;abstract;
     property MWHost: string read GetMWHost write SetMWHost;
     property MWEndPoint: string read GetMWEndPoint write SetMWEndpoint;
     property Age: ticker read GetAge;
-    function GetNextID(sType: string): int64;virtual;abstract;
-    function SetNextID(sType: string; id: int64): boolean;virtual;abstract;
   end;
 
   TAbstractFieldDef =   TSERowsetFieldDef;
@@ -73,6 +80,8 @@ type
     property FieldsByIndex[idx: ni]: variant read GetFieldByindex;
     property FieldCount: ni read GetFieldCount;
     property RecordCount: ni read CountRecords;
+    procedure IterateAC(p, commit: TProc<TStringList>; commitThreshold: int64 = 1000);
+
   end;
 
   TSERowSetCursor = class (TAbstractDBCursor)
@@ -102,12 +111,14 @@ type
 
   end;
 
+
 var
-  queryCache: TNameValuePairList;
+  queryCache: TNameValuePairList = nil;
 
 implementation
 
 { TAbstractdb }
+
 
 procedure TAbstractdb.ClearQueryCache;
 begin
@@ -255,8 +266,18 @@ begin
   result := nil;
 end;
 
+function TAbstractdb.ReadQueryDBCh(sQuery: string): IHolder<TAbstractDBCursor>;
+begin
+  result := nil;
+  var res := ReadQueryDBC(sQuery);
+  result := THolder<TAbstractDBCursor>.Create(res);
+
+
+end;
+
 function TAbstractdb.ReadQueryH(sQuery: string): IHolder<TSERowSet>;
 begin
+  Connect;
   result := THolder<TSERowSet>.create;
   result.o := ReadQuery(sQuery);
 end;
@@ -412,6 +433,26 @@ end;
 
 
 
+procedure TAbstractDBCursor.IterateAC(p: TProc<TStringList>; commit: TProc<TStringList>; commitThreshold: int64 = 1000);
+//                                     ^Acquire                     ^Commit
+begin
+  var slh := NewStringListH;
+  while not eof do begin
+    p(slh.o);//<<<<<-----------MAIN PROC
+
+    //if accumulated a bunch then
+    if slh.o.Count>=commitThreshold then begin
+      commit(slh.o);//<<<<<---------call the commit anon proc<> to commit the accumulation
+      slh.o.Clear;
+    end;
+    next;
+  end;
+
+  if slh.o.Count > 0 then
+    commit(slh.o);//<<<<<------final commit if anything is left
+
+end;
+
 procedure TAbstractDBCursor.Open(db: TAbstractDb; sQuery: string);
 begin
   //
@@ -468,9 +509,11 @@ initialization
 
 
 finalization
-  querycache.savetofile(GetTempPath+extractfilename(dllname)+'.querycache');
-  querycache.free;
-  querycache := nil;
+  if assigned(querycache) then begin
+    querycache.savetofile(GetTempPath+extractfilename(dllname)+'.querycache');
+    querycache.free;
+    querycache := nil;
+  end;
 
 
 end.

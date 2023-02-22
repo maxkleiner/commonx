@@ -1,6 +1,6 @@
 unit Speech;
 {$DEFINE SPEECHFALLBACK}
-{$DEFINE NOSPEECH}
+{x$DEFINE NOSPEECH}
 
 interface
 
@@ -21,7 +21,6 @@ procedure Say(sString: string; bWait: boolean = false; sVoice: string = 'ATT DTN
 
 
 function GetNaturalString(sString: string): string;
-
 
 procedure SayNatural(sString: string; bWait: boolean = false; sVoice: string = ''; bCached: boolean = true);
 procedure SayNaturalBlocking(sString: string; bWait: boolean = false; sVoice: string = ''; bCached: boolean = true);
@@ -65,7 +64,7 @@ function SelectRandomVoice: string;
 
 var
   sectSpeech: TCLXCriticalSection;
-  TTS: TTextToSpeechEngine;
+  TTS: TTextToSpeechEngine = nil;
 
 procedure LockSpeech;inline;
 procedure UnlockSpeech;inline;
@@ -78,11 +77,11 @@ implementation
 uses WebString;
 procedure LockSpeech;inline;
 begin
-  EnterCriticalSection(sectSpeech);
+  ecs(sectSpeech);
 end;
 procedure UnlockSpeech;inline;
 begin
-  LeaveCriticalSection(sectSpeech);
+  LCS(sectSpeech);
 end;
 
 procedure Say(sString: string; bWait: boolean = false; sVoice: string = 'ATT DTNV 1.4 Crystal16');
@@ -439,16 +438,18 @@ end;
 procedure oinit;
 begin
 SpeechError := false;
-InitializeCriticalSection(sectSpeech);
+ICS(sectSpeech);
 TTS := TTextToSpeechEngine.create;
 
 end;
 
 procedure ofinal;
 begin
-BGCmd.WaitForAll;
-DeleteCriticalSection(sectSpeech);
-TTS.free;
+
+  BGCmd.WaitForAll;
+  DeleteCriticalSection(sectSpeech);
+  if assigned(TTS) then
+   TTS.free;
 
 
 end;

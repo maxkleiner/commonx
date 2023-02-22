@@ -446,7 +446,7 @@ begin
     if iDISKID >= vdh.vdlist.count then
       raise Exception.create('vd not found.');
 
-//    vdh.vdlist[iDISKID].ResetZone(iZoneID);
+    vdh.vdlist[iDISKID].ResetZone(iZoneID);
 
   finally
 //    vdh.Unlock;

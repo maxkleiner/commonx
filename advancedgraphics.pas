@@ -203,7 +203,7 @@ type
     procedure DesignDraw;
 
     procedure CanvasConnect; virtual;
-    procedure FindFontSize(width, height: integer; sText: ansistring);
+    procedure FindFontSize(width, height: integer; sText: string);
 
   public
     function ScaleGlobalXtoScreen(Xdistance: advancedFloat): advancedFloat;
@@ -282,10 +282,10 @@ type
     property TextJustify: TTextJustify read FTextJustify write FTextJustify;
     property TextRotate: TTextRotate read FTextRotate write FTextRotate;
     property TextHeight: advancedFloat read FTextHeight write FTextHeight;
-    procedure Text(x, y: advancedFloat; sText: ansistring); overload;
-    procedure Text(globalX, globalY, width, height: advancedFloat; sText: ansistring;
+    procedure Text(x, y: advancedFloat; sText: string); overload;
+    procedure Text(globalX, globalY, width, height: advancedFloat; sText: string;
       bCenter: boolean = false; bVertical: boolean = false); overload;
-    procedure Text(globalX, globalY, width, height: advancedFloat; sText: ansistring;
+    procedure Text(globalX, globalY, width, height: advancedFloat; sText: string;
       just: TTextJustify = tjLeft; rot: TTextRotate = trHorizontal); overload;
     property TextColor: TColor read GetTextColor write SetTextcolor;
     property TextKnockOut: TTextKnockout read FTextKnockout write FTextKnockout;
@@ -293,7 +293,7 @@ type
       SetTextBackgroundcolor;
     property AutoTruncateText
       : boolean read FAutoTruncateText write FAutoTruncateText;
-    function TruncateText(width: integer; sText: ansistring): ansistring;
+    function TruncateText(width: integer; sText: string): string;
 
     procedure DoDraw; override;
     property UseScreenCoordinates
@@ -1118,7 +1118,7 @@ end;
 
 // ------------------------------------------------------------------------------
 procedure TDrawingBoard.Text(globalX, globalY, width, height: advancedFloat;
-  sText: ansistring; bCenter: boolean = false; bVertical: boolean = false);
+  sText: string; bCenter: boolean = false; bVertical: boolean = false);
 var
   tj: TTextJustify;
   tr: TTextRotate;
@@ -1136,7 +1136,7 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-procedure TDrawingBoard.FindFontSize(width, height: integer; sText: ansistring);
+procedure TDrawingBoard.FindFontSize(width, height: integer; sText: string);
 var
   itargetWidth, i, x, t: integer;
   iOldSize: integer;
@@ -1180,7 +1180,7 @@ begin
 end;
 
 function TDrawingBoard.TruncateText(width: integer;
-  sText: ansistring): ansistring;
+  sText: string): string;
 begin
   result := sText;
 
@@ -1449,16 +1449,16 @@ begin
 // TODO -cunimplemented: unimplemented block
 end;
 
-procedure TDrawingBoard.Text(x, y: advancedFloat; sText: ansistring);
+procedure TDrawingBoard.Text(x, y: advancedFloat; sText: string);
 begin
   Text(x, y, TEXT_WIDTH_INFINITE, TextHeight, sText, TextJustify, TextRotate);
 end;
 
 procedure TDrawingBoard.Text(globalX, globalY, width, height: advancedFloat;
-  sText: ansistring; just: TTextJustify = tjLeft;
+  sText: string; just: TTextJustify = tjLeft;
   rot: TTextRotate = trHorizontal);
 // procedure Text(globalx, globaly, width, height: advancedFloat;
-// sText: ansistring; just: TTextJustify; rot: TTextRotation);
+// sText: string; just: TTextJustify; rot: TTextRotation);
 var
   screenX: integer;
   textdraw: TImage;

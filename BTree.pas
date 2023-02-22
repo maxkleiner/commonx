@@ -61,7 +61,7 @@ unit BTree;
 //
 //
 
-
+{x$INLINE AUTO}
 {$DEFINE POINTER_PERFECT}
 {x$DEFINE EXTRA_CHECKS}
 interface
@@ -130,8 +130,12 @@ type
     function SlowSearch(const [unsafe] Aitem:TBtreeItem):ni;
     procedure Iterate(const AProcedure:TSimpleIterateProcedure); overload;
     procedure Iterate(AProcedure:TIterateProcedure); overload;
-    [Result: unsafe] function LastItem: TBTreeItem;
-    [Result: unsafe] function FirstItem: TBTreeItem;
+
+    [Result: unsafe]
+    function LastItem: TBTreeItem;
+
+    [Result: unsafe]
+    function FirstItem: TBTreeItem;
 
     procedure AddTree(tr: TBtree);
     property Root : TBTreeItem read FRoot;
@@ -795,7 +799,8 @@ end;
 
 function TBTreeItem.NeedsRebalance: boolean;
 begin
-  result := abs(FBalance) > 1;
+  var bal := FBalance;
+  result := (bal > 1) or (bal < -1);
 end;
 
 procedure TBTreeItem.SetTree(const [unsafe] Value: TObject);

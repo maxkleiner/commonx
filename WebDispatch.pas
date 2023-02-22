@@ -32,7 +32,7 @@ procedure WRQ_GetHitCount(rqInfo: TRequestInfo);
 implementation
 
 uses
-  MainServerDispatch, dialogs, ThreadSessionVar, Windows, FileCache,
+  WebDispatchMain, dialogs, ThreadSessionVar, Windows, FileCache,
   ErrorHandler, DataObjectServices, classes, Webfunctions,
   CommonRequests, WebStats, WebConfig, extctrls, MTDTInterface,
   WebResource, WebScript, ProxyDispatch, Thumbnail, mothershipwebserver, XMLTools,
@@ -131,21 +131,11 @@ begin
           result := DispatchMainServerRequest(rqInfo);
 
 
-        if not result then
-        //--------------------------------------HELP DISPATCH
-(*        if copy(rqInfo.request.Document, 1, length('/help_')) = '/help_' then begin
 
-          try
-            LoadWebResource(rqInfo.response.content, WebServer.Help.LookupHelpPage(rqInfo));
-          except
-            rqInfo.response.content.text := '<font size="4" face="helvetica, arial">Sorry no help is available for this topic</font>';
-          end;
-
-          result := true;
-        end else*)
         //-------------------------------------AUTOMATIC DISPATCH
-        //if it has a ps2 extrension... base the content EXCLUSIVELY on Digital Tundrascript
-        if (lowercase(rqInfo.request.DocumentExt) = '.ps2') then begin
+        //if it has a ps2 extrension... base the content EXCLUSIVELY on script
+{$IFDEF OLD_CODE}
+        if (lowercase(rqInfo.request.DocumentExt) = '.ms') then begin
           rqInfo.Response.Framed := true; //different exception handling style
           if rqInfo.Request.Command = 'GET' then begin
             result:= true;
@@ -156,6 +146,7 @@ begin
             ProcessPostScript(rqInfo);
           end;
         end;
+{$ENDIF}
 
         sDoc := lowercase(Rqinfo.request.document);
 
@@ -337,7 +328,7 @@ begin
 
         //-------------------------------------file streaming
         if NOT result then begin
-          if not ((rqInfo.request.DocumentExt = '.ms'))
+          if not ((rqInfo.request.DocumentExt = '.ps2'))
           then begin
             if comparetext(rqInfo.request.DocumentExt, '.js')=0 then begin
               sFile := GetResourceFile(rqInfo, zcopy(rqInfo.Request.document, 1, length(rqInfo.Request.document)-1));
@@ -356,7 +347,6 @@ begin
 
         //Ensure that dynamic varables were processed
         if rqInfo.response.NeedsProcessing then begin
-          Debug.Log(rqInfo.request.document+' ProcessDynamicVariables');
           rqInfo.Response.ProcessDynamicVariables;
 //          rqInfo.SaveVars;
         end;
@@ -523,7 +513,6 @@ var
   slParams: TStringList;
   t: integer;
 begin
-  exit;
 
   //a tier-to-tier request may specifically request that this feature be disabled
   //as it causes pasing problems on the other end.   
@@ -946,7 +935,7 @@ end;
 procedure WRQ_EchoHeader(rqInfo: TrequestInfo);
 begin
   rqInfo.response.contenttype :='text/plain';
-  rqINfo.response.content.add(rqInfo.request.Raw);
+  rqINfo.response.content.add(rqInfo.request.rawtext);
 
 end;
 //------------------------------------------------------------------------------
@@ -987,7 +976,7 @@ begin
         {$IFNDEF OLDMEMMAN}
         xmlb.OpenSimpleElement('Memory');
 {$IFDEF DO_MEM_CHART}
-        ManMan.Lock;
+{        ManMan.Lock;
         try
           for t:= 0 to ManMan.ManagerCount-1 do begin
             ManMan.Managers[t].Lock;
@@ -1002,7 +991,7 @@ begin
         finally
           ManMan.Unlock;
           xmlb.Close('Memory');
-        end;
+        end;}
 {$ENDIF}
         {$ENDIF}
 
@@ -1108,7 +1097,7 @@ begin
   rqInfo.response.contenttype := 'text/plain';
 
 {$IFDEF DO_MEM_CHART}
-  ManMan.Lock;
+{  ManMan.Lock;
   try
 
 
@@ -1125,7 +1114,7 @@ begin
 
   finally
     ManMan.Unlock;
-  end;
+  end;}
 {$ENDIF}
 end;
 
@@ -1216,7 +1205,7 @@ begin
   try
     htp.AutoLog := true;
     htp.AutoRedirect := false;
-    htp.Request := rQInfo.Request.Raw;
+    htp.Request := rQInfo.Request.RawText;
 //    htp.EnableGZIP := false;
     htp.Transact('www.ds2network.com', 80);
 

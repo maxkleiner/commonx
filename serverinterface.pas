@@ -131,9 +131,9 @@ type
       function GhostFetch(cache: TDataObjectCache; out obj: TDataObject; sType: string; params: variant; iSessionID: integer; bLazy: boolean = true; iTimeoutMS: integer = 300000; bcheckCacheOnly: boolean = false): boolean; overload;
       procedure Delete(cache: TdataObjectCache; obj: TDataObject);overload;
 
-      function GetNextID(sType: string): int64;
+      function GetNextID(sType: string; iCount:int64 = 1): int64;override;
       function GetNextIDEx(sType: string; iReserveCount: int64): int64;
-      function SetNextID(sType: string; iID: int64): boolean;
+      function SetNextID(sType: string; iID: int64): boolean;override;
       procedure Time;
       function Ghost(cache: TDataObjectCache; out obj: TDataObject; sType: string; params: variant; iSessionID: integer): boolean; overload;
       function New(cache: TDataObjectCache; out obj: TDataObject; sType: string; params: variant; iSessionID: integer): boolean; overload;
@@ -294,6 +294,7 @@ var
   s: string;
   t: ni;
 begin
+  result := true;
   if obj.IsList then begin
     for t := 0 to obj.objectcount-1 do begin
       if obj.obj[t].IsChanged then
@@ -308,6 +309,9 @@ begin
   //  end;
     CheckConnectedOrConnect;
     cli.WriteQuery(s);
+    //Todo 1: If Transaction fails, this cannot be resubmitted!  Should probably only reset these flags if the Commit() succeeds.
+    obj.IsChanged := false;
+    obj.IsNew := false;
   end;
 end;
 
@@ -493,10 +497,10 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-function TServerInterface.GetNextID(sType: string): int64;
+function TServerInterface.GetNextID(sType: string; iCount:int64 = 1): int64;
 begin
   CheckConnectedOrConnect;
-  result := cli.GetNextID(sType)
+  result := cli.GetNextIDEx(sType,sType,sType,iCount)
 end;
 
 function TServerInterface.GetNextIDEx(sType: string;
@@ -605,8 +609,13 @@ begin
   if bCheckCacheOnly then begin
     obj := cache.GetExistingObject(sType, params, self.DataCenter, self.DataTier);
     result := not ((obj = nil) or obj.expired);
+
     if not result then
       result := Ghost(cache, obj, sType, params, iSessionID);
+
+    if (obj <> nil) and (obj.expired)  then
+      obj.Genesis := getticker;
+
   end else begin
     if bLazy then
       result := LazyFetch(cache, obj, sType, params, iSessionID, iTimeoutMS)
@@ -615,6 +624,10 @@ begin
 
     if not result then
       result := Ghost(cache, obj, sType, params, iSessionID);
+
+    if (obj <> nil) and (obj.expired)  then
+      obj.Genesis := getticker;
+
   end;
 
 end;
@@ -851,8 +864,6 @@ function TServerInterface.Query(cache: TDataObjectCache;
 var
   rs: TSERowSet;
   osub: TDataObject;
-  t: ni;
-  fd: ni;
   f: PSERowsetFieldDef;
 begin
   Connect;
@@ -862,16 +873,33 @@ begin
   rs := ReadQuery_End();
   try
     DOCF.LowLevelDOCreate(obj, cache, 'TdoQuery', sQuery, 0,0,0);
-    for t:= 0 to rs.RowCount-1 do begin
-      DOCF.LowLevelDOCreate(osub, cache, 'TdoQuery', VarArrayOf([sQuery, t]), 0,0,0);
-      obj.AddObject(osub);
-      for fd := 0 to rs.FieldCount-1 do begin
+    if bExpectMany then begin
+      for var t:= 0 to rs.RowCount-1 do begin
+        DOCF.LowLevelDOCreate(osub, cache, 'TdoQuery', VarArrayOf([sQuery, t]), 0,0,0);
+        obj.AddObject(osub);
+        for var fd := 0 to rs.FieldCount-1 do begin
 
-        f := rs.FieldDefs[fd];
-        var dot := RSTypeToDOType(f.vType);
-        osub.AddFieldDef(f.sName, dot , '');
+          f := rs.FieldDefs[fd];
+          var dot := RSTypeToDOType(f.vType);
+          osub.AddFieldDef(f.sName, dot , '');
 
-        osub.FieldByIndex[fd].AsVariant := rs.Values[fd, t];
+          osub.FieldByIndex[fd].AsVariant := rs.Values[fd, t];
+        end;
+      end;
+    end else begin
+      if rs.RowCount = 0 then
+        raise EDataObjectError.Create('the requested TDataObject was not found')
+      else begin
+        DOCF.LowLevelDOCreate(osub, cache, 'TdoQuery', VarArrayOf([sQuery]), 0,0,0);
+        for var fd := 0 to rs.FieldCount-1 do begin
+
+          f := rs.FieldDefs[fd];
+          var dot := RSTypeToDOType(f.vType);
+          osub.AddFieldDef(f.sName, dot , '');
+
+          osub.FieldByIndex[fd].AsVariant := rs.Values[fd, 0];
+        end;
+        obj := osub;
       end;
     end;
 
@@ -963,6 +991,9 @@ begin
 
   if (obj = nil) or (obj.expired) or ((obj.linkto <> 'nil') and (obj.linkto <> ''))then begin
     result := self.Query(cache, obj, squery, iSessionid, bExpectMany, slDebug, iTimeOUTMS);
+    if (obj <> nil) and (obj.expired)  then
+      obj.Genesis := getticker;
+
   end else begin
     result := true;
     if obj.linkto = 'nil' then begin
@@ -985,9 +1016,11 @@ begin
   obj := cache.GetExistingObject(sBaseType,vBaseKeys,0,0);
 
   result := not ((obj = nil) or obj.expired);
+  if obj <> nil then
+    obj.Genesis := getticker;
 
   if not result then begin
-    result := QueryMap(cache, obj, sQuery, iSessionID, itimeOutMS, true, 'TdoQuery', vBaseKeys, nil, 'TdoQuery', iSubKeys);
+    result := QueryMap(cache, obj, sQuery, iSessionID, itimeOutMS, true, sBaseType, vBaseKeys, nil, sSubType, iSubKeys);
   end else begin
     if obj.linkto = 'nil' then begin
       obj := nil;
@@ -1024,12 +1057,14 @@ end;
 
 procedure TServerInterface.Rollback;
 begin
-  cli.rollback;
+  if assigned(cli) then
+    cli.rollback;
 end;
 
 procedure TServerInterface.Commit;
 begin
-  cli.commit;
+  if assigned(cli) then
+    cli.commit;
 end;
 
 function TServerInterface.GetReplayLogs(since: TDateTime): string;
@@ -1056,23 +1091,24 @@ end;
 function RSTypeToDOType(rs: data.db.TFieldType): TDataFieldClass;
 begin
   case rs of
-    ftMemo, ftWideString,
+    ftMemo, ftWideString, ftWideMemo, ftFixedchar,
     ftString : result := TstringDataField;
 
     ftSmallint,
     ftLongWord,
     ftWord,
     ftByte,
-    ftInteger,
+    ftInteger, ftShortint,
     ftLargeint
       : result := TLongintDataField;
 
     ftBoolean: result := TBooleanDataField;
     ftFloat: result := TFloatingPointDataField;
-
-
+    ftDate,ftDateTime: result := TDateTimeDataField;
+    ftVariant: result := TStringDataField;
+    ftObject: result := TStringDataField;
   else
-    raise ECritical.create('Unhandled field type in RSTypeToDOType()');
+    raise ECritical.create('Unhandled field type in RSTypeToDOType('+inttostr(ord(rs))+')');
 
   end;
 
@@ -1101,6 +1137,7 @@ begin
     end;
   end else begin
     squery := stringreplace(sQuery, '~~~0~~~', vartostr(vBaseKeys), [rfReplaceAll]);
+//    squery := stringreplace(sQuery, '~~~1~~~', vartostr(vBaseKeys), [rfReplaceAll]);
   end;
 
   c := DOCF.GetClassTypeForClassName(sBaseType);
@@ -1168,6 +1205,7 @@ begin
   DOCF.LowLowLevelDOCreate(result, cache, cType, v, 0,0,0);
 
   iFirstnonKeyfieldInObject := Result.firstnonkeyfield;
+
   //unwrap the fields
   for t:= iFirstnonKeyfieldInObject to result.FieldCount-1 do begin
     f := result.FieldByIndex[t];
@@ -1175,12 +1213,18 @@ begin
       f.AsVariant := rs.Values[t+iKeyCount-iFirstnonKeyfieldInObject,row];
   end;
 
-
-
   result.IsChanged := false;
 
 end;
 
 end.
+
+
+
+
+
+
+
+
 
 

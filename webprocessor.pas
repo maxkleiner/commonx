@@ -3,9 +3,9 @@ unit WebProcessor;
 {x$define ALWAYS_CLOSE}
 interface
 
-uses betterobject, SharedObject, requestinfo, tickcount,beeper,
-    better_sockets, helpers.sockets, stringx, sockfix, commandicons,
-    IPClientWrapper, httpclient, systemx, typex, commandprocessor,
+uses betterobject, SharedObject, requestinfo, tickcount,beeper, numbers,
+    better_sockets, helpers.sockets, stringx, sockfix, commandicons,hitclient,
+    IPClientWrapper, httpclient, systemx, typex, commandprocessor, helpers_stream,
     MotherShipWebServer, classes, sysutils, ExceptionsX, windows, webstring, stringx.ansi, webfunctions;
 
 const
@@ -67,7 +67,7 @@ type
     FPreload: string;
     FLeftOvers: PByte;
     FLeftOverLength: integer;
-
+    clientip: string;
     procedure SaveLeftOvers(p: Pbyte; len: integer);
     function GetStateString: string;
     procedure SetRequestState(const Value: TRequestState);
@@ -224,7 +224,34 @@ begin
         RequestState := rqsDispatch;
         Step := 1;
 //        debug.log('Dispatching:'+rQInfo.request.document,self.classname);
+        var tm := GetTicker;
+        var tmIn:= now();
+        clientip := self.FCLientSocket.remotehost;
+        var cip := clientip;
+        var sjunk:= '';
+        if rqInfo.request.hasparam('x-forwarded-for') then
+          SplitString(rqInfo.request['x-forwarded-for'],':',cip,sJunk);
+        if cip <> clientip then begin
+          clientip := cip;
+          FRQINfo.Request.ClientIP := cip;
+        end;
+
         WebServer.DispatchWebRequest(rqInfo);
+        var tmFin := GetTicker;
+        var tmDif := gettimesince(tmFin,tm);
+        if projcode <> '' then begin
+                  //RecordHit(ip: string; ts: TDateTime; runtime: int64; page: string; url: string; useragent: string; size: UInt64; referer: string);
+
+          var a := rqInfo.request.useragent;
+          var r := rqInfo.request.referer;
+          var m := rqInfo.request.method;
+          var d := rqInfo.request.document;
+          var f := rqInfo.request.fullurl;
+
+          HitClient.RecordHit(m, cip  ,tmIn, tmDif, d, f, a, greaterof(0,rqInfo.response.ContentLength), r);
+
+        end;
+
         Step := 2;
 //        debug.log('Dispatched:'+rQInfo.request.document,self.classname);
 //        self.ClientSocket.TimeOut := SHORT_SOCKET_TIMEOUT;
@@ -332,9 +359,10 @@ begin
     FRqInfo.request.document := 'init';
     debug.log('request init');
     try
-      debug.log('About to process2: '+FRqInfo.request.document);
+//      debug.log('About to process2: '+FRqInfo.request.document);
       inc(requests_this_connection);
       Process2(sPreBuf);
+
       bKeepAlive := rqInfo.response.connection = rqcKeepAlive;
     finally
       s := FRqINfo.request.document;
@@ -377,7 +405,7 @@ begin
         inc(requests_this_connection);
         rqInfo.Request.Default('connection', 'close');
         //rqINfo.Request['connection'] := 'nil';
-        debug.log('About to process from keep alive: '+FRqInfo.request.document);
+//        debug.log('About to process from keep alive: '+FRqInfo.request.document);
         WebServer.HitAccept;
         process2;
         bKeepAlive := rqInfo.response.connection = rqcKeepAlive;
@@ -404,7 +432,7 @@ end;
 
 procedure Tcmd_ProcessWebRequests.ReadAvailable(bHeaderComplete: boolean);
 var
-  s: string;
+  s: rawbytestring;
 //Reads bytes available on the socket.
 begin
 
@@ -413,10 +441,13 @@ begin
 
   //if the header has already been received, read into the content
   //else read into the "raw" buffer.
-  if bHeaderComplete then
-    rqInfo.Request.Content := rqInfo.Request.Content + s
-  else
-    rqInfo.Request.Raw := rqInfo.Request.Raw + s;
+  if bHeaderComplete then begin
+//    rqInfo.Request.ContentString := rqInfo.Request.ContentString + s;
+    stream_GuaranteeWrite(rqInfo.Request.ContentStream.o, @s[low(s)], length(s));
+
+  end else begin
+    rqInfo.Request.RawText := rqInfo.Request.RawText + s;
+  end;
 end;
 
 procedure Tcmd_ProcessWebRequests.ReadRequest;
@@ -424,7 +455,7 @@ var
   tm2, tm1: cardinal;
   iFirstSpace: integer;
   iTemp: integer;
-  sTemp: string;
+  sTemp: rawbytestring;
   t: integer;
   sLeft, sRight : string;
   sLeft2, sRight2: string;
@@ -436,7 +467,7 @@ var
   iLastReceiveLength: integer;
   bHeaderComplete: boolean;
   sl: TStringList;
-  sLeftover: string;
+  sLeftover: rawbytestring;
 const
   THREAD_READ_TIMEOUT = 30000;
 
@@ -446,7 +477,7 @@ begin
   bHeaderComplete := false;
   sTempContent := '';
   iContentLength := 0;
-  rqINfo.Request.Raw := FPreload;
+  rqINfo.Request.RawText := FPreload;
 
   //Init start timer
   tm1 := GetTickCount;
@@ -497,30 +528,38 @@ begin
     //If header has not been received then search of end of header and get the content length from the header
     if not bHeaderComplete then begin
       //if found end of header....
-      iTemp := pos(#13#10#13#10, rqInfo.Request.Raw);
+      iTemp := pos(#13#10#13#10, rqInfo.Request.RawText);
       if iTemp = 0 then
-        iTemp := pos(#13#13, rqInfo.Request.Raw);
+        iTemp := pos(#13#13, rqInfo.Request.RawText);
       if iTemp<>0 then begin
         //split the request at the delimiter into the request[header] and requestcontent
-        sTemp := rqInfo.Request.Raw;
-        rqInfo.Request.Content := copy(sTemp,  1, iTemp+3);
+        sTemp := rqInfo.Request.RawText;
+//        rqInfo.Request.ContentString := copy(sTemp,  1, iTemp+3);
         //separate out and content bytes
-        rqInfo.Request.Content := '';
+//        rqInfo.Request.ContentString := '';
         sLeftOver := copy(sTemp, iTemp+4, length(sTemp) - iTemp+3);
-        SaveLeftOvers(@sLeftOver[1], length(sLeftOver));
+        if length(sLeftOver) > 0 then
+          SaveLeftOvers(@sLeftOver[1], length(sLeftOver))
+        else
+          sLeftOver := '';
+        rqInfo.Request.ContentStream.o.seek(0, soBeginning);
+        if sLeftOver <> '' then
+          Stream_GuaranteeWrite(rqInfo.Request.ContentStream.o, @sLeftOver[low(sLeftOver)], length(sLeftOver));
 
 
 
         bheaderComplete := true;
-        iContentLength := HackContentLength(rqInfo.Request.Raw);
+        iContentLength := HackContentLength(rqInfo.Request.RawText);
       end;
+    end else begin
+      //rest of this stuff is handled in ReadAvailable();
     end;
 
     //determine that request is COMPLETE if header flag has been set indicating
     //that the header has been read AND the length of the RequestContent is
     //equal-to or greater than the content length specified in the header
 
-    bDoneReading := bHeaderComplete and (length(rqInfo.Request.Content)>=iContentLength);
+    bDoneReading := bHeaderComplete and (rqInfo.request.contentstream.o.size>=iContentLength);
 
     //Thread-hang prevention
     //if haven't recieved data in THREAD_READ_TIMEOUT seconds, then kill the thread
@@ -530,14 +569,14 @@ begin
     bDoneReading;
 
     //This triggers the "raw" stringlist to split the request into multiple lines for easier parsing.
-    rqInfo.request.raw := rqInfo.request.raw;
+    rqInfo.request.rawtext := rqInfo.request.rawtext;
 
   try
     //if nothing was recieved then exit
-    if length(rqInfo.Request.Raw)<1 then
+    if length(rqInfo.Request.Rawtext)<1 then
       exit;
 
-    sTemp := rqInfo.Request.Raw;
+    sTemp := rqInfo.Request.Rawtext;
 
     //Get the 'GET/POST' part of the request
 
@@ -568,7 +607,7 @@ begin
     t:= 1;
     sl := TStringList.create;
     try
-      sl.text := rqInfo.request.raw;
+      sl.text := rqInfo.request.rawtext;
       repeat
         rqInfo.request.Header.add(sl[t]);
         inc(t);
@@ -588,9 +627,9 @@ begin
       sRight := Trim(sRight);
 
       if (sLeft <> '') then begin
-      //Left side is the name
-      //Right side is param value
-      rqInfo.Request.AddParam(Trim(sLeft), Trim(sRight), pcHeader);//<--Don't URL Decode the header parameters
+        //Left side is the name
+        //Right side is param value
+        rqInfo.Request.AddParam(Trim(sLeft), Trim(sRight), pcHeader);//<--Don't URL Decode the header parameters
       end;
     end;
 
@@ -639,7 +678,7 @@ begin
       until (sInlineParams = '');
     end;
 
-    //INLINE PARAMETERS
+    //INLINE/URL PARAMETERS
     //-------------------
     //Get User-defined parameters from document name
     //split document name based on whatever comes first ? or #
@@ -652,6 +691,7 @@ begin
     rqInfo.Request.Document := sLeft;
 
     sInlineParams := sRight;
+    var origURLPArams := sInlineParams;
     if sRight<>'' then begin
       repeat
 
@@ -668,12 +708,18 @@ begin
         end;
       until (sInlineParams = '');
     end;
+//    if zpos('id=', origURLParams) >=0 then
+//      if rqInfo.request.params['id'] = '' then
+//        raise ECritical.create('whowhowhowhowhowhowhowa');
+
+
 
     //If a multipart message
     if NOT IsMultiPart(rqInfo) then begin
       //GET CONTENT PARAMETERS
-      if length(rqInfo.Request.Content) > 0 then begin
-        sInlineParams := rqInfo.Request.Content;
+      if (zpos('form-urlencoded', lowercase(rqInfo.request.contenttype)) >=0)
+      and (length(rqInfo.Request.Contentstring) > 0) then begin
+        sInlineParams := rqInfo.Request.Contentstring;
         repeat
 
           //segregate the first parameter definition from the inline parameters
@@ -890,7 +936,11 @@ begin
   //Cookie header params
   if rqInfo.response.CookieCount > 0 then begin
     for t:= 0 to rqInfo.response.cookiecount-1 do begin
-      s:=s+'Set-Cookie: '+rqInfo.response.cookienames[t]+'='+rqInfo.response.cookievalues[t]+';expires=Monday, 10-Aug-2099 00:00:00 GMT;path=/'+#13#10;
+      var val := rqInfo.Response.CookieValues[t];
+      if val = '' then
+        s:=s+'Set-Cookie: '+rqInfo.response.cookienames[t]+'='+rqInfo.response.cookievalues[t]+';expires=Monday, 10-Aug-1977 00:00:00 GMT;path=/'+#13#10
+      else
+        s:=s+'Set-Cookie: '+rqInfo.response.cookienames[t]+'='+rqInfo.response.cookievalues[t]+';expires=Monday, 10-Aug-2099 00:00:00 GMT;path=/'+#13#10;
     end;
   end;
 
@@ -930,7 +980,7 @@ begin
   //Send response down pipe
   self.WriteResponseData(s);
 
-  rqInfo.request.raw := rqInfo.request.raw;
+  rqInfo.request.rawtext := rqInfo.request.rawtext;
 
 end;
 procedure Tcmd_ProcessWebRequests.WriteResponse;

@@ -13,7 +13,7 @@ type
   TSocksHeader = packed record
   private
     function GetPortNumber: smallint;
-    procedure SetPortNumber(const Value: smallint);
+     procedure SetPortNumber(const Value: smallint);
   public
     version: byte;
     command: byte;
@@ -62,6 +62,7 @@ type
 
     procedure Flush;override;
     property UseSocks: boolean read FUseSocks write FUseSocks;
+    function getUniqueId: int64; override;
 
   end;
 
@@ -269,6 +270,11 @@ begin
   end;
 end;
 
+
+function TSimpleWinsockconnection.getUniqueId: int64;
+begin
+  result:= self.hSocket;
+end;
 
 procedure TSimpleWinsockconnection.CheckSocketError(iJustSent: nativeint);
 begin

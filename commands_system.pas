@@ -4,7 +4,7 @@ unit commands_system;
 interface
 
 uses
-  classes, commandprocessor, systemx, commandicons, tickcount, orderlyinit, numbers;
+  debug,classes, commandprocessor, systemx, commandicons, tickcount, orderlyinit, numbers, sysutils;
 
 type
 
@@ -19,8 +19,10 @@ type
   private
     FLength: cardinal;
   public
+    destructor Destroy; override;
     property Length: cardinal read FLength write FLength;
     procedure DoExecute;override;
+
   end;
 
   Tcmd_Garbage = class(TCommand)
@@ -49,7 +51,7 @@ type
     procedure DoExecute; override;
   public
     procedure Init; override;
-    property time: ticker read Ftime write SEtTime;
+    property time: ticker read Ftime write SetTime;
   end;
 
 
@@ -86,6 +88,12 @@ end;
 
 { TSleepCommand }
 
+destructor TSleepCommand.Destroy;
+begin
+  Debug.Log('Destroying '+classname);
+  inherited;
+end;
+
 procedure TSleepCommand.DoExecute;
 var
   t: integer;
@@ -93,12 +101,13 @@ var
 begin
   inherited;
   Status := 'Sleeping...';
-  i := Length div 10;
+  i := Length div 1000;
 
-  StepCount := 9;
-  for t:= 0 to 9 do begin
+  StepCount := i;
+  for t:= 0 to i do begin
     Step := t;
     sleep(1000);
+    Status := 'Sleeping...'+inttostr(t);
 
   end;
 
@@ -276,7 +285,7 @@ end;
 
 procedure oinit;
 begin
-  ics(cpcreate);
+  ics(cpcreate,'cpCreate');
   
 end;
 

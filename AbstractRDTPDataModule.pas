@@ -164,7 +164,7 @@ type
 
 
 var
-  datapool: TDataPool;
+  datapool: TDataPool = nil;
 
 
 implementation
@@ -729,12 +729,13 @@ begin
 end;
 
 initialization
-init.RegisterProcs('AbstractRDTPDataModule', oinit, ofinal);
+  init.RegisterProcs('AbstractRDTPDataModule', oinit, ofinal);
 
-datapool := TDataPool.create;
+  datapool := TDataPool.create;
 
 finalization
-datapool.free;
+  if assigned(datapool) then
+    datapool.free;
 
 end.
 

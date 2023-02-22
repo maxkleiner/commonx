@@ -15,16 +15,16 @@ type
     Fdesc: pointer;
     Fdesclength: byte;
     visible: boolean;
-    f1,f2,f3,f4,f5,f6,f7,f8: integer;
+    f1,f2,f3,f4,f5,f6,f7,f8: int64;
     public
     procedure Init;
 
-    procedure SetName(sName: ansistring);
-    procedure SetDesc(sDesc: ansistring);
-    function GetName: ansistring;
-    function GetDesc: ansistring;
-    property Name: ansistring read GetName write SetName;
-    property Desc: ansistring read GetDesc write SetDesc;
+    procedure SetName(sName: string);
+    procedure SetDesc(sDesc: string);
+    function GetName: string;
+    function GetDesc: string;
+    property Name: string read GetName write SetName;
+    property Desc: string read GetDesc write SetDesc;
 
 
 
@@ -40,10 +40,10 @@ var
 
 
 
-function ReadOnlyRightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: ansistring; bNoFilter: boolean; bReadOnly: boolean=false): ansistring;
-function RightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: ansistring; bNoFilter: boolean; bReadOnly: boolean=false): ansistring;
-function DefineRight(bVisible: boolean; sRight: ansistring; sDesc: ansistring): PRight;
-function FindRight(sName: ansistring): PRight;
+function ReadOnlyRightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: string; bNoFilter: boolean; bReadOnly: boolean=false): string;
+function RightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: string; bNoFilter: boolean; bReadOnly: boolean=false): string;
+function DefineRight(bVisible: boolean; sRight: string; sDesc: string): PRight;
+function FindRight(sName: string): PRight;
 function GetRightCount: integer;
 function GetRight(idx: integer): PRight;
 function IsRightInFilter(superior, sub: PRight): boolean;
@@ -56,7 +56,7 @@ implementation
 uses WebString, rights;
 
 //------------------------------------------------------------------------------
-function DefineRight(bVisible: boolean ;sRight: ansistring; sDesc: ansistring): PRight;
+function DefineRight(bVisible: boolean ;sRight: string; sDesc: string): PRight;
 var
   i: integer;
 begin
@@ -92,7 +92,7 @@ function CompareMemory(p1,p2: pointer; size: integer): boolean;
 asm
 end;
 
-function FindRight(sName: ansistring): PRight;
+function FindRight(sName: string): PRight;
 var
   t: integer;
   l: integer;
@@ -141,7 +141,7 @@ begin
 
 end;
 
-function ReadOnlyRightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: ansistring; bNoFilter: boolean; bReadOnly: boolean=false): ansistring;
+function ReadOnlyRightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: string; bNoFilter: boolean; bReadOnly: boolean=false): string;
 var
   t: integer;
   filter, right: PRight;
@@ -160,7 +160,7 @@ begin
 end;
 
 
-function RightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: ansistring; bNoFilter: boolean; bReadOnly: boolean=false): ansistring;
+function RightsCheckboxList(rqINfo: TRequestInfo; roleID: integer; sRightFilter: string; bNoFilter: boolean; bReadOnly: boolean=false): string;
 var
   t: integer;
   filter, right: PRight;
@@ -209,12 +209,12 @@ end;
 
 { TRight }
 
-function TRight.GetDesc: ansistring;
+function TRight.GetDesc: string;
 begin
   result := PAnsiChar(FDesc);
 end;
 
-function TRight.GetName: ansistring;
+function TRight.GetName: string;
 begin
   result := PAnsiChar(FName)
 end;
@@ -227,7 +227,7 @@ begin
   FDescLength := 0;
 end;
 
-procedure TRight.SetName(sName: ansistring);
+procedure TRight.SetName(sName: string);
 begin
   if FName <> nil then
     system.FreeMem(FNAme);
@@ -241,7 +241,7 @@ begin
 
 end;
 
-procedure TRight.SetDesc(sDesc: ansistring);
+procedure TRight.SetDesc(sDesc: string);
 begin
   if FDesc <> nil then
     system.FreeMem(FDesc);

@@ -2,8 +2,9 @@ unit dirfilecomparer;
 
 interface
 {x$DEFINE USE_MFS}
+{$DEFINE USE_AQFS}
 uses
-  typex, systemx, MemoryFileStream, sysutils, helpers_stream, numbers, stringx, commandprocessor, tickcount, classes;
+  typex, systemx, MemoryFileStream, sysutils, helpers_stream, numbers, stringx, commandprocessor, tickcount, classes, queuestream;
 
 type
   TCopyRecommendation = (crNoCopy, crCopyToLeft, crCopyToRight, crNoCopyRightIsNewer, crCopyDisabled);
@@ -46,6 +47,15 @@ type
     property f1: string read FF1 write SetF1;
     property f2: string read FF2 write SEtF2;
     property Result: TCompareFileResults read FResult write SetResult;
+    procedure DoExecute; override;
+  end;
+
+  Tcmd_ReadFileTest = class(TCommand)
+  private
+    FF1: string;
+    procedure SetF1(const Value: string);
+  public
+    property f1: string read FF1 write SetF1;
     procedure DoExecute; override;
   end;
 
@@ -140,10 +150,14 @@ end;
 procedure Tcmd_CompareFiles_Slow.DoExecute;
 type
   TFileCompareOps = record
+{$IFDEF USE_AQFS}
+    fs: TAdaptiveQueuedFileStream;
+{$ELSE}
 {$ifdef USE_MFS}
     fs: TMemoryFileStream;
 {$ELSE}
     fs: TFileStream;
+{$ENDIF}
 {$ENDIF}
     buf: pbyte;
     justgot: ni;
@@ -183,12 +197,17 @@ begin
   ops[1].buf := GetMemory(BUFSZ);
   try
 
+  {$IFDEF USE_AQFS}
+    ops[0].fs := TAdaptiveQueuedFileStream.create(f1, fmOpenRead+fmShareDenyNone);
+    ops[1].fs := TAdaptiveQueuedFileStream.create(f2, fmOpenRead+fmShareDenyNone);
+  {$ELSE}
   {$IFDEF USE_MFS}
     ops[0].fs := TMemoryFileStream.create(f1, fmOpenRead+fmShareDenyNone);
     ops[1].fs := TMemoryFileStream.create(f2, fmOpenRead+fmShareDenyNone);
   {$ELSE}
     ops[0].fs := TFileStream.create(f1, fmOpenRead+fmShareDenyNone);
     ops[1].fs := TFileStream.create(f2, fmOpenRead+fmShareDenyNone);
+  {$ENDIF}
   {$ENDIF}
 
     ops[0].fs.seek(0,0);
@@ -215,15 +234,34 @@ begin
   //  if cx > (100*million) then
   //    cx := 100*million;
     while cx > 0 do begin
+      {$IFDEF USE_AQFS}
+      var c0 := ops[0].fs.BeginAdaptiveRead(ops[0].buf, lesserof(cx, BUFSZ),true,false);
+      var c1 := ops[1].fs.BeginAdaptiveRead(ops[1].buf, lesserof(cx, BUFSZ),true,false);
+      ops[0].justgot := ops[0].fs.EndAdaptiveRead(c0);
+      ops[1].justgot := ops[1].fs.EndAdaptiveRead(c1);
+//      ops[1].justgot := stream_guaranteeread_NoExceptions(ops[1].fs, ops[1].buf, lesserof(cx, BUFSZ));
+      {$ELSE}
       ops[0].justgot := stream_guaranteeread_NoExceptions(ops[0].fs, ops[0].buf, lesserof(cx, BUFSZ));
       ops[1].justgot := stream_guaranteeread_NoExceptions(ops[1].fs, ops[1].buf, lesserof(cx, BUFSZ));
+      {$ENDIF}
 
       if ops[0].justgot <> ops[1].justgot then begin
         Fresult.contentsidentical := false;
         exit;
       end;
 
-      for t:= 0 to ops[0].justgot-1 do begin
+      t := 0;
+//      var bestgot := lesserof(ops[0].justgot, ops[1].justgot);
+      //todo 5: maybe someday you want to implement... although current BeginAdaptiveRead guarantees length
+      while t < ops[0].justgot do begin
+        if cx > 8 then begin
+          var i64 := PInt64(@ops[0].buf[t])^;
+          var ii64 := PInt64(@ops[1].buf[t])^;
+          if ii64 = i64 then begin
+            inc(t,8);
+            continue;
+          end;
+        end;
         b := ops[0].buf[t];
         bb := ops[1].buf[t];
         FResult.SizeOfComparedContents := FResult.SizeOfComparedContents+1;
@@ -245,6 +283,7 @@ begin
         if bb = 0 then
           inc(z2);
 
+        inc(t);
       end;
 
       inc(x,ops[0].justgot);
@@ -252,7 +291,7 @@ begin
       Step := x;
       tmDif := GetTimesince(tmStart);
       if tmDif > 0 then begin
-        Status := 'Comparing ... '+commaize(Step div tmDif)+' bytes/ms    ';
+        Status := 'Comparing... '+commaize(Fresult.different)+' different of '+commaize(x)+' ... ' +commaize((Step*1000) div tmDif)+' bytes/sec    ';
       end;
 
       if not CompareAll then begin
@@ -360,5 +399,38 @@ begin
 
 
 end;
+
+{ Tcmd_ReadFileTest }
+
+procedure Tcmd_ReadFileTest.DoExecute;
+var
+  a: TDynByteArray;
+begin
+  inherited;
+  var tmStart := GetTicker;
+  var fs := TFileStream.create(f1, fmOpenRead+fmShareDenyNone);
+  stepcount := fs.Size;
+  setlength(a, 262144*4);
+  var cx := fs.size;
+  var x : int64 := 0;
+  var tot := cx;
+  while cx > 0 do begin
+    var ijust := Stream_GuaranteeRead(fs, @a[0], lesserof(cx, length(a)));
+    dec(cx, iJust);
+    inc(x, iJust);
+
+    Step := x;
+    var tmDif := GetTimesince(tmStart);
+    if tmDif > 0 then begin
+        Status := 'Read...  '+commaize(x)+' of '+commaize(tot)+' at '+commaize((Step*1000) div tmDif)+' bytes/sec    ';
+    end;
+  end;
+end;
+
+procedure Tcmd_ReadFileTest.SetF1(const Value: string);
+begin
+  FF1 := value;
+end;
+
 
 end.

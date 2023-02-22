@@ -32,11 +32,12 @@ type
     procedure Lock;
     procedure Unlock;
     function GetDebugInfo: string;
+    procedure RegisterInternalLeaks;
   end;
 
 
 var
-  bor: TBetterObjectRegistry;
+  bor: TBetterObjectRegistry = nil;
 
 
 implementation
@@ -61,7 +62,7 @@ end;
 
 constructor TBetterObjectRegistry.Create;
 begin
-  systemx.ics(sect);
+  systemx.ics(sect, classname);
   FObjects := TList<TBOREntry>.create;
 end;
 
@@ -164,6 +165,14 @@ begin
   end;
 end;
 
+procedure TBetterObjectRegistry.RegisterInternalLeaks;
+begin
+{$IFDEF MSWINDOWS}
+  RegisterExpectedMemoryLeak(@sect);
+  RegisterExpectedMemoryLeak(FObjects);
+{$ENDIF}
+end;
+
 procedure TBetterObjectRegistry.Unlock;
 begin
   LeaveCriticalSection(sect);
@@ -175,6 +184,10 @@ begin
 end;
 procedure ofinal;
 begin
+{$IFDEF MSWINDOWS}
+  RegisterExpectedMemoryLeak(bor);
+  bor.RegisterInternalLeaks;
+{$ENDIF}
 //  bor.free;
 //  bor := nil;
 

@@ -104,14 +104,14 @@ var
   sSource: ansistring;
 begin
 
-  sSource := ansistring(lowercase(sRealSource));
-  sSplitter := ansistring(lowercase(sSplitter));
+  sSource := ansistring(lowercase(string(sRealSource)));
+  sSplitter := ansistring(lowercase(string(sSplitter)));
 
   //find position of splitter
   if bStartAtRight then
-    iPos:= lastposex(string(sSplitter), string(sSource), [notinleft, notinright])
+    iPos:= lastposex(string(sSplitter), string(sSource), [string(notinleft), string(notinright)])
   else
-    iPos := posex(sSplitter, sSource, [notinleft, notinright]);
+    iPos := posex(string( sSplitter), string(sSource), [string(notinleft), string(notinright)]);
 
   //if splitter not found
   if iPos<1 then begin
@@ -198,7 +198,7 @@ begin
         setlength(s,st-1);
 {$ENDIF}
         if s <> '' then
-          sl.Add(s);
+          sl.Add(string(s));
 {$IFDEF NEED_FAKE_ANSISTRING}
         s.SetLength(st-1);
 {$ELSE}
@@ -243,14 +243,14 @@ var
   sSource: ansistring;
 begin
 
-  sSource := ansistring(lowercase(sRealSource));
-  sSplitter := ansistring(lowercase(sSplitter));
+  sSource := ansistring(lowercase(string(sRealSource)));
+  sSplitter := ansistring(lowercase(string(sSplitter)));
 
   //find position of splitter
   if bStartAtRight then
-    iPos:= lastposex(sSplitter, sSource, notin)
+    iPos:= lastposex(string(sSplitter), string(sSource), notin)
   else
-    iPos := posex(sSplitter, sSource, notin);
+    iPos := posex(string(sSplitter), string(sSource), notin);
 
   //if splitter not found
   if iPos<1 then begin

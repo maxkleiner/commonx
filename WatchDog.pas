@@ -4,7 +4,7 @@ interface
 
 
 uses
-  PeriodicEvents, betterobject, tickcount, typex, exe, sysutils, orderlyinit, debug;
+  systemx,stringx,PeriodicEvents, betterobject, tickcount, typex, exe, sysutils, orderlyinit, debug;
 
 type
   TWatchDogIgnoreHandle = class;//forward
@@ -45,7 +45,7 @@ type
   TWatchDogIgnoreHandle = class(TBetterObject)
   public
     wd: TWAtchDog;
-    constructor Create(aWD: TWatchDog);
+    constructor Create(aWD: TWatchDog);reintroduce;virtual;
     destructor Destroy;override;
   end;
 
@@ -55,7 +55,7 @@ type
 
 
 var
-  WD: TWatchDog;
+  WD: TWatchDog = nil;
 
 
 
@@ -79,7 +79,15 @@ procedure TWatchDog.Alarm;
 begin
   Debug.Log('******* WATCHDOG ALARM TRIGGERED ACTION: '+FAction+' '+FParams);
 {$IFDEF MSWINDOWS}
-  exe.RunProgram(FAction, FParams, extractfilepath(FAction));
+  SaveStringAsFile(dllname+'.watchdog.txt','WATCHDOG! '+FAction);
+  if not IsTaskRunningInPath(extractfilename(FAction), extractfilepath(FAction)) then begin
+    var alt := extractfilenamepart(FAction)+'_'+extractfileext(FAction);
+    if not IsTaskRunningInPath(extractfilename(alt), extractfilepath(FAction)) then begin
+      exe.RunProgram(FAction, FParams, extractfilepath(FAction));
+    end;
+  end;
+  sleep(30000);
+
 {$ENDIF}
 end;
 
@@ -145,6 +153,7 @@ begin
 
   Debug.Log('Watchdog enabled with timeout '+timeout.tostring+' ms.');
 
+
 end;
 
 procedure TWatchDog.ForceAlarm;
@@ -202,7 +211,8 @@ begin
 end;
 procedure ofinal;
 begin
-  WD.Free;
+  if assigned(WD) then
+    WD.Free;
 end;
 
 

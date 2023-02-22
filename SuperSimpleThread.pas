@@ -28,9 +28,9 @@ end;
 
 initialization
 begin
-  test := TThreadTest.Create(true);
-  test.FreeOnTerminate := true;
-  test.resume;
+//  test := TThreadTest.Create(true);
+//  test.FreeOnTerminate := true;
+//  test.resume;
 
 
 end;

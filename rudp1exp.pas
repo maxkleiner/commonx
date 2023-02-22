@@ -7093,6 +7093,8 @@ end;
 
 procedure ofinal;
 begin
+  if not assigned(rsMon) then
+    exit;
   rsMon.UnregisterRingStat(net_stats_clear_rate_tx);
   net_stats_clear_rate_tx.DetachAndfree;
   rsMon.UnregisterRingStat(net_stats_clear_rate_rx);

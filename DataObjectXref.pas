@@ -2,7 +2,7 @@ unit DataObjectXref;
 //This unit contains the TXrefPool class and related classes.
 
 interface
-uses sysutils, stringx;
+uses sysutils, stringx, typex;
 
 
 threadvar
@@ -93,7 +93,7 @@ end;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 function TXRefPool.FindXRefByString(str: string): PClassXRef;
-//p: str: The string for which you are searching on.  In the Case of PWLN, this will typically be the object type name e.g. "TdoUser".
+//p: str: The string for which you are searching on.  In the Case of most, this will typically be the object type name e.g. "TdoUser".
 //Given a string, returns a matching XRef Record. If no record is foudn, result.cClass will be nil.
 var
   t: integer;
@@ -101,11 +101,13 @@ begin
   result := @FNullXref;
 
   for t:= 0 to iXrefSize-1 do begin
-    if lowercase(FObjectConsts[t].sString) = lowercase(str) then begin
+    if comparetext(FObjectConsts[t].sString,str)=0 then begin
       result := @FObjectConsts[t];
-      break;
+      exit;
     end;
   end;
+
+//  raise ECritical.create('did not find Xref for '+str);
 
 end;
 
@@ -126,7 +128,7 @@ begin
 end;
 
 procedure TXRefPool.InitObjectConsts;
-//This function is only here to generify the TXrefPool class.  It is virtual, and therefore, overridable by descendant classes.  Descendant classes can overide this to define how their descendents get their information.  PWLN infuses the information from an external source so this funtion does nothing.
+//This function is only here to generify the TXrefPool class.  It is virtual, and therefore, overridable by descendant classes.  Descendant classes can overide this to define how their descendents get their information.  infuses the information from an external source so this funtion does nothing.
 begin
 //TODO -cunimplemented: unimplemented block
 end;

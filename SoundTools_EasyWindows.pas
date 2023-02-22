@@ -544,7 +544,7 @@ var
   t: integer;
 begin
   SetLength(FBuf, 2 * LesserOf(length(FBufL), length(FBufR)));
-  for t := 0 to LesserOf(length(FBufL), length(FBufR)) do begin
+  for t := 0 to LesserOf(high(FBufL), high(FBufR)) do begin
     FBuf[(t shl 1) + 0] := FBufL[t];
     FBuf[(t shl 1) + 1] := FBufR[t];
   end;

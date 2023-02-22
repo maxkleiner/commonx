@@ -16,25 +16,37 @@ uses
   orderlyinit;
 
 var
-  BackgroundThreadMan : TThreadManager;
+  GFBackgroundThreadMan : TThreadManager =nil;
+
+function BackgroundThreadMan: TThreadManager;
 
 
 implementation
 
 
+function BackgroundThreadMan: TThreadManager;
+begin
+  if GFBackgroundThreadMan = nil then
+    GFBackgroundThreadMan := TThreadManager.create;
+  result := GFBackgroundThreadMan;
+
+end;
+
 procedure oinit;
 begin
-  BackgroundThreadMan := TThreadManager.create;
+//  GFBackgroundThreadMan := TThreadManager.create;
+  BackgroundThreadMan;
 end;
 
 procedure ofinal;
 begin
-  BackGroundthreadMan.free;
+  if assigned(GFBackgroundThreadMan) then
+    GFBackgroundThreadMan.free;
 
 end;
 
 initialization
-  init.RegisterProcs('BackgroundThreads', oinit, ofinal);
+  init.RegisterProcs('BackgroundThreads', oinit, ofinal, 'ManagedThread');
 
 
 finalization

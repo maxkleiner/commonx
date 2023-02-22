@@ -6,13 +6,15 @@ unit ffmpeg_tools;
 {x$define DO_LQ}
 {x$DEFINE DO_SWAP_CR}
 {$DEFINE TIME_LIMIT}
+{$DEFINE REXE_WORK_STEP}
 {x$DEFINE REXE}//define this only at the projet level
+{x$DEFINE ONE_AT_A_TIME}
 
 
 interface
 
 uses
-  ExternalMemoryStream, helpers_stream,numbers,search, encodermaster,
+  ExternalMemoryStream, helpers_stream,numbers,search, encodermaster, ffmpeg_types,
   soundconversions_commandline, rtti_helpers, commands_file,
   debug, tickcount, soundinterfaces, commandicons, managedthread, sharedobject,
   commandprocessor, soundtools, classes, betterobject, easyimage, dir, dirfile,
@@ -88,6 +90,7 @@ type
 
 
     Timeout: int64;
+    Servicer: string;
     procedure InitExpense; override;
     property CPuExpense: single read GetCPUExpense write SetCPUExpense;
   end;
@@ -98,20 +101,9 @@ type
 {$ENDIF}
 
 
-  TFFProbe = record
-    w,h: single;
-    VideoCodec: string;
-    VideoCodecEx: string;
-    AudioCodec: string;
-    AudioCodecEx: string;
-    procedure Init;
-    function ToString: string;
-    function Is5_1: boolean;
-    function Is7_1: boolean;
 
-  end;
-  TBleedingEdge = (beAncient, beStable, be4kEra);
   TJVIDFormat = (jvfJPG, jvfDDS, jvfCRN);
+  TConversionSuite = (csConvert, csStablize);
   TJVIDMainHeader = packed record
     fourcc: array [0..3] of ansichar;
     version: cardinal;
@@ -125,6 +117,7 @@ type
     format: TJVIDFormat;
     procedure Init;
   end;
+
   TJVIDHeader = packed record
     FrameNumber: cardinal;
     PrevFrameSize: cardinal;
@@ -173,13 +166,17 @@ type
     function TarExtPath: string;
     function TarTempFileName: string;
   public
+    SourceStartTime: TDateTime;
+    OutputLength: TDateTime;
     useremotes: boolean;
     clean: boolean;
     trackingnumber: int64;
     filename: string;
+    suite: TConversionSuite;
     procedure InitExpense; override;
     procedure RenameExistingRelatedFiles;
     procedure Init; override;
+
 
 
   end;
@@ -271,7 +268,7 @@ type
     property outfile: string read Foutfile write foutfile;
   end;
 
-  TFFMPEG_Action = (ffExtractFrame,ffExtractFrames, ffToDmxVideo, ffToMp3, ffToChromecastLQ, ffToChromecastHQ, ffToChromecastOQ, ffToChromeCastUQ, ffToOculus,ffProbe, ffSwapCR);
+
 
   Tcmd_FFMPEG = class(TUnitExe)
   private
@@ -289,6 +286,7 @@ type
     FDurationInMS: int64;
     procedure SetOutputFile(const Value: string);
   protected
+    suite: Tcmd_ConversionSuite;
     procedure InitExpense;override;
     procedure DoExecute;override;
     procedure PreProcess;override;
@@ -297,11 +295,18 @@ type
     procedure CC(ccStatus: TConsoleCaptureStatus; sData: string);override;
     procedure OnStart;override;
    public
+    SourceStartTime: TDatetime;
+    OutputLength: TDatetime;
+    AudioSwapCR: boolean;
+    AudioChannelMapOverride: string;
+    StabParams: string;
 
     procedure Init; override;
     constructor Create; override;
+    procedure Log(s: string); override;
     property ACtion: TFFMPeg_Action read FAction write FAction;
     procedure AfterConstruction; override;
+
 
     property InputFile: string read Finfile write finfile;
     property outputdirectory: string read Foutdir write foutdir;
@@ -311,6 +316,8 @@ type
     property Height: nativeint read Fh write Fh;
     property BleedingEdge: TBleedingEdge read FBleedingEdge write FBleedingEdge;
     property OverwriteOutput: boolean read FOverWriteOutput write FOverwriteOutput;
+
+
   end;
 
 
@@ -320,7 +327,7 @@ function ffMpegProbe(sFile: string): TFFProbe;
 function ffGetRelatedFileName(sFile, sQualityNoDot: string; bAppendExt: boolean): string;
 function ffFindRelatedFile(sFile, sQualityNoDot: string): string;
 
-
+function FFActionToStr(ffa: TFFMPEG_Action): string;
 
 procedure VideoToDmxVideo(sInputFile: string; sOutputFile: string; cmd: TCommand = nil);
 procedure VideoToJVid(sInputFile: string; sOutputFile: string; cmd: TCommand = nil; fmt: TJVIDFormat = jvfJPG);
@@ -332,6 +339,7 @@ procedure REbuildVideoFrames(sInputDir: string; sOutputFile: string; w,h,fps: in
 procedure REbuildVideoFrames_DateOrder(sInputDir: string; sOutputFile: string; w,h,fps: nativeint; ext: string = 'jpg');
 procedure REbuildVideoFrames_DateOrder_AggSubfolder(sInputDir: string; sOutputFile: string; w,h,fps: nativeint; ext: string = 'jpg');
 
+function EncodeTrfParam(s: string): string;
 procedure ExtractVideoFrames(sInputFile: string; sOutputDir: string; w: nativeint = 0; h: nativeint = 0);
 function BeginExtractVideoFrames(sInputFile: string; sOutputDir: string; w: nativeint = 0; h: nativeint = 0): Tcmd_FFMPEG;
 procedure EndExtractVideoFrames(cexe: Tcmd_FFMPEG);
@@ -344,11 +352,26 @@ procedure EndTranscodeForXbox(c: Tcmd_XBOXtranscode);
 function ffmpeg_cpus(relativepower: single): single;
 function ffmpeg: string;
 //function ffmpeg_ex(sVariation: string = '_bleeding_edge_sept'):string;
-function ffmpeg_ex(sVariation: string = '_2020'):string;
+function ffmpeg_ex(sVariation: string = '_4k'):string;
 implementation
 
 uses
-  servervideoparser, tools;
+  servervideoparser, tools, audai, ffmpeg_tools_localexecution;
+
+function EncodeTrfParam(s: string): string;
+begin
+  result := s;
+//  result := (stringreplace(result, '\','%'+inttohex(ord(ansichar('\')),2),[rfReplaceAll]));
+//  result := (stringreplace(result, ' ','%'+inttohex(ord(ansichar(' ')),2),[rfReplaceAll]));
+//  result := (stringreplace(result, '/','%'+inttohex(ord(ansichar('/')),2),[rfReplaceAll]));
+  result := (stringreplace(result, '\','\\',[rfReplaceAll]));
+  result := (stringreplace(result, ':','\:',[rfReplaceAll]));
+  result := (stringreplace(result, '''','''\''',[rfReplaceAll]));
+//  result := (stringreplace(result, ' ',''' ''',[rfReplaceAll]));
+  result := quote(result,'''');
+  result := quote(result);
+
+end;
 
 function ffmpeg_cpus(relativepower: single): single;
 begin
@@ -391,7 +414,7 @@ begin
       sNewName := sLeft+'.';
       SplitString(sRight,'.', sLeft, sRight);
       sNewName := slash(fil.Path)+sNewName+ inttostr(strtoint(sLeft))+'.'+sRight;
-      debug.log('ren: '+fil.fullname+' to '+sNewName);
+      Log('ren: '+fil.fullname+' to '+sNewName);
       RenameFile(fil.fullname, sNewName);
     end;
 
@@ -399,9 +422,9 @@ begin
     dir.free;
   end;
 
-  debug.log('RUN: '+ffmpeg);
+  Log('RUN: '+ffmpeg);
   sParams := '-y -f image2 -r '+inttostr(fps)+' -i "'+sInputDir+'working.%d.jpg" -b 1000000 -s '+inttostr(w)+'x'+inttostr(h)+' -aspect 16:9 -r '+inttostr(fps)+' "'+sOutputFile+'"';
-  debug.log(sParams);
+  Log(sParams);
   exe.RunProgramAndWait(ffmpeg, sParams, '');
 
 end;
@@ -451,7 +474,7 @@ begin
     f.Free;
   end;
 
-  Debug.log('RUN: '+ffmpeg_ex());
+  Log('RUN: '+ffmpeg_ex());
   //took out aspect 16:9
   if (w>0) and (h>0) then begin
     sParams := '-y -f image2 -r '+inttostr(fps)+' -i "'+sTempFolder+'%d.jpg" -b 1000000 -s '+inttostr(w)+'x'+inttostr(h)+' -r '+inttostr(fps)+' "'+sOutputFile+'"';
@@ -459,7 +482,7 @@ begin
     sParams := '-y -f image2 -r '+inttostr(fps)+' -i "'+sTempFolder+'%d.jpg" -b 1000000 -r '+inttostr(fps)+' "'+sOutputFile+'"';
   end;
 
-  debug.log(sParams);
+  Log(sParams);
   exe.RunProgramAndWait(ffmpeg_ex(), sParams, '',true );
   DeleteFolder(sTempFolder);
 end;
@@ -502,7 +525,7 @@ begin
 //      sNewName := sLeft+'.';
 //      SplitString(sRight,'.', sLeft, sRight);
 //      sNewName := adjustpath(fil.Path)+sNewName+ inttostr(strtoint(sLeft))+'.'+sRight;
-//      debug.log('ren: '+fil.fullname+' to '+sNewName);
+//      Log('ren: '+fil.fullname+' to '+sNewName);
 //      RenameFile(fil.fullname, sNewName);
 
 
@@ -512,7 +535,7 @@ begin
 
 
 
-  debug.log('RUN: '+ffmpeg_ex());
+  Log('RUN: '+ffmpeg_ex());
   //took out aspect 16:9
   if (w>0) and (h>0) then begin
     sParams := '-y -f image2 -r '+inttostr(fps)+' -i "'+sTempFolder+'temp%d.jpg" -b 1000000 -s '+inttostr(w)+'x'+inttostr(h)+' -r '+inttostr(fps)+' "'+sOutputFile+'"';
@@ -520,7 +543,7 @@ begin
     sParams := '-y -f image2 -r '+inttostr(fps)+' -i "'+sTempFolder+'temp%d.jpg" -b 1000000 -r '+inttostr(fps)+' "'+sOutputFile+'"';
   end;
 
-  debug.log(sParams);
+  Log(sParams);
   exe.RunProgramAndWait(ffmpeg, sParams, '',true );
   DeleteFolder(sTempFolder);
 end;
@@ -995,7 +1018,10 @@ var
   sThreads: string;
 begin
   inherited;
-
+  if not fileexists(inputfile) then begin
+    exit;
+//    raise ECritical.create('cannot find input file '+inputfile);
+  end;
   Name := extractFileName(outputfile);
   ConsoleRedirect := true;
   Hide := true;
@@ -1006,22 +1032,46 @@ begin
   if lowercase(extractfileext(InputFile)) = '.webm' then
     BleedingEdge := beSTable;
 
-  case bleedingedge of
-    beAncient: prog := ffmpeg;
-    beStable: prog := ffmpeg_ex();
-    be4kEra: prog := ffmpeg_ex('_4k');
-  end;
+
 
   p.init;
-  if action <> ffProbe then
-    p := ffMpegProbe(InputFile);
+
+  if action <> ffProbe then begin
+    try
+      p := ffMpegProbe(InputFile);
+      if p.w = 0 then
+        raise ECritical.Create('could not determine video width');
+      if p.h = 0 then
+        raise ECritical.Create('could not determine video height');
+
+
+      if (p.AudioChannels > 8) or (p.AudioChannels < 0) then
+        raise Ecritical.Create('Unsupported audio channels: '+p.AudioChannels.ToString);
+    except
+      on E: Exception do begin
+        Log('probe was wierd: '+E.message+' for file '+inputfile);
+        Log('moar info: '+p.debugString);
+        raise;
+      end;
+    end;
+
+  end;
+
 
   if (Width > 0) and (Height > 0) then
     sDim := ' -s '+inttostr(Width)+'x'+inttostr((height shr 1) shl 1);
 
-  var AUDIO51_CORRECTION := '';
+  var AUDIO51_CORRECTION := Self.AudioChannelMapOverride;
 
-  sThreads := ' ';//' -threads '+ffmpeg_cpus.tostring+' ';
+  sThreads := ' -threads '+getenabledcpucount.tostring+' ';//' -threads '+ffmpeg_cpus.tostring+' ';
+  var ss := '';
+  var sto := '';
+  if SourceStartTime > 0.0 then begin
+    ss := ' -ss '+FormatDateTime('hh:mm:ss.zzz',SourceStarttime)+' ';
+  end;
+  if OutputLength > 0.0 then begin
+    sto := ' -to '+FormatDatetime('hh:mm:ss.zzz',OutputLength)+' ';
+  end;
 
   case Action of
     ffProbe: begin
@@ -1029,7 +1079,7 @@ begin
       CPuExpense := 0.0;
     end;
     ffExtractFrame: begin
-      if BleedingEdge <> beAncient then begin
+      if BleedingEdge <> beAncientDeprecated then begin
         Params := '-y'+sThreads+'-i "'+InputFile+'" -ss 00:05:00.000 -y -r 30 -f image2 -q:a 0 -q:v 0 -b 100000'+sDim+' -vframes 1 "'+OutputFIle+'"';
         GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda '+Params;
       end else begin
@@ -1038,7 +1088,7 @@ begin
     end;
     ffExtractFrames: begin
       OutputFile := slash(OutputDirectory)+'working.%d.'+extract_image_ext;
-      if BleedingEdge <> beAncient then begin
+      if BleedingEdge <> beAncientDeprecated then begin
         Params := '-y'+sThreads+'-i "'+InputFile+'" -y -r 30 -f image2 -q:a 0 -q:v 0 -b 100000'+sDim+' "'+OutputFIle+'"';
       end else begin
         Params := '-y'+sThreads+'-i "'+InputFile+'" -y -f image2 -sameq '+sDim+' "'+OutputFIle+'"';
@@ -1046,10 +1096,10 @@ begin
     end;
     ffToDMXVideo: begin
 //      OutputFile := slash(OutputDirectory)+'working.%d.'+extract_image_ext;
-      if BleedingEdge <> beAncient then begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -r 30 '+sDim+' "'+OutputFIle+'"';
+      if BleedingEdge <> beAncientDeprecated then begin
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -r 30 '+sDim+sto+' "'+OutputFIle+'"';
       end else begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' "'+OutputFIle+'"';
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+sto+' "'+OutputFIle+'"';
       end;
     end;
     ffSwapCR: begin
@@ -1060,6 +1110,9 @@ begin
         if p.AudioCodec = 'eac3' then begin
           Params := accel+'-y'+sThreads+'-i "'+InputFile+'" -filter_complex "channelmap=map=FL-FL|FC-FC|FR-FR|LFE-LFE|SL-SL|SR-SR:channel_layout=5.1" -vcodec copy "'+OutputFile+'"';
         end else
+        if p.AudioCodec = 'dts' then begin
+          Params := accel+'-y'+sThreads+'-i "'+InputFile+'" -filter_complex "channelmap=map=FL-FL|FC-SL|FR-FR|LFE-SR|SL-FC|SR-LFE:channel_layout=5.1" -vcodec copy "'+OutputFile+'"';
+        end else
           Params := accel+'-y'+sThreads+'-i "'+InputFile+'" -filter_complex "channelmap=map=FL-FL|FC-FC|FR-FR|LFE-LFE|BL-BL|BR-BR:channel_layout=5.1" -vcodec copy "'+OutputFile+'"';
       end else
       if p.Is7_1 then begin
@@ -1068,6 +1121,9 @@ begin
       if outputfile <> '' then begin
         forcedirectories(extractfilepath(outputfile));
         SaveStringAsFile(outputfile+'.txt',params+NL+gpuparams);
+        SaveStringAsFile(inputFile+'.'+ffactiontostr(self.action)+'.txt',params+NL+gpuparams);
+      end else begin
+        SaveStringAsFile(inputFile+'.'+ffactiontostr(self.action)+'.txt',params+NL+gpuparams);
       end;
     end;
     ffToChromeCastOQ: begin
@@ -1082,10 +1138,10 @@ begin
 
         sDim := '';
         if FAlternate then changefileext(OutputFile, '.webm');
-        if BleedingEdge <> beAncient then begin
-          Params := '-y'+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -c:v libx265 -crf 20 -preset ultrafast -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  "'+OutputFile+'"';
-          GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '+sThreads+
-                      '-i "'+InputFile+'" -q:a 0 -q:v 0 -c:v hevc_nvenc -crf 20 -b:v 15M -maxrate:v 20M -rc:v vbr_hq -cq:v 10 -gpu ##gpu## -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  "'+OutputFile+'"';
+        if BleedingEdge <> beAncientDeprecated then begin
+          Params := ss+'-y'+sThreads+'-i "'+InputFile+'" '+stabparams+' '+AUDIO51_CORRECTION+' -q:a 0 -q:v 0 -c:v libx265 -crf 21 -preset ultrafast -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  '+sto+'"'+OutputFile+'"';
+          GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  '+ss+' -y '+sThreads+
+                      '-i "'+InputFile+'" '+stabparams+' -q:a 0 -q:v 0 -c:v hevc_nvenc -crf 20 -b:v 15M -maxrate:v 20M -rc:v vbr_hq -cq:v 10 -gpu ##gpu## -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  '+sto+'"'+OutputFile+'"';
 (*
 e:ffmpeg_4k.exe -hwaccel_device 1 -hwaccel cuda -y -i "\\192.168.101.123\media\_movies\Wreck-It Ralph\Wreck-It Ralph.mkv" -t 1:00 -q:a 0 -q:v 0 -c:v hevc_nvenc -rc:v vbr_hq -cq:v 10 -gpu 1 -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec mp3  -movflags faststart  "\\192.168.101.123\media\_movies\Wreck-It Ralph\oq\oq.Wreck-It Ralph.mp4"
 *)
@@ -1108,18 +1164,21 @@ e:ffmpeg_4k.exe -hwaccel_device 1 -hwaccel cuda -y -i "\\192.168.101.123\media\_
         end;
 
         sDim := '';
+        stabparams := stringreplace(stabparams, '%outputheight%', round(p.h).ToString, [rfReplaceAll]);
         if FAlternate then changefileext(OutputFile, '.webm');
-        if BleedingEdge <> beAncient then begin
-          Params := accel+'-y'+sThreads+'-i "'+InputFile+'" -c:v libx264 -profile:v high -level:v 5.2 -pix_fmt yuv420p -preset ultrafast -acodec '+ACODEC_4k+' '+sDim+' "'+OutputFile+'"';
-          GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '
-                       +sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -c:v h264_nvenc -crf 20 -rc:v vbr_hq -cq:v 10 -b:v 15M -maxrate:v 20M -gpu ##gpu## -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  "'+OutputFile+'"';
+        if BleedingEdge <> beAncientDeprecated then begin
+          Params := accel+ss+'-y'+sThreads+'-i "'+InputFile+'" '+stabparams+' -c:v libx264 -profile:v high -level:v 5.2 -pix_fmt yuv420p -preset ultrafast -acodec '+ACODEC_4k+' '+sDim+' '+sto+'"'+OutputFile+'"';
+          GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  '+ss+'-y '
+                       +sThreads+'-i "'+InputFile+'" '+stabparams+' '+AUDIO51_CORRECTION+' -q:a 0 -q:v 0 -c:v h264_nvenc -crf 20 -rc:v vbr_hq -cq:v 10 -b:v 15M -maxrate:v 20M -gpu ##gpu## -level:v 5.1 -pix_fmt yuv420p -movflags faststart -acodec '+ACODEC_4k+' '+sDim+' -movflags faststart  '+sto+'"'+OutputFile+'"';
 
         end else begin
   //        Params := '-i "'+InputFile+'" -sameq -b 100000'+sDim+' "'+OutputFIle+'"';
         end;
         if outputfile <> '' then begin
           forcedirectories(extractfilepath(outputfile));
-          SaveStringAsFile(outputfile+'.txt',params+NL+gpuparams);
+{$IFNDEF REXE}
+          SaveStringAsFile(outputfile+'.txt',prog+' '+params+NL+'GPUParams (if using):'+gpuparams);
+{$ENDIF}
         end;
       end;
 
@@ -1127,46 +1186,63 @@ e:ffmpeg_4k.exe -hwaccel_device 1 -hwaccel cuda -y -i "\\192.168.101.123\media\_
     ffToChromeCastHQ: begin
       if outputfile <> '' then begin
         forcedirectories(extractfilepath(outputfile));
-        SaveStringAsFile(outputfile+'.txt',params+NL+gpuparams);
+{$IFNDEF REXE}
+        SaveStringAsFile(outputfile+'.txt',prog+' '+params+NL+gpuparams);
+{$ENDIF}
       END;
-      if ((p.AudioCodec = 'eac3') or (p.audiocodec = 'ac3'))
-      and (p.Is5_1) then begin//-filter_complex "channelmap=map=FL-FL|FC-FC|FR-FR|LFE-LFE|SL-SL|SR-SR:channel_layout=5.1"
-        AUDIO51_CORRECTION := ' -af "channelmap=0|1|2|3|4|5:5.1"';
+
+      if p.Is5_1 then begin
+        if ((p.AudioCodec = 'eac3') or (p.audiocodec = 'ac3'))
+        then begin
+          if AudioSwapCR then
+            AUDIO51_CORRECTION := ' -af "channelmap=0|2|1|3|4|5:5.1"'
+          else
+            AUDIO51_CORRECTION := ' -af "channelmap=0|1|2|3|4|5:5.1"';
+        end;
+
       end;
       if ((p.AudioCodec = 'eac3') or (p.audiocodec = 'ac3'))
       and (p.Is7_1) then begin
-        AUDIO51_CORRECTION := ' -af "channelmap=0|1|2|3|4|5|6|7:7.1"';
+        if AudioSwapCR then
+          AUDIO51_CORRECTION := ' -af "channelmap=0|2|1|3|4|5|6|7:7.1"'
+        else
+          AUDIO51_CORRECTION := ' -af "channelmap=0|1|2|3|4|5|6|7:7.1"';
       end;
 
 
       if (sDim = '') and (p.w > 1920) then begin
         sDim := '-s 1920x'+inttostr(round(1920*(p.h/p.w)));
       end;
+      stabparams := stringreplace(stabparams, '%outputheight%', round(p.h).ToString, [rfReplaceAll]);
       if FAlternate then changefileext(OutputFile, '.webm');
-      if BleedingEdge <> beAncient then begin
-        Params := ' -y '+sThreads+'-i "'+InputFile+'" '+AUDIO51_CORRECTION+' -q:a 0 -q:v 3 -vcodec h264 -pix_fmt yuv420p -acodec '+ACODEC_Safe+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
-        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '+sThreads+'-i "'+InputFile+'" '+AUDIO51_CORRECTION+' -q:a 0 -q:v 3 -vcodec h264_nvenc -gpu ##gpu## -b:v 15M -maxrate:v 20M -pix_fmt yuv420p -acodec '+ACODEC_Safe+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
+      if BleedingEdge <> beAncientDeprecated then begin
+        Params := ss+' -y '+sThreads+'-i "'+InputFile+'" '+stabparams+' '+AUDIO51_CORRECTION+' -q:a 0 -q:v 3 -vcodec h264 -pix_fmt yuv420p -acodec '+ACODEC_Safe+AUDIO51_CORRECTION+' '+sDim+' '+sto+'"'+OutputFIle+'"';
+        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  '+ss+'-y '+sThreads+'-i "'+InputFile+'" '+AUDIO51_CORRECTION+' -q:a 0 -q:v 3 -vcodec h264_nvenc -gpu ##gpu## -b:v 15M -maxrate:v 20M -pix_fmt yuv420p -acodec '+ACODEC_Safe+AUDIO51_CORRECTION+' '+sDim+' '+sto+'"'+OutputFIle+'"';
       end else begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' "'+OutputFIle+'"';
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" '+stabparams+' -sameq -b 100000'+sDim+' '+sto+'"'+OutputFIle+'"';
       end;
       try
-        SaveStringAsFile(outputfile+'.txt',params+NL+gpuparams);
+{$IFNDEF REXE}
+        SaveStringAsFile(outputfile+'.txt',prog+' '+params+NL+gpuparams);
+{$ENDIF}
       except
       end;
     end;
     ffToOculus: begin
       if FAlternate then changefileext(OutputFile, '.webm');
-      if BleedingEdge <> beAncient then begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
-        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
+      if BleedingEdge <> beAncientDeprecated then begin
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
+        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  '+ss+'-y '+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' '+sto+'"'+OutputFIle+'"';
       end else begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' "'+OutputFIle+'"';
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' '+sto+'"'+OutputFIle+'"';
       end;
     end;
     ffToChromeCastLQ: begin
       if outputfile <> '' then begin
         forcedirectories(extractfilepath(outputfile));
-        SaveStringAsFile(outputfile+'.txt',params+NL+gpuparams);
+{$IFNDEF REXE}
+        SaveStringAsFile(outputfile+'.txt',prog+' '+params+NL+gpuparams);
+{$ENDIF}
       END;
 
       if (p.AudioCodec = 'eac3')
@@ -1181,13 +1257,40 @@ e:ffmpeg_4k.exe -hwaccel_device 1 -hwaccel cuda -y -i "\\192.168.101.123\media\_
       if (sDim = '') and (p.w > 1920) then begin
         sDim := '-s 1920x'+inttostr(round(1920*(p.h/p.w)));
       end;
+      stabparams := stringreplace(stabparams, '%outputheight%', round(p.h).ToString, [rfReplaceAll]);
       if FAlternate then changefileext(OutputFile, '.webm');
-      if BleedingEdge <> beAncient then begin
-        Params := accel+'-y'+sThreads+'-i "'+InputFile+'"'+AUDIO51_CORRECTION+' -c:v libx264 -crf 20 -maxrate 300k -acodec '+ACODEC_SAFE+' -bufsize 1834k '+sDim+' "'+OutputFIle+'"';
-        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' "'+OutputFIle+'"';
+      if BleedingEdge <> beAncientDeprecated then begin
+        Params := accel+ss+'-y'+sThreads+'-i "'+InputFile+'" '+stabparams+' '+AUDIO51_CORRECTION+' -c:v libx264 -crf 20 -maxrate 300k -acodec '+ACODEC_SAFE+' -bufsize 1834k '+sDim+' "'+OutputFIle+'"';
+        GPUParams := '-hwaccel_device ##gpu## -hwaccel cuda  -y '+sThreads+'-i "'+InputFile+'" -q:a 0 -q:v 0 -s 3840x1080 -acodec '+ACODEC_SAFE+AUDIO51_CORRECTION+' '+sDim+' '+sto+'"'+OutputFIle+'"';
       end else begin
-        Params := '-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' "'+OutputFIle+'"';
+        Params := ss+'-y'+sThreads+'-i "'+InputFile+'" -sameq -b 100000'+sDim+' '+sto+'"'+OutputFIle+'"';
       end;
+    end;
+    ffVidStab1: begin
+      //ffmpeg_vidstab.exe -i %1 -vf vidstabdetect=stepsize=32:shakiness=10:accuracy=10:result=transform_vectors.trf -f null -
+      BleedingEdge := beVidStab;
+      var trffileWin := OutputFile;
+      var trffileParam := trffilewin;
+      Params := ' -i '+quote(Inputfile)+' -vf vidstabdetect=stepsize=32:shakiness=10:accuracy=10:result='+trffileParam+' -f null -';
+      CPUExpense := 1.0;
+    end;
+    ffVidStab2: begin
+      //ffmpeg_vidstab.exe -i %1 -y -vf vidstabtransform=input=transform_vectors.trf:zoom=0:smoothing=10,unsharp=5:5:0.8:3:3:0.4 -vcodec libx264 -tune film -an %2
+      BleedingEdge := beVidStab;
+      var trffileWin := Inputfile+'.trf';;
+      var trffileParam := trffilewin;
+
+      Params := ' -i '+quote(Inputfile)+' -y -vf vidstabtransform=input='+trffileParam+':zoom=0:smoothing=10,unsharp=5:5:0.8:3:3:0.4,scale:'+round(p.w).ToString+',-1 -vcodec copy -tune film -an '+quote(outputfile);
+    end;
+    ffExtractAudioChannels: begin
+      BleedingEdge := be4kEra;
+      cpuexpense := p.AudioChannels;
+      MemoryExpenseGB := 0.5;
+      var chanmaps := '';
+      for var t:= 0 to p.AudioChannels-1 do begin
+        chanmaps := chanmaps + ' -map_channel 0.'+p.AudioSubStream.tostring+'.'+t.ToString+' '+quote(OutputFile+'_ch'+t.ToString+'.wav')
+      end;
+      Params := ss + ' -y -async 1 -i '+quote(inputfile)+chanmaps;
     end;
     ffToMp3: begin
       if lowercase(extractfileext(INputFile)) = '.flv' then begin
@@ -1197,17 +1300,29 @@ e:ffmpeg_4k.exe -hwaccel_device 1 -hwaccel cuda -y -i "\\192.168.101.123\media\_
       end;
 
       //if bUseAsyncFlag then
-      Params := '-y'+sThreads+'-vsync 1 -async 1 -ab '+br+' -i "' + INputFile + '" "' + OutputFile + '"'
+      Params := ss+'-y'+sThreads+'-vsync 1 -async 1 -ab '+br+' -i "' + INputFile + '" '+sto+'"' + OutputFile + '"'
       //else
       //  result.Params := '-y -vsync 1 -ab '+br+' -i "' + sFile + '" "' + sOutFile + '"';
 
     end;
   end;
 
+  if stabparams <> '' then
+    bleedingedge := beVidStab;
+
+  case bleedingedge of
+    beAncientDeprecated: prog := ffmpeg;
+    beStable: prog := ffmpeg_ex();
+    be4kEra: prog := ffmpeg_ex('_4k');
+    beVidStab: prog := ffmpeg_ex('_vidstab');
+  end;
+
 
 {$IFDEF CONSOLE}
   Writeln('');
   Writeln('Command-line: '+self.prog+' '+self.params);
+  if self.params = '' then
+    Log('wtf');
   Writeln('');
   Writeln('');
 {$ENDIF}
@@ -1299,7 +1414,9 @@ end;
 constructor Tcmd_FFMPEG.Create;
 begin
   inherited;
-
+  SourceStartTime := 0.0;
+  OutputLength := 0.0;
+  BleedingEdge := beStable;
 end;
 
 procedure Tcmd_FFMPEG.DoExecute;
@@ -1314,7 +1431,10 @@ begin
     try
       if outputfile <> '' then begin
         forcedirectories(extractfilepath(outputfile));
+{$IFNDEF REXE}
         SaveStringAsFile(outputfile+'.log',consoleoutput);
+        SaveStringAsFile(inputfile+'.'+ffactiontostr(action)+'.log',consoleoutput);
+{$ENDIF}
       end;
     except
     end;
@@ -1335,6 +1455,15 @@ begin
 
 end;
 
+
+procedure Tcmd_FFMPEG.Log(s: string);
+begin
+  if suite <> nil then
+    suite.Log(s)
+  else
+    inherited;
+
+end;
 
 procedure Tcmd_FFMPEG.OnStart;
 begin
@@ -1434,7 +1563,7 @@ begin
   Params := '-y -i "'+finfile+'" -s 850x480 -ac 2 "'+foutfile+'"';
   Hide := true;
 
-  Debug.Log(Prog+' '+Params);
+  Log(Prog+' '+Params);
 
 end;
 
@@ -1553,7 +1682,7 @@ begin
     finally
       tm2 := GEtTimeSince(tm);
       if tm2 > (1000/30) then begin
-        Debug.log('Frame grab time: '+inttostr(tm2));
+        Log('Frame grab time: '+inttostr(tm2));
       end;
     end;
   finally
@@ -1903,7 +2032,9 @@ begin
           c2.FAction := TFFMPEG_Action.ffToDMXVideo;
           c2.InputFile := sIn;
           c2.outputFile := changefileext(sOutputFile,'.mp4');
+//          c2.suite := self;
           c2.Start;
+
         end;
         try
 
@@ -1991,7 +2122,7 @@ begin
       end;
     except
       on e:exception do begin
-        Debug.Log(e.classname+' threw exception: '+e.classname+' '+e.message)
+        Log(e.classname+' threw exception: '+e.classname+' '+e.message)
       end;
     end;
   finally
@@ -2121,118 +2252,59 @@ end;
 
 function ffMpegProbe(sFile: string): TFFProbe;
 var
-  junk, s, sl, sr: string;
-  h: IHolder<TStringList>;
-  t: ni;
+  s: string;
 begin
-  result.init;
-  s := ffMpegProbeStr(sFile);
-  if SplitString(s, 'Stream #0:0', sl, sr) then begin
-    sr := stringreplace(sr, CRLF, LF, [rfReplaceAll]);
-    h := ParseStringh(sr, LF);
-    if h.o.Count > 0 then begin
-      h := ParseStringh(h.o[0], ',');
-      for t:= 0 to h.o.count-1 do begin
-        s := h.o[t];
-        s := Trim(s);
+  var cx := 20;
+  while cx > 0 do begin
 
-        if SplitString(s, 'x', sl,sr) then begin
-          SplitString(sr,' ',sr, junk);
-          if IsInteger(sl) and IsInteger(sr) then begin
-            result.w := strtofloat(sl);
-            result.h := strtofloat(sr);
-          end;
-        end;
-      end;
-
-    end;
-  end;
-
-  //parse streams
-  begin
+    result.init;
     s := ffMpegProbeStr(sFile);
-    for var x := 0 to 32 do begin
-      for var y := 0 to 32 do begin
-        //if we have such a stream
-        if SplitString(s, 'Stream #'+x.ToString+':'+y.tostring+'(', sl,sr)
-        or SplitString(s, 'Stream #'+x.ToString+':'+y.tostring+':', sl,sr)
-        then begin
-          //identify the stream type
-          Splitstring(sr,#10, sl, sr);
-          sl := trim(sl);
-          if SplitString(sl, 'Video: ', sl, sr) then begin
-            result.VideoCodecEx := sr;
-            SplitString(sr,',',result.VideoCodec, sr);
-          end;
-          if SplitString(sl, 'Audio: ', sl, sr) then begin
-            result.AudioCodecEx := sr;
-            SplitString(sr,',',result.AudioCodec, sr);
-          end;
-
-        end;
-      end;
+    result.parse(s);
+    if result.valid then begin
+//      debug.log('valid probe for '+sFile+NL+s);
+//      SaveStringAsFile(extractfilepath(sFile)+'valid.txt',s);
+      exit;
     end;
+    debug.log('invalid probe for '+sFile+NL+s);
+//    SaveStringAsFile(extractfilepath(sFile)+'invalid.txt',s);
+//
+    dec(cx);
 
   end;
+
+  raise Ecritical.create('could not probe '+sFile+'after 20 tries, got odd result: '+s);
+
+
 
 
 end;
 
 function ffMpegProbeStr(sFile: string; bSynchronous: boolean = true): string;
-var
-  c: Tcmd_FFMPEG;
 begin
   if sFile = '' then
     raise ECritical.create('no file specified');
-  c := Tcmd_FFMPEG.Create;
+  var c := ffmpeg_tools_localexecution.Tcmd_FFMPEG.Create;
   try
     c.bleedingedge := be4kEra;
     c.InputFile := sFile;
     c.ACtion := ffProbe;
     c.CaptureConsoleoutput := true;
     c.CPUExpense := 0;
-    c.resources.SetResourceUsage('ffmpeg_probe', 1.0);
+//    c.resources.SetResourceUsage('ffmpeg_probe', 1.0);
     if bSynchronous then
       c.Execute
     else begin
       c.Start;
       c.WaitFor;
     end;
-    result := c.Consoleoutput;
+
+    result := c.prog+' '+c.params+CRLF+c.Consoleoutput;
   finally
     c.Free;
   end;
 
 end;
 
-{ TFFProbe }
-
-procedure TFFProbe.Init;
-begin
-  w := 0;
-  h := 0;
-
-end;
-
-function TFFProbe.Is5_1: boolean;
-begin
-  result := zpos('5.1', AudioCodecEx) >=0;
-end;
-
-function TFFProbe.Is7_1: boolean;
-begin
-  result := zpos('7.1', AudioCodecEx) >=0;
-end;
-
-function TFFProbe.ToString: string;
-begin
-  result := 'w: '+w.tostring+' h: '+h.tostring+NL+
-            'Video: '+videocodec+'    '+
-            'Audio: '+audiocodec+nl+
-            'VideoEx: '+videocodecex+nl+
-            'AudioEx: '+audiocodecex;
-
-end;
 
 { Tcmd_ConversionSuite }
 
@@ -2244,12 +2316,18 @@ var
   begin
     starlog := starlog + s + NL;
     SaveStringAsFile(Originalfile+'.untar.log', starlog);
+    Log(s);
 {$IFDEF CONSOLE}
     WriteLn(s);
 {$ENDIF}
   end;
 begin
   inherited;
+{$IFDEF ONE_AT_A_TIME}
+  var l : IHolder<TNamedLockHandle> := gNamedLocks.GetH('1atatime');
+{$ENDIF}
+  Log('Begin '+classname+' for '+self.filename);
+
   cpuexpense := 0;
   RenameExistingRelatedFiles;
 
@@ -2299,6 +2377,7 @@ begin
             c.Hide := true;
             c.WorkingDir := tardir;
             forcedirectories(tardir);
+//            c.suite := self;
             c.start;
             c.waitfor;
           finally
@@ -2393,12 +2472,17 @@ procedure Tcmd_ConversionSuite.Init;
 begin
   inherited;
   Icon := @CMD_ICON_SUITE;
+  SourceStartTime := 0.0;
+  OutputLength := 0.0;
+  suite :=csConvert;
+
 end;
 
 procedure Tcmd_ConversionSuite.InitExpense;
 begin
   inherited;
   CPUExpense := 0;
+  MemoryExpense := 1.0;
 end;
 
 procedure Tcmd_ConversionSuite.MakeFilm(rootfolder, sFile: string);
@@ -2415,7 +2499,7 @@ end;
 procedure Tcmd_ConversionSuite.MakeFilm(rootfolder:string; sbase: string; fil: TFileInformation);
 var
 //  sOutmp4: string;
-  cHQCR, cLQCR, cTH,cHQ,cOQ,cUQ,cLQ,c, cMain, cDep: Tcmd_FFMPEG;
+  cHQCR, cLQCR, cTH,cHQ,cOQ,cUQ,cLQ,c, cVidStab, cMain, cDep: Tcmd_FFMPEG;
   sSub: string;
   sBaseMod: string;
   sDir2: string;
@@ -2423,9 +2507,90 @@ var
   sThumbFile: string;
   probe: TFFProbe;
   sHQOut: string;
-
+  ai: IHolder<TAudAI>;
+  stabParams: string;
+  trffileWin, trffileParam: string;
 begin
   sThumbfile := '';
+  Log('Audio Channel processing for '+fil.FullName);
+  probe := ffMpegProbe(fil.fullname);
+  var AudiochannelMap := '';
+  try
+
+
+  cVidStab := nil;
+  //if stabilize is requested, then we need to generate motion vectors
+//  var trffile := inttohex(int64(pointer(self)),1)+'trf';
+  trffileWin := fil.fullname+'.trf';
+  trffileParam := EncodeTrfParam(trffilewin);//quote(stringreplace(trffileWin,'\','/',[rfReplaceAll]));
+
+  if Self.suite = csStablize then begin
+    if not fileexists(fil.FullName+'.trf') then begin
+      cVidStab := Tcmd_FFMPEG.Create;
+      cVidStab.ACtion := ffVidStab1;
+      cVidStab.InputFile := fil.FullName;
+      cVidStab.outputFile := trffileParam;
+      cVidStab.suite := self;
+      cVidStab.start;
+    end;
+  end;
+
+  if probe.AudioChannels > 2 then begin
+    var allAudioChannelsExist := true;
+    var audOutFile := fil.FullName+'.wav';
+    for var t:= 0 to probe.AudioChannels-1 do begin
+      if not fileexists(audOutFile+'_ch'+t.ToString+'.wav') then
+        allAudioChannelsExist := false;
+    end;
+    Log(probe.audiochannels.tostring +' Audio Channels requires AI analysis');
+    if not allAudioChannelsExist then begin
+      c := Tcmd_FFMPEG.Create;
+      c.ACtion := ffExtractAudioChannels;
+      c.InputFile := fil.FullName;
+      c.outputFile := audOutFile;
+      c.suite := self;
+      c.start;
+      try
+        Log('Waiting for Audio Extraction');
+        self.WaitForAnotherCommand(c);
+        c.WaitFor;
+      finally
+        c.Free;
+      end;
+    end;
+    Log('Performing Audio Analysis for '+fil.fullname);
+    ai := StartAudAI(probe, fil.FullName+'.wav');
+    self.WaitForAnotherCommand(ai.o);
+    try
+      ai.o.RaiseExceptions := true;
+      ai.o.waitfor;
+      AudioChannelMap := ai.o.GetFFMpegChannelMap;
+      Log('Finished! Audio Channel maps is '+AudioChannelMap);
+    finally
+      //ai.o.Free;
+    end;
+  end;
+  except
+    on E:Exception do begin
+      e.Message := 'error during audio processing stage:'+e.message;
+      log(e.message);
+      raise;
+    end;
+  end;
+
+  if cVidStab <> nil then begin
+    Log('Working on VidStab pass 1 (transform vectors)');
+    self.WaitForAnotherCommand(cVidStab);
+    cVidStab.WaitFor;
+    cVidStab.Free;
+    cVidStab := nil;
+  end;
+
+  stabParams := '';
+
+  Log('Working on Main files.');
+
+
 
   //dont convert output files that already exist!
   if zpos('hq.', lowercase(fil.name)) = 0 then
@@ -2441,13 +2606,19 @@ begin
   cHQCR := nil; cLQCR := nil;
 
 
+
 //  sOutmp4 := slash(edit2.text) + fil.NAme + '.mp4';/////<<<<< BAD
   cdep := nil;
   cMain := nil;
   if zpos('hq.', lowercase(fil.name)) <> 0 then
   begin
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
+    c.AudioChannelMapOverride := AudioChannelMap;
     c.ACtion := ffToChromecastHQ;
+    if suite=csStablize then
+      c.stabparams := '-vf vidstabtransform=input='+trffileParam+':zoom=0:smoothing=10,unsharp=5:5:0.8:3:3:0.4,scale=%outputheight%:-1';
     if zpos('SBS', uppercase(fil.name)) >= 0 then
     begin
   //raise ECritical.create('unimplemented');
@@ -2457,7 +2628,7 @@ begin
     c.CPUExpense := ffmpeg_cpus(1);
     c.MemoryExpenseGB := 0.5;
     c.InputFile := fil.FullName;
-    probe := ffMpegProbe(fil.fullname);
+//    probe := ffMpegProbe(fil.fullname);
     if probe.w > 1920 then begin
       c.BleedingEdge := be4kEra;
     end;
@@ -2487,6 +2658,8 @@ begin
 //  if not fileexists(sThumbFile) then begin
   if assigned(cMain) then begin
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
     c.ACtion := ffSwapCR;
     c.BleedingEdge := be4kEra;
     c.CPUExpense := ffmpeg_cpus(3/16);
@@ -2497,6 +2670,7 @@ begin
     c.outputFile := slash(ExtractFilepath(sHQOut))+'swapcr.'+extractfilename(sHQOut);
     if cDep <> nil then
       c.AddDependency(cDep);
+    c.suite := self;
     c.Start;
     cHQCR := c;
   end;
@@ -2504,6 +2678,8 @@ begin
 {$IFDEF DO_THUMB}
   if not fileexists(sThumbFile) then begin
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
     c.ACtion := ffExtractFrame;
     c.BleedingEdge := be4kEra;
     c.CPUExpense := ffmpeg_cpus(3/16);
@@ -2514,16 +2690,22 @@ begin
     c.outputFile := sThumbFile;
     if cDep <> nil then
       c.AddDependency(cDep);
+    c.suite := self;
     c.Start;
     cTH := c;
   end;
 {$ENDIF}
-if cMain <> nil then
+  if cMain <> nil then begin
+    cMain.suite := self;
     cMain.start;
+  end;
 {$IFDEF DO_OQ}
   if zpos('oq.', lowercase(fil.name)) < 0 then
   begin
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
+    c.AudioChannelMapOverride := AudioChannelMap;
     c.ACtion := ffToChromecastOQ;
     if zpos('SBS', uppercase(fil.name)) >= 0 then
     begin
@@ -2537,11 +2719,15 @@ if cMain <> nil then
     sSub := zcopy(fil.FullName, length(sBase), 999999);
     sBaseMod := stringreplace(sBase, 'process', 'processed', [rfIgnoreCase]);
     c.OutputFile := changefileext(sBaseMod + sSub, '.mp4');
+    if suite=csStablize then
+      c.stabparams := '-vf vidstabtransform=input='+trffileParam+':zoom=0:smoothing=10,unsharp=5:5:0.8:3:3:0.4,scale=%outputheight%:-1';
+
     sDir2 := ExtractFilePath(c.outputFile);
     sFile := ExtractFileName(c.outputFile);
     sDir2 := slash(sDir2) + 'oq\';
 //    forcedirectories(sDir2);
     c.outputFile := slash(sDir2) + 'oq.' + sFile;
+    c.suite := self;
     if clean then deletefile(c.outputFile);
     if fileexists(c.outputFile) then begin
       c.free;
@@ -2556,7 +2742,13 @@ if cMain <> nil then
   if zpos('uq.', lowercase(fil.name)) < 0 then
   begin
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
     c.ACtion := ffToChromecastUQ;
+    c.AudioChannelMapOverride := AudioChannelMap;
+    if suite=csStablize then
+      c.stabparams := '-vf vidstabtransform=input='+trffileParam+':zoom=0:smoothing=10,unsharp=5:5:0.8:3:3:0.4,scale=%outputheight%:-1';
+
     if zpos('SBS', uppercase(fil.name)) >= 0 then
     begin
 //  raise ECritical.create('unimplemented');
@@ -2574,6 +2766,7 @@ if cMain <> nil then
     sDir2 := slash(sDir2) + 'uq\';
 //    forcedirectories(sDir2);
     c.outputFile := slash(sDir2) + 'uq.' + sFile;
+    c.suite := self;
     if clean then deletefile(c.outputFile);
     if fileexists(c.outputFile) then begin
       c.free;
@@ -2589,8 +2782,11 @@ if cMain <> nil then
   begin
     //--------------------------------------
     c := Tcmd_FFMPEG.Create;
+    c.OutputLength := self.outputlength;
+    c.SourceStartTime := self.SourceStarttime;
     c.ACtion := ffToChromecastLQ;
     c.BleedingEdge := beStable;
+    c.AudioChannelMapOverride := AudioChannelMap;
     c.CPUExpense := ffmpeg_cpus(0.5);
     c.MemoryExpenseGB := 0.5;
     c.InputFile := fil.FullName;
@@ -2603,6 +2799,7 @@ if cMain <> nil then
 //    forcedirectories(sDir2);
     c.outputFile := slash(sDir2) + 'lq.' + sFile;
     c.FireForget := false;
+    c.suite := self;
     if clean then deletefile(c.outputFile);
     if fileexists(c.outputFile) then begin
       c.free;
@@ -2616,16 +2813,26 @@ if cMain <> nil then
 {$ENDIF}
 
 
-  if assigned(cLQ) then
+  if assigned(cLQ) then begin
     WaitForAnotherCommand(cLQ);
-  if assigned(cHQ) then
+    Log('LQ has finished for '+fil.Name);
+  end;
+  if assigned(cHQ) then begin
     WaitForanotherCommand(cHQ);
-  if assigned(cUQ) then
+    Log('HQ has finished for '+fil.Name);
+  end;
+  if assigned(cUQ) then begin
     WaitForanotherCommand(cUQ);
-  if assigned(cOQ) then
+    Log('UQ has finished for '+fil.name);
+  end;
+  if assigned(cOQ) then begin
     WaitForAnotherCommand(cOQ);
-  if assigned(cTH) then
+    Log('OQ has finished for '+fil.name);
+  end;
+  if assigned(cTH) then begin
     WaitForAnotherCommand(cTH);
+    Log('TH has finished for '+fil.name);
+  end;
   if assigned(cHQCR) then begin
     WaitForAnotherCommand(cHQCR);
     if fileexists(cHQ.outputfile) then begin
@@ -2676,6 +2883,8 @@ if cMain <> nil then
       cLQCR.free;
   except
   end;
+
+  Log('Finmished processing '+fil.fullname);
 
 //  if assigned(c4) then
 //    WaitForanotherCommand(c4);
@@ -2742,6 +2951,7 @@ begin
 
   cc(ccStart, '');
   repeat
+    var tmStart := getticker;
     w := em.GetWorkStatus(hand);
 {$IFDEF REXE_WORK_STEP}
     Step := w.Step;
@@ -2749,7 +2959,7 @@ begin
 {$ENDIF}
     Status := w.Status;
     if not w.Complete then
-      sleep(1000);
+      sleep(greaterof(1000,gettimesince(tmStart)));
 
     cc(ccProgress, w.DrainConsole);
 
@@ -2789,6 +2999,30 @@ end;
 procedure TREXE.SetCPUExpense(Value: single);
 begin
   FRemoteCPuExpense := value;
+
+end;
+
+function FFActionToStr(ffa: TFFMPEG_Action): string;
+begin
+  case ffa of
+    TFFMPEG_Action.ffExtractFrame: exit('ffExtractFrame');
+    TFFMPEG_Action.ffToDmxVideo: exit('ffToDmxVideo');
+    TFFMPEG_Action.ffExtractFrames: exit('ffExtractFrames');
+    TFFMPEG_Action.ffToMp3: exit('ffToMp3');
+    TFFMPEG_Action.ffExtractAudioChannels: exit('ffExtractAudioChannels');
+    TFFMPEG_Action.ffToChromecastLQ: exit('ffToChromecastLQ');
+    TFFMPEG_Action.ffToChromecastHQ: exit('ffToChromecastHQ');
+    TFFMPEG_Action.ffToChromecastOQ: exit('ffToChromecastOQ');
+    TFFMPEG_Action.ffToChromecastUQ: exit('ffToChromecastUQ');
+    TFFMPEG_Action.ffToOculus: exit('ffToOculus');
+    TFFMPEG_Action.ffProbe: exit('ffProbe');
+    TFFMPEG_Action.ffSwapCR: exit('ffSwsapCR');
+    TFFMPEG_Action.ffVidStab1: exit('ffVidStab1');
+    TFFMPEG_Action.ffVidStab2: exit('ffVidStab2');
+  else
+    exit('unhandled TFFMPEGAction in FFActionToSTr');
+  end;
+
 
 end;
 

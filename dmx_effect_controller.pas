@@ -4,7 +4,7 @@ interface
 
 uses
   tickcount, Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, dmx_controls, Vcl.ExtCtrls, validation, debug,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, dmx_controls, Vcl.ExtCtrls, validationx, debug,
   Vcl.StdCtrls, guihelpers, dmx_objects, comctrls, generics.collections.fixed, typex, BCF2000, systemx;
 
 type

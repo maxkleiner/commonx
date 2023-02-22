@@ -7,7 +7,7 @@ unit MTDTInterface;
 interface
 
 uses
-  Variants, typex, systemx, signals, RequestInfo, WebFunctions, DataObject, DataObjectCache, windows, classes, ExceptionsX, ErrorResource, WebConfig, managedthread;
+  debug,Variants, typex, systemx, signals, RequestInfo, WebFunctions, DataObject, DataObjectCache, windows, classes, ExceptionsX, ErrorResource, WebConfig, managedthread;
 
 type
   TInsertSelectThread = class(TProcessorThread)
@@ -36,6 +36,7 @@ procedure InsertSelectMod(rqInfo2: TRequesTInfo; sInsert: string; sSelect: strin
 procedure InsertSelect(rqInfo2: TRequesTInfo; sInsert: string; sSelect: string; thr: TInsertSElectThread = nil);
 function Queryfn(rqInfo: TRequestInfo; sQuery: string):string;overload;
 function QueryfnV(rqInfo: TRequestInfo; sQuery: string):variant;overload;
+function QueryFnVDT(dtid: int64; rqInfo: TRequestInfo; sQuery: string):variant;overload;
 function LazyQueryfn(rqInfo: TRequestInfo; sQuery: string):string;overload;
 function LazyQueryfnV(rqInfo: TRequestInfo; sQuery: string):variant;overload;
 function GhostQueryMap(rqInfo: TRequestInfo; sQuery: string; sType: string; vKeys: variant; sSubType: string = ''; iSubKeys: integer = 0): TDataObject;
@@ -68,14 +69,12 @@ procedure GenerateRekeyMap(rqInfo: TRequestInfo; sTempTable: string; sField: str
 procedure ApplyKeyMap(rqInfo: TRequestInfo; sDataTableNonTemp: string; sField: string; sTargetField: string = '');
 procedure CopyTempTableToPublic(rqInfo: TRequestInfo; sTempTable: string; sTable: string);
 
-
-
-
-
+function UpdateQueryDT(rqInfo: TRequestInfo; dt: int64; sQuery: string; bExpectMany: boolean = true):boolean;
 function UpdateQuery(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true):boolean;
 function NoTransUpdateQuery(rqInfo: TRequestInfo; sQuery: string):boolean;
 function FireForgetQuery(rqInfo: TRequestInfo; sQuery: string; bSerialize: boolean=false):boolean;
-function Query(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true): TDataObject;
+function QueryX(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true): TDataObject;
+function QueryDT(rqInfo: TRequestInfo; dt: nativeint; sQuery: string; bExpectMany: boolean = true): TDataObject;
 function SaveQuery(rqInfo: TrequestInfo; obj: TDataOBject; sTable: string; Keys: array of string; bNoTrans :boolean= false): boolean;
 function LazyQuery(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true): TDataObject;
 
@@ -91,7 +90,7 @@ uses
   DataObjectServices, SysUtils, CommonRequests, dialogs, orderlyinit,
   ErrorHandler, WebResource, Rights, stringx, BackgroundThreads;
 
-function Query(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true): TDataObject;
+function QueryX(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true): TDataObject;
 //a: Jason Nelson
 begin
   if pos('[[[', sQuery) > 0 then
@@ -101,6 +100,20 @@ begin
     raise ENewException.create(rqInfo.Server.GetLastErrorCode, ERR_FETCH, 'Could not query : '+sQuery+'-- '+rqInfo.Server.GetLastErrorMessage);
   end;
 end;
+
+function QueryDT(rqInfo: TRequestInfo; dt: nativeint; sQuery: string; bExpectMany: boolean = true): TDataObject;
+begin
+  if pos('[[[', sQuery) > 0 then
+    sQuery := rqInfo.ProcessQuery(sQuery);
+
+  sQuery := StringReplace(sQuery,'|','''',[rfReplaceAll]);
+
+  Debug.Log('QUERYDT: '+sQuery);
+  if not rqINfo.server(dt).Query(rqInfo.Response.DOCache, result,sQuery, rqInfo.SessionID, bExpectMany,rqInfo.response.DebugLog) then begin
+    raise ENewException.create(rqInfo.Server.GetLastErrorCode, ERR_FETCH, 'Could not query : '+sQuery+'-- '+rqInfo.Server.GetLastErrorMessage);
+  end;
+end;
+
 
 function RecordExists(rqInfo: TRequestInfo; sQuery: string): boolean;
 var
@@ -338,13 +351,22 @@ function QuickSession(rqInfo: TRequestInfo; bLazy: boolean = true; bNoPackage: b
 //p: bLazy: defaults to TRUE, if TRUE uses a cached version of the session if available.
 //p: bNoPackage: avoids fetching the session package (for optimization)
 begin
+  result := nil;
+  if rqInfo.sessionid=0 then
+    exit;
 
-  result := LazyQueryMap(rqInfo, 'SELECT * from Session where sessionid='+inttostr(rqInfo.sessionid), 'TdoSession', rqInfo.SessionID);
-  if result = nil then begin
-    raise ENewException.create(117, 'Your session has expired','Session not found');
+  try
+    result := LazyQueryMap(rqInfo, 'SELECT * from Session where sessionid='+inttostr(rqInfo.sessionid), 'TdoSession', rqInfo.SessionID);
+    if result = nil then begin
+      raise ENewException.create(117, 'Your session has expired','Session not found');
+    end;
+
+    if result <> nil then
+      rqinfo.response.objectpool['session'] := result;
+  except
+    //result if no session is that there will be no session in the object pool
+    //check with :vif('session')
   end;
-
-  rqinfo.response.objectpool['session'] := result;
 
 
 end;
@@ -386,7 +408,7 @@ begin
     end;
 
     sQuery := sQuery+sWhere+'';
-    Query(rqInfo, sQuery);
+    QueryX(rqInfo, sQuery);
   end;
 end;
 
@@ -535,7 +557,16 @@ end;
 
 
 
+function UpdateQueryDT(rqInfo: TRequestInfo; dt: int64; sQuery: string; bExpectMany: boolean = true):boolean;
+begin
+  if pos(']]]', sQuery) > 0 then
+    sQuery := rqInfo.ProcessQuery(sQuery);
 
+  if not rqINfo.server(dt).UpdateQuery(rqInfo.Response.DOCache, sQuery, rqInfo.SessionID, bExpectMany,rqInfo.response.DebugLog) then begin
+    raise ENewException.create(rqInfo.server.GetLastErrorCode, ERR_FETCH, 'Could not query : '+sQuery+'-- '+rqInfo.server.GetLastErrorMessage);
+  end;
+  result := true;
+end;
 
 
 function UpdateQuery(rqInfo: TRequestInfo; sQuery: string; bExpectMany: boolean = true):boolean;
@@ -613,9 +644,9 @@ begin
 
   if not rqINfo.server.LazyQueryMap(rqInfo.Response.DOCache, result, sQuery, rqInfo.SessionID, 300000, iIgnoreKeys, sType, vKeys, rqInfo.Response.DebugLog, sSubType, iSubKeys) then begin
 
-    if rqInfo.request.hasparam('template') and (not (lowercase(rqInfo.request['template']) = 'shop')) and (pos('select * from session', lowercase(sQuery)) > 0) and not rQInfo.request.hasparam('shop') then
-      rqInfo.response.location := 'out/login.ms'
-    else
+//    if rqInfo.request.hasparam('template') and (not (lowercase(rqInfo.request['template']) = 'shop')) and (pos('select * from session', lowercase(sQuery)) > 0) and not rQInfo.request.hasparam('shop') then
+//      rqInfo.response.location := 'out/login.ms'
+//    else
       raise ENewException.create(rqInfo.server.GetLastErrorCode, ERR_FETCH, 'Could not query : '+sQuery+'-- '+rqInfo.server.GetLastErrorMessage);
 
   end;
@@ -650,14 +681,30 @@ begin
 
 end;
 
-function QueryfnV(rqInfo: TRequestInfo; sQuery: string):variant;
+function QueryFnV(rqInfo: TRequestInfo; sQuery: string):variant;overload;
 var
   d: TDataObject;
 begin
   if pos('[[[', sQuery) > 0 then
     sQuery := rqInfo.ProcessQuery(sQuery);
 
-  d := Query(rQInfo, sQuery, true);
+  d := QueryX(rQInfo, sQuery, true);
+  if d.objectcount = 0 then
+    result := null
+  else
+    result := d.obj[0].fieldbyindex[0].AsVariant;
+
+
+end;
+
+function QueryFnVDT(dtid: int64; rqInfo: TRequestInfo; sQuery: string):variant;overload;
+var
+  d: TDataObject;
+begin
+  if pos('[[[', sQuery) > 0 then
+    sQuery := rqInfo.ProcessQuery(sQuery);
+
+  d := QueryDT(rQInfo, dtid, sQuery, true);
   if d.objectcount = 0 then
     result := null
   else
@@ -728,7 +775,7 @@ end;
 function GetTempTableFromQuery(rqInfo: TRequestInfo; sTableName: string; sQuery: string; bAutoDrop: boolean = true): TDataObject;
 begin
   CreateTempTableFromQuery(rqInfo, sTAbleName, sQuery);
-  result := Query(rqInfo, 'select * from '+GetTempTableName(rqinfo, sTableName));
+  result := QueryX(rqInfo, 'select * from '+GetTempTableName(rqinfo, sTableName));
 
 end;
 
@@ -790,7 +837,7 @@ begin
 
 
   //fetch the keymap
-  q := Query(rqInfo, 'select * from '+sReKEyTAble);
+  q := QueryX(rqInfo, 'select * from '+sReKEyTAble);
   //apply key changes to table
   for t:= 0 to q.objectcount-1 do begin
     k1 := q.obj[t]['key1'].asString;
@@ -870,7 +917,7 @@ begin
   try
     if assigned(thr) then thr.lockall;
     try
-      q:=Query(rqInfo, sSelect);
+      q:=QueryX(rqInfo, sSelect);
     finally
       if assigned(thr) then thr.unlockall;
     end;

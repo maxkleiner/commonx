@@ -27,7 +27,7 @@ type
   end;
 
 var
-  WebThreads: TWebThreadManager;
+  WebThreads: TWebThreadManager = nil;
 implementation
 
 { TWebThreadManager }
@@ -120,6 +120,7 @@ webThreads := TWebThreadManager.create;
 
 finalization
 
-webThreads.free;
+if assigned(webthreads) then
+  webThreads.free;
 
 end.

@@ -71,7 +71,7 @@ type
   end;
 
 var
-  ErrorRes: TErrorResource;
+  ErrorRes: TErrorResource = nil;
 
 
 implementation

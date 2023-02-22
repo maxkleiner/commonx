@@ -1,3 +1,4 @@
+
 unit WebScript;
 {$INLINE AUTO}
 interface
@@ -69,7 +70,7 @@ function ScriptParamToVariant(v: variant; spt: TScriptParameterType): variant;
 
 procedure DecodeScriptFunction(sTagBody:string; out sCommand: string; params: TParamList);
 //procedure HandleOperation(var sev: TScriptEngineVars; sTagBody: string; sOp: string; var vResult: variant; var vtResult: TScriptParameterType);
-procedure HandleOperation(var sev: TScriptEngineVars; sTagBody: string; var vResult: variant; var vtResult: TScriptParameterType);
+procedure HandleOperation(recurselevel: ni; var sev: TScriptEngineVars; sTagBody: string; var vResult: variant; var vtResult: TScriptParameterType);
 
 function HandleScript(sTagBody: string; rqInfo: TRequestInfo): variant; overload;
 function HandleScript(sTagBody: string; rqInfo: TRequestInfo; var iStartRow, iStartCol: integer; out bHandled: boolean): variant; overload;
@@ -117,7 +118,7 @@ const
 
 implementation
 
-uses webstring, webscriptfunctions, stringx.ansi,
+uses webstring, webscriptfunctions,
   scriptfunctions;
 
 
@@ -141,7 +142,8 @@ begin
   for t:= 1 to length(s) do begin
     case s[t] of
       '''': begin
-        bQuote := not bQuote;
+        if (t=high(s)) or (not (s[t+1]='''')) then
+          bQuote := not bQuote;
       end;
       '(': begin
         if not bQuote then begin
@@ -299,7 +301,7 @@ begin
   sev.FullTagBody := sTagBody;
   sev.bHandled := false;
   try
-    Handleoperation(sev, sTagBody,vRight, vtRight);
+    Handleoperation(0,sev, sTagBody,vRight, vtRight);
     bHandled := sev.bHandled;
     iStartCol := sev.iStartCol;
     iStartRow := sev.iStartRow;
@@ -413,6 +415,7 @@ var
   iStart, iEnd, t: integer;
   iParamRecursion: integer;
   sTemp: string;
+  sCurrentParam: string;
 begin
   sCommand := '';
   iStart := -1;
@@ -425,6 +428,11 @@ begin
   ss := ssCommand;
   iParamRecursion:=0;
   for t:= 1 to length(sTagBody) do begin
+    if ss = ssString then begin
+      if (t=high(sTagBody)) or ((sTagBody[t+1])<>'''') then begin
+        sCurrentParam := sCurrentParam + sTagBody[t];
+      end;
+    end;
 
     case sTagBody[t] of
       //------------------------------------
@@ -486,7 +494,8 @@ begin
             ss := ssString;
           end;
           ssString: begin
-            ss := ssParameter;
+            if (t=high(sTagBody)) or (sTagBody[t+1]<>'''') then
+              ss := ssParameter;
           end;
         END
       ;
@@ -1364,6 +1373,9 @@ begin
 //    result := s2 in operators;
 //  end;
 
+//  if result then
+//    debug.log('operator found '+s1);
+
 
 end;
 
@@ -1431,7 +1443,7 @@ begin
           iEnd := t+bInParens;
         sNewtag :=  copy(sTagBody, iStart, ((iEnd)-iStart)+1);
 
-        Handleoperation(sev,sNewTag, v, vt);
+        Handleoperation(0,sev,sNewTag, v, vt);
         if (iEnd >= iStart) then
           params.Add(v);
         iStart := iEnd +2;
@@ -1444,7 +1456,7 @@ begin
 
 end;
 
-procedure HandleOperation(var sev: TScriptEngineVars; sTagBody: string; var vResult: variant; var vtResult: TScriptParameterType);
+procedure HandleOperation(recurselevel: ni; var sev: TScriptEngineVars; sTagBody: string; var vResult: variant; var vtResult: TScriptParameterType);
 var
   params: TScriptParamList;
   vLeft,vRight: variant;
@@ -1457,6 +1469,7 @@ var
   sOriginalTagBody: string;
 
 begin
+//  debug.Log(StringRepeat('  ',recurselevel)+'>'+sTagBody);
   bWasParen := false;
   vLeft := NULL;
   vRight := null;
@@ -1491,7 +1504,7 @@ begin
             break;
           end;
           if (sOP <> '') and (sOP <> '(') then
-            HandleOperation(sev, sRemainder, vRight, vtRight);
+            HandleOperation(recurselevel+1, sev, sRemainder, vRight, vtRight);
 
           bWasParen := sOp = '(';
           if bWasPAren then begin
@@ -1500,7 +1513,7 @@ begin
             else begin
 
 //              GLOG.Debug('Enter Sub op:'+sRemainder,'webscript');
-              HandleOperation(sev, sRemainder, vRight, vtRight);
+              HandleOperation(recurselevel+1, sev, sRemainder, vRight, vtRight);
               MoveThroughParens(sRemainder);
 //              if sOP = '' then begin
                 vLeft := vRight;
@@ -1521,6 +1534,8 @@ begin
 
     //check if its a registered function
     func := sf.GetFunction(sTagBody);
+    if (zcopy(sTagBody,0,1) = ':') and (not assigned(func)) then
+      raise EScriptError.Create('Unknown function: '+sTagBody);
     if assigned(func) then begin
       vLeft := func(sTagBody, sTagBody, sev, params, vtLeft);
     end else begin
@@ -1633,6 +1648,8 @@ begin
   finally
     params.free;
   end;
+
+
 
 end;
 

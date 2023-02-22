@@ -15,8 +15,10 @@ procedure MemChart(chart1: TChart);
 procedure MemBlockChart(chart1: TChart);
 implementation
 
+{$IFDEF DO_MEM_CHART}
 {$IFNDEF NOSUPERMEM}
 uses BigBrainUltra;
+{$ENDIF}
 {$ENDIF}
 
 {$IFNDEF LINUX}
@@ -97,6 +99,13 @@ end;
 
 
 procedure MemChart(chart1: TChart);
+{$IFNDEF DO_MEM_CHART}
+begin
+//  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+{$ELSE}
+
 {$IFNDEF NOSUPERMEM}
 var
   t: integer;
@@ -104,6 +113,9 @@ var
   b2: boolean;
 {$ENDIF}
 begin
+{$IFDEF DISABLE_BIG_BRAIN}
+  exit;
+{$ENDIF}
 {$IFNDEF NOSUPERMEM}
 {$IFNDEF LINUX}
 
@@ -136,13 +148,24 @@ begin
 {$ENDIF}
 {$ENDIF}
 end;
+{$ENDIF}
 
 procedure MemBlockChart(chart1: TChart);
+{$IFNDEF DO_MEM_CHART}
+begin
+//  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+{$ELSE}
+
 {$IFNDEF NOSUPERMEM}
 var
   t: integer;
 {$ENDIF}
 begin
+{$IFDEF DISABLE_BIG_BRAIN}
+  exit;
+{$ENDIF}
 {$IFNDEF NOSUPERMEM}
   Chart1.SeriesList[0].Clear;
   ManMan.Lock;
@@ -168,6 +191,7 @@ begin
   end;
 {$ENDIF}
 end;
+{$ENDIF}
 
 end.
 

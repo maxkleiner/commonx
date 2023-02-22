@@ -10,7 +10,7 @@ interface
 
 
 uses
-  classes, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  classes, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -78,7 +78,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetFiles():TStringList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -105,7 +105,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.GetFiles_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -125,7 +125,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetFiles_Response():TStringList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -141,7 +141,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetQueue():TStringList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -168,7 +168,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.GetQueue_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -188,7 +188,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetQueue_Response():TStringList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -204,7 +204,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueItem(sName:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -229,7 +229,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueItem_Async(sName:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -250,7 +250,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.NextItem();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -274,7 +274,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.NextItem_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -294,7 +294,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.Pause();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -318,7 +318,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.Pause_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -338,7 +338,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.Rewind();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -362,7 +362,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.Rewind_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -382,7 +382,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetRemoteData():TRemoteData;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -409,7 +409,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.GetRemoteData_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -429,7 +429,7 @@ end;
 //------------------------------------------------------------------------------
 function TLightShowClient.GetRemoteData_Response():TRemoteData;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -445,7 +445,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.UnQueueItem(iIndex:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -470,7 +470,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.UnQueueItem_Async(iIndex:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -491,7 +491,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueMoveUp(iIndex:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -516,7 +516,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueMoveUp_Async(iIndex:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -537,7 +537,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueMoveDown(iIndex:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -562,7 +562,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TLightShowClient.QueueMoveDown_Async(iIndex:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');

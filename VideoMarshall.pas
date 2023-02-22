@@ -3,7 +3,7 @@ unit VideoMarshall;
 interface
 
 uses
-  packet, sysutils, variants, dir, dirfile, classes, systemx;
+  packetabstract, packet, sysutils, variants, dir, dirfile, classes, systemx;
 
 type
   TPlaybackInfo = packed record
@@ -15,8 +15,8 @@ type
     LastPLayState: integer;
   end;
 
-procedure GetTPlaybackInfoFromPacket(packet: TRDTPPacket; out res: TPlaybackInfo);
-procedure WriteTPlaybackInfoToPacket(packet: TRDTPPacket; pi: TPlaybackInfo);
+procedure GetTPlaybackInfoFromPacket(packet: TRDTPPacketAbstract; out res: TPlaybackInfo);
+procedure WriteTPlaybackInfoToPacket(packet: TRDTPPacketAbstract; pi: TPlaybackInfo);
 
 
 
@@ -27,7 +27,7 @@ procedure WriteTPlaybackInfoToPacket(packet: TRDTPPacket; pi: TPlaybackInfo);
 implementation
 
 
-procedure GetTPlaybackInfoFromPacket(packet: TRDTPPacket; out res: TPlaybackInfo);
+procedure GetTPlaybackInfoFromPacket(packet: TRDTPPacketAbstract; out res: TPlaybackInfo);
 var
   p: PByte;
   iLen: int64;
@@ -44,7 +44,7 @@ begin
 
 end;
 
-procedure WriteTPlaybackInfoToPacket(packet: TRDTPPacket; pi: TPlaybackInfo);
+procedure WriteTPlaybackInfoToPacket(packet: TRDTPPacketAbstract; pi: TPlaybackInfo);
 var
   p: PByte;
   iLen: integer;

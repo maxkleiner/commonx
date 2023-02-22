@@ -13,7 +13,7 @@ interface
 
 
 uses
-  Dir, DirFile, Classes, rdtp_file, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  Dir, DirFile, Classes, rdtp_file, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -24,12 +24,12 @@ type
     destructor Destroy;override;
 
     
-    function PutFile(oFile:TFileTransferReference):boolean;overload;virtual;
-    procedure PutFile_Async(oFile:TFileTransferReference);overload;virtual;
-    function PutFile_Response():boolean;
-    function GetFile(var oFile:TFileTransferReference):boolean;overload;virtual;
-    procedure GetFile_Async(var oFile:TFileTransferReference);overload;virtual;
-    function GetFile_Response(var oFile:TFileTransferReference):boolean;
+    function PutFileDEPRECATED(oFile:TFileTransferReference):boolean;overload;virtual;
+    procedure PutFileDEPRECATED_Async(oFile:TFileTransferReference);overload;virtual;
+    function PutFileDEPRECATED_Response():boolean;
+    function GetFileDEPRECATED(var oFile:TFileTransferReference):boolean;overload;virtual;
+    procedure GetFileDEPRECATED_Async(var oFile:TFileTransferReference);overload;virtual;
+    function GetFileDEPRECATED_Response(var oFile:TFileTransferReference):boolean;
     function OpenFile(sFile:string; out oFile:TFileTransferReference; iMode:integer):boolean;overload;virtual;
     procedure OpenFile_Async(sFile:string; iMode:integer);overload;virtual;
     function OpenFile_Response(out oFile:TFileTransferReference):boolean;
@@ -75,9 +75,9 @@ type
     function ExecuteAndCapture(sPath:string; sProgram:string; sParams:string):string;overload;virtual;
     procedure ExecuteAndCapture_Async(sPath:string; sProgram:string; sParams:string);overload;virtual;
     function ExecuteAndCapture_Response():string;
-    function GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;
-    procedure GetFileList_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);overload;virtual;
-    function GetFileList_Response():TRemoteFileArray;
+    function GetFileListDEPRECATED(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;
+    procedure GetFileListDEPRECATED_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);overload;virtual;
+    function GetFileListDEPRECATED_Response():TRemoteFileArray;
     function StartExeCommand(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single):int64;overload;virtual;
     procedure StartExeCommand_Async(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single);overload;virtual;
     function StartExeCommand_Response():int64;
@@ -120,6 +120,21 @@ type
     function PathExists(sPath:string):boolean;overload;virtual;
     procedure PathExists_Async(sPath:string);overload;virtual;
     function PathExists_Response():boolean;
+    function Sign(sFile:string; signconfig:string):boolean;overload;virtual;
+    procedure Sign_Async(sFile:string; signconfig:string);overload;virtual;
+    function Sign_Response():boolean;
+    function ReadyForEncoding():boolean;overload;virtual;
+    procedure ReadyForEncoding_Async();overload;virtual;
+    function ReadyForEncoding_Response():boolean;
+    function PutFile(oFile:TFileTransferReference):boolean;overload;virtual;
+    procedure PutFile_Async(oFile:TFileTransferReference);overload;virtual;
+    function PutFile_Response():boolean;
+    function GetFile(var oFile:TFileTransferReference):boolean;overload;virtual;
+    procedure GetFile_Async(var oFile:TFileTransferReference);overload;virtual;
+    function GetFile_Response(var oFile:TFileTransferReference):boolean;
+    function GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;
+    procedure GetFileList_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);overload;virtual;
+    function GetFileList_Response():TRemoteFileArray;
 
 
     function DispatchCallback: boolean;override;
@@ -152,9 +167,9 @@ end;
 
 
 //------------------------------------------------------------------------------
-function TFileServiceClient.PutFile(oFile:TFileTransferReference):boolean;
+function TFileServiceClient.PutFileDEPRECATED(oFile:TFileTransferReference):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -163,7 +178,7 @@ begin
     packet.AddVariant($6000);
     packet.AddVariant(0);
     packet.AddString('FileService');
-{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6000:TFileServiceClient.PutFile');{$ENDIF}
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6000:TFileServiceClient.PutFileDEPRECATED');{$ENDIF}
     WriteTFileTransferReferenceToPacket(packet, oFile);
     if not Transact(packet) then raise ECritical.create('transaction failure');
     if not packet.result then raise ECritical.create('server error: '+packet.message);
@@ -180,9 +195,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TFileServiceClient.PutFile_Async(oFile:TFileTransferReference);
+procedure TFileServiceClient.PutFileDEPRECATED_Async(oFile:TFileTransferReference);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -201,9 +216,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-function TFileServiceClient.PutFile_Response():boolean;
+function TFileServiceClient.PutFileDEPRECATED_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -217,9 +232,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-function TFileServiceClient.GetFile(var oFile:TFileTransferReference):boolean;
+function TFileServiceClient.GetFileDEPRECATED(var oFile:TFileTransferReference):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -228,7 +243,7 @@ begin
     packet.AddVariant($6001);
     packet.AddVariant(0);
     packet.AddString('FileService');
-{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6001:TFileServiceClient.GetFile');{$ENDIF}
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6001:TFileServiceClient.GetFileDEPRECATED');{$ENDIF}
     WriteTFileTransferReferenceToPacket(packet, oFile);
     if not Transact(packet) then raise ECritical.create('transaction failure');
     if not packet.result then raise ECritical.create('server error: '+packet.message);
@@ -246,9 +261,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TFileServiceClient.GetFile_Async(var oFile:TFileTransferReference);
+procedure TFileServiceClient.GetFileDEPRECATED_Async(var oFile:TFileTransferReference);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -267,9 +282,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-function TFileServiceClient.GetFile_Response(var oFile:TFileTransferReference):boolean;
+function TFileServiceClient.GetFileDEPRECATED_Response(var oFile:TFileTransferReference):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -286,7 +301,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.OpenFile(sFile:string; out oFile:TFileTransferReference; iMode:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -316,7 +331,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.OpenFile_Async(sFile:string; iMode:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -338,7 +353,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.OpenFile_Response(out oFile:TFileTransferReference):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -355,7 +370,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.CloseFile(oFile:TFileTransferReference):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -383,7 +398,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.CloseFile_Async(oFile:TFileTransferReference);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -404,7 +419,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.CloseFile_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -420,7 +435,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.Dir(sRemotePath:string):TDirectory;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -448,7 +463,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.Dir_Async(sRemotePath:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -469,7 +484,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.Dir_Response():TDirectory;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -485,7 +500,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradePath(sProgramName:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -513,7 +528,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetUpgradePath_Async(sProgramName:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -534,7 +549,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradePath_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -550,7 +565,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradeScript(sProgramName:string; iFromVersion:integer; iToVersion:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -580,7 +595,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetUpgradeScript_Async(sProgramName:string; iFromVersion:integer; iToVersion:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -603,7 +618,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradeScript_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -619,7 +634,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradeVersion(sProgramName:string; bBeta:boolean):integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -648,7 +663,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetUpgradeVersion_Async(sProgramName:string; bBeta:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -670,7 +685,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetUpgradeVersion_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -686,7 +701,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetFileChecksum(sFile:string):TAdvancedFileChecksum;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -714,7 +729,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetFileChecksum_Async(sFile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -735,7 +750,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetFileChecksum_Response():TAdvancedFileChecksum;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -751,7 +766,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.BuildHueFile(sFile:string; LengthInSeconds:real):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -780,7 +795,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.BuildHueFile_Async(sFile:string; LengthInSeconds:real);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -802,7 +817,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.BuildHueFile_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -818,7 +833,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.DeleteFile(sFile:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -846,7 +861,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.DeleteFile_Async(sFile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -867,7 +882,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.DeleteFile_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -883,7 +898,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.Execute(sPath:string; sProgram:string; sParams:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -913,7 +928,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.Execute_Async(sPath:string; sProgram:string; sParams:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -936,7 +951,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.Execute_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -952,7 +967,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.BuildHueFileFromStream(str:TStream; sExt:string; LengthInSeconds:real):TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -982,7 +997,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.BuildHueFileFromStream_Async(str:TStream; sExt:string; LengthInSeconds:real);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1005,7 +1020,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.BuildHueFileFromStream_Response():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1021,7 +1036,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EchoStream(strin:TStream):TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1049,7 +1064,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.EchoStream_Async(strin:TStream);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1070,7 +1085,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EchoStream_Response():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1086,7 +1101,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.AppendTextFile(filename:string; text:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1115,7 +1130,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.AppendTextFile_Async(filename:string; text:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1137,7 +1152,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.AppendTextFile_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1153,7 +1168,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetFileSize(filename:string):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1181,7 +1196,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetFileSize_Async(filename:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1202,7 +1217,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetFileSize_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1218,7 +1233,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.ExecuteAndCapture(sPath:string; sProgram:string; sParams:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1248,7 +1263,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.ExecuteAndCapture_Async(sPath:string; sProgram:string; sParams:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1271,7 +1286,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.ExecuteAndCapture_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1285,9 +1300,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-function TFileServiceClient.GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;
+function TFileServiceClient.GetFileListDEPRECATED(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1296,7 +1311,7 @@ begin
     packet.AddVariant($6017);
     packet.AddVariant(0);
     packet.AddString('FileService');
-{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6017:TFileServiceClient.GetFileList');{$ENDIF}
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6017:TFileServiceClient.GetFileListDEPRECATED');{$ENDIF}
     WritestringToPacket(packet, sRemotePath);
     WritestringToPacket(packet, sFileSpec);
     WriteintegerToPacket(packet, attrmask);
@@ -1316,9 +1331,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TFileServiceClient.GetFileList_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);
+procedure TFileServiceClient.GetFileListDEPRECATED_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1340,9 +1355,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-function TFileServiceClient.GetFileList_Response():TRemoteFileArray;
+function TFileServiceClient.GetFileListDEPRECATED_Response():TRemoteFileArray;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1358,7 +1373,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommand(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1390,7 +1405,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.StartExeCommand_Async(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1415,7 +1430,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommand_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1431,7 +1446,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandStatus(handle:int64; out status:string; out step:int64; out stepcount:int64; out finished:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1463,7 +1478,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetCommandStatus_Async(handle:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1484,7 +1499,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandStatus_Response(out status:string; out step:int64; out stepcount:int64; out finished:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1504,7 +1519,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EndCommand(handle:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1532,7 +1547,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.EndCommand_Async(handle:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1553,7 +1568,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EndCommand_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1569,7 +1584,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCPUCount():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1596,7 +1611,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetCPUCount_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1616,7 +1631,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCPUCount_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1632,7 +1647,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandResourceConsumption(out cpusUsed:single; out cpuMax:single; out memGBUsed:single; out memGBMax:single):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1663,7 +1678,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetCommandResourceConsumption_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1683,7 +1698,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandResourceConsumption_Response(out cpusUsed:single; out cpuMax:single; out memGBUsed:single; out memGBMax:single):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1703,7 +1718,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EndExeCommand(handle:int64):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1731,7 +1746,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.EndExeCommand_Async(handle:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1752,7 +1767,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.EndExeCommand_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1768,7 +1783,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetEXECommandStatus(handle:int64; out status:string; out finished:boolean; out consoleCapture:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1799,7 +1814,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetEXECommandStatus_Async(handle:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1820,7 +1835,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetEXECommandStatus_Response(out status:string; out finished:boolean; out consoleCapture:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1839,7 +1854,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommandEx(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single; ext_resources:string):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1872,7 +1887,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.StartExeCommandEx_Async(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single; ext_resources:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1898,7 +1913,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommandEx_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1914,7 +1929,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandResourceConsumptionEx(out cpusUsed:single; out cpuMax:single; out memGBUsed:single; out memGBMax:single; out gpusUsed:single; out gpuMax:single; out ext_resources:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1948,7 +1963,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetCommandResourceConsumptionEx_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1968,7 +1983,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetCommandResourceConsumptionEx_Response(out cpusUsed:single; out cpuMax:single; out memGBUsed:single; out memGBMax:single; out gpusUsed:single; out gpuMax:single; out ext_resources:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1991,7 +2006,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetGPUList():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2018,7 +2033,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetGPUList_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2038,7 +2053,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetGPUList_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2054,7 +2069,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetGPUCount():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2081,7 +2096,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.GetGPUCount_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2101,7 +2116,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.GetGPUCount_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2117,7 +2132,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommandExFFMPEG(sPath:string; sProgram:string; sParams:string; sGPUParams:string; cpus:single; memgb:single; gpu:single):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2151,7 +2166,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.StartExeCommandExFFMPEG_Async(sPath:string; sProgram:string; sParams:string; sGPUParams:string; cpus:single; memgb:single; gpu:single);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2178,7 +2193,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.StartExeCommandExFFMPEG_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2194,7 +2209,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.FileExists(sFile:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2222,7 +2237,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.FileExists_Async(sFile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2243,7 +2258,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.FileExists_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2259,7 +2274,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.PathExists(sPath:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2287,7 +2302,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TFileServiceClient.PathExists_Async(sPath:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2308,7 +2323,7 @@ end;
 //------------------------------------------------------------------------------
 function TFileServiceClient.PathExists_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2317,6 +2332,339 @@ begin
     packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
     //packet.SeqRead;//read off the service name and forget it (it is already known)
     GetbooleanFromPacket(packet, result);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.Sign(sFile:string; signconfig:string):boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($6032);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6032:TFileServiceClient.Sign');{$ENDIF}
+    WritestringToPacket(packet, sFile);
+    WritestringToPacket(packet, signconfig);
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetbooleanFromPacket(packet, result);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TFileServiceClient.Sign_Async(sFile:string; signconfig:string);
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($6032);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+    WritestringToPacket(packet, sFile);
+    WritestringToPacket(packet, signconfig);
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.Sign_Response():boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetbooleanFromPacket(packet, result);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.ReadyForEncoding():boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($6033);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6033:TFileServiceClient.ReadyForEncoding');{$ENDIF}
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetbooleanFromPacket(packet, result);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TFileServiceClient.ReadyForEncoding_Async();
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($6033);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.ReadyForEncoding_Response():boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetbooleanFromPacket(packet, result);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.PutFile(oFile:TFileTransferReference):boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($6100);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6100:TFileServiceClient.PutFile');{$ENDIF}
+    WriteTFileTransferReferenceToPacket(packet, oFile);
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetbooleanFromPacket(packet, result);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TFileServiceClient.PutFile_Async(oFile:TFileTransferReference);
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($6100);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+    WriteTFileTransferReferenceToPacket(packet, oFile);
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.PutFile_Response():boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetbooleanFromPacket(packet, result);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.GetFile(var oFile:TFileTransferReference):boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($6101);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6101:TFileServiceClient.GetFile');{$ENDIF}
+    WriteTFileTransferReferenceToPacket(packet, oFile);
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetbooleanFromPacket(packet, result);
+    GetTFileTransferReferenceFromPacket(packet, oFile);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TFileServiceClient.GetFile_Async(var oFile:TFileTransferReference);
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($6101);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+    WriteTFileTransferReferenceToPacket(packet, oFile);
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.GetFile_Response(var oFile:TFileTransferReference):boolean;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetbooleanFromPacket(packet, result);
+    GetTFileTransferReferenceFromPacket(packet, oFile);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($6117);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$6117:TFileServiceClient.GetFileList');{$ENDIF}
+    WritestringToPacket(packet, sRemotePath);
+    WritestringToPacket(packet, sFileSpec);
+    WriteintegerToPacket(packet, attrmask);
+    WriteintegerToPacket(packet, attrresult);
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetTRemoteFileArrayFromPacket(packet, result);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TFileServiceClient.GetFileList_Async(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer);
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($6117);
+    packet.AddVariant(0);
+    packet.AddString('FileService');
+    WritestringToPacket(packet, sRemotePath);
+    WritestringToPacket(packet, sFileSpec);
+    WriteintegerToPacket(packet, attrmask);
+    WriteintegerToPacket(packet, attrresult);
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TFileServiceClient.GetFileList_Response():TRemoteFileArray;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetTRemoteFileArrayFromPacket(packet, result);
   finally
     packet.free;
   end;

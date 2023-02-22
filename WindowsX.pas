@@ -5,7 +5,24 @@ interface
 uses
   windows, typex, sysutils;
 
+const
+  THREAD_TERMINATE                 = $0001;
+  THREAD_SUSPEND_RESUME            = $0002;
+  THREAD_GET_CONTEXT               = $0008;
+  THREAD_SET_CONTEXT               = $0010;
+  THREAD_SET_INFORMATION           = $0020;
+  THREAD_QUERY_INFORMATION         = $0040;
+  THREAD_SET_THREAD_TOKEN          = $0080;
+  THREAD_IMPERSONATE               = $0100;
+  THREAD_DIRECT_IMPERSONATION      = $0200;
+  THREAD_SET_LIMITED_INFORMATION   = $0400;
+  THREAD_QUERY_LIMITED_INFORMATION = $0800;
+  THREAD_ALL_ACCESS                = STANDARD_RIGHTS_REQUIRED or SYNCHRONIZE or $03FF;
 
+
+function OpenThread(dwDesiredAccess: DWord;
+                    bInheritHandle: Bool;
+                    dwThreadId: DWord): DWord; stdcall; external 'kernel32.dll';
 
 
 function GetLastErrorMessage(code: ni): string;

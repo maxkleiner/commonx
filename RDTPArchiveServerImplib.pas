@@ -1,4 +1,4 @@
-  unit RDTPArchiveServerImplib;
+unit RDTPArchiveServerImplib;
 {GEN}
 {TYPE IMPLIB}
 {RQFILE RDTPArchiveRQs.txt}
@@ -6,9 +6,10 @@
 interface
 uses
   lockqueue, classes, systemx, rdtpprocessor, orderlyinit, rdtpserverlist, rdtpArchiveServer,typex, archub, archiver, virtualdiskconstants, namevaluepair, sysutils;
+
+
 type
   TRDTPArchiveServer = class(TRDTPArchiveServerBase)
-  private
   protected
     function TryGetAndLockArchive(sArc: string): TArchiver;
     procedure RaiseBusyError;
@@ -25,8 +26,9 @@ type
     function RQ_ListArchives():string;overload;override;
     function RQ_GetZoneChecksum(sArchive:string; z:int64; out iSum:int64; out iXor:int64):boolean;overload;override;
     function RQ_GetZoneStackReport(sArchive:string; z:int64; fullstack:boolean):string;overload;override;
-    procedure RQ_NextZoneHint(sArchive:string; z:int64);overload;override;
+    procedure RQ_NextZoneHint(sArchive:string; z:int64; pin:TDateTime);overload;override;
     function RQ_GetArcVatCheckSum(sArchive:string; zStart:int64; zCount:int64):int64;overload;override;
+    function RQ_GetZonePresenceHints(sArchive:string; zStart:int64; zCount:int64):TDynByteArray;overload;override;
 
 {INTERFACE_END}
   end;
@@ -56,11 +58,9 @@ end;
 
 
 function TRDTPArchiveServer.RQ_GetArcVatCheckSum(sArchive: string; zStart,zCount: int64): int64;
-var
-  arc: Tarchiver;
 begin
   result := 0;
-  arc := garchub.Find(sArchive);
+  var arc := garchub.Find(sArchive);
   if arc <> nil then begin
     result := arc.GetArcVatChecksum(zStart, zcount);
   end;
@@ -76,7 +76,7 @@ begin
   arc := garchub.Find(sArchive);
   setlength(data, blocklength*blocksize);
   if arc <> nil then begin
-    arc.GuaranteeRebuildDAta(startblock, @data[0], blocklength, pin, nil);
+    arc.GuaranteeRebuildDAta(false, startblock, @data[0], blocklength, pin, nil);
   end;
   result := blocklength;
 
@@ -153,9 +153,23 @@ begin
   inherited;
   arc := garchub.Find(sArchive);
   if arc <> nil then begin
+    arc.AbridgeFilesFromAllPaths;
+//    arc.AbridgeZone(z, now-BACKUP_DURATION);
+//    arc.AbridgeZone(random(z), now-BACKUP_DURATION);
     arc.GetZoneChecksum(z, NULL_PIN, iSum, iXor);
     result := true;
   end;
+end;
+
+function TRDTPArchiveServer.RQ_GetZonePresenceHints(sArchive: string; zStart,
+  zCount: int64): TDynByteArray;
+begin
+  result := 0;
+  var arc := garchub.Find(sArchive);
+  if arc <> nil then begin
+    result := arc.GetZonePresenceHints(zStart, zcount);
+  end;
+
 end;
 
 function TRDTPArchiveServer.RQ_GetZoneStackReport(sArchive: string;
@@ -205,21 +219,27 @@ begin
     if (blocklength shl 9) <> (length(data)) then
       raise ECritical.create('lengths don''t match '+inttostr(blocklength)+' <> '+inttostr(length(data)));
     actual := 0;
-    result := arc.RecordDataEx(startblock, @data[0], blocklength, fromid, toid, actual);
+    try
+    arc.AbridgeFilesFromAllPaths;
+    except
+    end;
+//    arc.AbridgeZone((startblock div ARC_ZONE_SIZE_IN_BYTES) * ARC_ZONE_SIZE_IN_BYTES, now-BACKUP_DURATION);
+//    arc.AbridgeZone(random((startblock div ARC_ZONE_SIZE_IN_BYTES) * ARC_ZONE_SIZE_IN_BYTES), now-BACKUP_DURATION);
+    result := arc.RecordDataEx(false, startblock, @data[0], blocklength, fromid, toid, actual);
 
   end;
 end;
 
-procedure TRDTPArchiveServer.RQ_NextZoneHint(sArchive: string; z: int64);
+procedure TRDTPArchiveServer.RQ_NextZoneHint(sArchive: string; z: int64; pin:TDateTime);
 var
   arc: Tarchiver;
 begin
   inherited;
-{$DEFINE ENABLE_HINTS}
+{x$DEFINE ENABLE_HINTS}
 {$IFDEF ENABLE_HINTS}
   arc := garchub.Find(sArchive);
   if arc <> nil then begin
-    arc.RebuildZone(z, NULL_PIN);
+    arc.RebuildZone(false, z, pin);
   end;
 {$ENDIF}
 end;

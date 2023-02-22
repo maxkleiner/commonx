@@ -3,12 +3,31 @@ unit Debug;
 
 interface
 
+
+{$DEFINE LOG_TO_CONSOLE}
+{$IFDEF LOG_MEM}
+  {$IFDEF MSWINDOWS}
+    {$UNDEF NO_MEM}
+  {$ENDIF}
+{$ENDIF}
+{$IFNDEF MSWINDOWS}
+  {$DEFINE NO_MEM}
+{$ENDIF}
+
+{$IFDEF NODISKLOGGING}
+  {$DEFINE NO_DISK_LOGGING}
+{$ENDIF}
+{$IFDEF ANDROID}
+{$DEFINE LOG_TO_DISK}
+{$DEFINE LOG_TO_USER_FOLDER}
+{$ENDIF}
 {x$DEFINE LOG_TO_IRC}
 {$IFDEF MSWINDOWS}
   {$IFNDEF NO_DISK_LOGGING}
     {$DEFINE LOG_TO_DISK}
   {$ELSE}
-    {$UNDEF LOG_TO_DISK}
+    {x$UNDEF LOG_TO_DISK}
+    {$DEFINE LOG_TO_USER_FOLDER}
   {$ENDIF}
 {$ENDIF}
 {$DEFINE NO_US}
@@ -25,20 +44,29 @@ interface
   {x$DEFINE LOG_TO_THREAD_STATUS}
   {x$DEFINE LOG_TO_CTO}
 {$ENDIF}
+
+
 {$IFDEF MOARDEBUG}
   {$UNDEF NO_US}
   {$UNDEF NO_THREADID}
+  {$IFDEF MSWINDOWS}
+    {$UNDEF NO_MEM}
+  {$ENDIF}
 {$ENDIF}
 
 uses
 {$IFDEF ANDROID}androidapi.log,{$ENDIF}
-{$IFDEF WINDOWS}windows,{$ENDIF}
+{$IFDEF MSWINDOWS}windows,{$ENDIF}
 {$IFDEF LOG_TO_CTO}
 xxx
 //  edi_log_jan,
 //  edi_global,
 {$ENDIF}
-  typex, systemx, sharedobject, sysutils, classes, ringbuffer, stringx, numbers, signals, commandline;
+  typex, systemx,
+{$IFDEF FMX}
+  FMX.Types,
+{$ENDIF}
+  sharedobject, sysutils, classes, ringbuffer, stringx, numbers, signals, commandline, tickcount;
 
 type
   TLogTarget = (ltDisk, ltConsole, ltThread, ltEDI);
@@ -57,7 +85,7 @@ type
 {$IFDEF WINDOWS}
   logstring = ansistring;
 {$ELSE}
-  logstring = string;
+  logstring = utf8string;
 {$ENDIF}
 
 
@@ -73,7 +101,9 @@ type
     fs: TFileStream;
     fsInstance: TFileStream;
     lastArchiveTime: Tdatetime;
+    lastLogCleanupTime: TDateTime;
     FHeartBeatOnLog: boolean;
+    FLogfileDays: fint;
     function GetFilter: string;
     procedure SetFilter(const Value: string);
     function LogFileName(bDated: boolean = true): string;
@@ -82,7 +112,11 @@ type
     procedure ArchiveLogData;
     procedure WriteToSharedLogEx(sLine, sFile: string;
       out bLogWasCreated: boolean);
+    procedure SetLogFileDays(const Value: fint);
   public
+    prefix: string;
+    prefixesc: string;
+    procedure CalcEsc;
     constructor Create;virtual;
     destructor Destroy;override;
     property LogHook: TLogHook read FLogHook write FLogHook;
@@ -95,9 +129,12 @@ type
 
     procedure WriteToSharedLog(sLine: string);
 
-    procedure SaveLog(sToFile: string);
+    procedure SaveLog(sToFile: string; limitBytes: int64 = 0);
     property HeartbeatOnLog: boolean read FHeartBeatOnLog write FHeartBeatOnLog;
     procedure WriteHeartBeat;
+    procedure CleanupOldLogs(sPath:string = '');
+    procedure CleanupOldLogsIfTime;
+    property LogFileDays: fint read FLogfileDays write SetLogFileDays;
   end;
 
 
@@ -112,7 +149,7 @@ procedure ConsoleLog(s: string);
 
 function DebugLog: TDebugLog;
 
-
+function LogPath: string;
 procedure SetDebugThreadVar(thr: TObject);
 procedure LogToThreadStatus(s: string);
 
@@ -135,20 +172,20 @@ var
 
 implementation
 
-uses OrderlyInit, helpers_stream, tickcount,
+uses OrderlyInit, helpers_stream, dir, applicationparams, dirfile,
 {$IFDEF LOG_TO_IRC}
   irc_monitor, irc_abstract, betterobject, ircconversationd,
 {$ENDIF}
 {$IFDEF LOG_TO_TOOLBELT}
   ToolBelt_Log,
 {$ENDIF}
-  managedthread;
+  managedthread, consoleglobal;
 
 
 
 {$IFDEF LOG_TO_IRC}
 type
-  TIRCDebugConversation = class(TIRCConversationDaemon)
+  TIRCDebugConversation = class(TChatConversationDaemon)
   protected
     procedure SendhelpCommands; override;
 
@@ -172,6 +209,11 @@ type
 
 threadvar
   threadlog: TThreadLog;
+
+function LogPath: string;
+begin
+  result := dllpath;
+end;
 
 procedure SaveLog(sToFile:string);
 begin
@@ -210,6 +252,9 @@ end;
 procedure Log(sender: TObject; s: string; sFilter: string = '');
 var
   sobj: string;
+{$IFNDEF NO_MEM}
+  heap: THeapStatus;
+{$ENDIF}
 begin
   try
     if log_is_shut_down then exit;
@@ -218,11 +263,18 @@ begin
     end else begin
       sObj := sender.classname+'@'+inttohex(ni(pointer(sender)), sizeof(ni)*2)+': ';
     end;
+{$IFNDEF NO_MEM}
+    heap := GetHeapStatus;
+    var heapstr := stringx.FriendlySizeName(heap.TotalAllocated)+': ';
+{$ELSE}
+    var heapstr := '';
+{$ENDIF}
+
     DebugLog.Log(ltAll,
 {$IFDEF NO_THREADID}
-      DateToStr(Date)+', '+TimeToStr(Now)+': '+sObj+StringReplace(s,NEWLINE,' ',[rfReplaceAll]),
+      DateToStr(Date)+', '+TimeToStr(Now)+': '+heapstr+sObj+StringReplace(s,NEWLINE,' ',[rfReplaceAll]),
 {$ELSE}
-      GetcurrentThreadid.tostring+':'+DateToStr(Date)+', '+TimeToStr(Now)+': '+sObj+StringReplace(s,NEWLINE,' ',[rfReplaceAll]),
+      GetcurrentThreadid.tostring+':'+DateToStr(Date)+', '+TimeToStr(Now)+':tick '+commaize(getticker)+': '+heapstr+': '+sObj+StringReplace(s,NEWLINE,' ',[rfReplaceAll]),
 {$ENDIF}
       sFilter
     );
@@ -331,10 +383,46 @@ begin
   end;
 end;
 
+procedure TDebugLog.CalcEsc;
+begin
+  if prefix <> '' then
+    prefixEsc := '`c'+inttohex(15-random(5),1)+'`';
+end;
+
+procedure TDebugLog.CleanupOldLogs(sPath:string = '');
+var
+  fil: TFileInformation;
+begin
+  lastLogCleanupTime := now();
+  if logfiledays = 0 then
+    exit;
+  if sPath = '' then sPath := logpath;
+  var nao := now();
+  var daysToKeep := logfiledays;
+  var dir := TDirectory.CreateH(logpath, '*.log', 0,0,false,false);
+  while dir.o.GetNextFile(fil) do begin
+    if fil.Date <  (nao-daystokeep) then begin
+      try
+        deletefile(fil.FullName);
+      except
+      end;
+    end;
+  end;
+end;
+
+procedure TDebugLog.CleanupOldLogsIfTime;
+begin
+  if logfiledays > 0 then begin
+    if ((now-lastLogCleanuptime) > 0.5 ) or (LastLogCleanupTime = 0) then begin
+      CleanupOldLogs;
+    end;
+  end;
+end;
+
 constructor TDebugLog.Create;
 begin
   inherited;
-  ics(sect);
+  ics(sect, classname);
   slLog := TRingBuffer.create;
 //  slLog := TStringlist.create;
 
@@ -398,33 +486,59 @@ begin
   ecs(sect);
 end;
 
+
+procedure LimitLogSize(s: TStream);
+begin
+
+  if s.size > int64(int64(4)*int64(BILLION)) then begin
+    s.Size := 0;
+    s.Seek(0, soBeginning);
+{$IFNDEF NEED_FAKE_ANSISTRING}
+    var ss: ansistring := '!!!!!!!!!*****THIS LOG WAS WIPED BECAUSE IT GOT TOO LARGE******!!!!!!!';
+    Stream_GuaranteeWrite(s, @ss[low(ss)], length(ss));
+{$ENDIF}
+  end;
+
+end;
+
 procedure TDebugLog.Log(targets: TLogTargets; const s: string; const sFilter: string = '');
 var
   sLog: string;
-  sLog2: logstring;
   pb: PByte;
   ss: ansistring;
   sss: string;
   sNewFile: string;
 begin
-
+  CleanupOldLogsIfTime;
   try
 {$IFDEF LOG_TO_IRC}
   log_to_irc(s, sFilter);
 {$ENDIF}
 
-{$IFDEF MSWINDOWS}
-  {$IFDEF LOG_TO_CONSOLE}
+{$IFDEF LOG_TO_CONSOLE}
+  {$IFDEF MSWINDOWS}
   if ltConsole in targets then begin
     if length(s) > 256 then
       sss := zcopy(s,0,256)
     else
       sss := s;
+    var pluscrlf := sss+#13#10;
     Windows.OutputDebugStringW(pchar(sss));
     if LogToStdout then
-      if IsConsole then
-        WriteLn(s);
+      if IsConsole then begin
+//        if prefix <> '' then begin
+          if prefixesc = '' then
+            calcesc;
+          if consoleglobal.con <> nil then
+            consoleglobal.con.WriteLnEx(prefixEsc+padstring(zcopy(prefix,0,8),' ',8)+':'+s);
+//        end else
+//          globalconsole.WriteLnEx(prefixEsc+prefix+':'+s);;
+      end;
   end;
+  {$ELSE}
+    {$IFDEF FMX}
+      FMX.Types.Log.d(s);
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 {$IFDEF LINUX}
@@ -450,8 +564,10 @@ begin
 {$ENDIF}
     g_log_initialized := true;
     sLog := s;
+{$IFNDEF IGNORE_LOG_HOOK}
     if assigned(LogHook) then
       logHook(sLog);
+{$ENDIF}
 {$IFDEF LOG_TO_DISK}
     if ltDisk in targets then begin
       {$IFDEF LOG_TO_DISK_SHARED}
@@ -526,20 +642,18 @@ begin
 
 
       //write the stuff to the actual log
-      sLog2 := ansistring(sLog)+ansistring(NEWLINE);
-      pb := GetMemory(length(sLog2));
-      try
-        movemem32(pb, @sLog2[STRZ], length(sLog2));
+      var byts := StringToBytes(sLog+NEWLINE);
 
-        fsInstance.Seek(0, soEnd);
-        Stream_GuaranteeWrite(fsInstance, pb, length(sLog2));
+
+      LimitLogSize(fsinstance);
+
+      fsInstance.Seek(0, soEnd);
+      Stream_GuaranteeWrite(fsInstance, @byts[0], length(byts));
+
 
         //flush instance log to dated log if it is time to do so (DISK_LOG_DRAIN_INTERVAL)
-        ARchiveLogDataIfTime;
+      ARchiveLogDataIfTime;
 
-      finally
-        FreeMemory(pb);
-      end;
       {$ENDIF}
     end;
 {$ENDIF}
@@ -551,9 +665,15 @@ begin
 {$ENDIF}
 
 {$IFDEF LOG_TO_TOOLBELT}
+  {$IFNDEF LOG_TO_TOOLBELT_GUI}
     if ltEDI in targets then begin
       ToolBelt_Log.WriteLog(sLog);
     end;
+  {$ELSE}
+    if ltEDI in targets then begin
+      ToolBelt_Log.WriteLogGUI(sLog);
+    end;
+  {$ENDIF}
 {$ENDIF}
 
 
@@ -587,10 +707,18 @@ begin
   forcedirectories(GEtTempPath);
   result := GEtTempPath+extractfilename(DLLNAme)+'.'+inttostr(GetCurrentTHreadID)+'.txt';
 {$ELSE}
+  {$IFDEF LOG_TO_USER_FOLDER}
+  sPath := GetTempPath;
+  {$ELSE}
   sPath := DLLPath;
+  {$ENDIF}
+
   forcedirectories(sPath);
   sDateCode := FormatDateTime('YYYYMMDD', now);
   var logfileprefix := cl.GetNamedParameterEx('-lfp', '--log-file-prefix', '');
+  prefix := logfileprefix;
+
+
   if bDated then
     result := sPath+(changefileext(logfileprefix+extractfilename(DLLNAme),'.'+sDateCode+'.log'))
   else
@@ -632,24 +760,28 @@ begin
 {$ENDIF}
 end;
 
-procedure TDebugLog.SaveLog(sToFile: string);
+procedure TDebugLog.SaveLog(sToFile: string; limitBytes: int64 = 0);
 begin
-Lock;
-try
-  if fsInstance= nil then
-    exit;
-  var fsOut := TfileStream.create(sToFile, fmCreate);
+  Lock;
   try
-    fsInstance.Seek(0,soBeginning);
-    Stream_GuaranteeCopy(self.fsInstance,fsOut);
-    fsInstance.Seek(0,soEnd);
+    if fsInstance= nil then
+      exit;
+    var fsOut := TfileStream.create(sToFile, fmCreate);
+    try
+      var start: int64 := 0;
+      if limitBytes > 0 then
+        start := greaterof(0,fsInstance.size-limitBytes);
 
+      fsInstance.Seek(start,soBeginning);
+      Stream_GuaranteeCopy(self.fsInstance,fsOut);
+      fsInstance.Seek(0,soEnd);
+
+    finally
+      fsOut.free;
+    end;
   finally
-    fsOut.free;
+    Unlock;
   end;
-finally
-  Unlock;
-end;
 end;
 
 procedure TDebugLog.SetFilter(const Value: string);
@@ -660,6 +792,13 @@ begin
   finally
     Unlock;
   end;
+
+end;
+
+procedure TDebugLog.SetLogFileDays(const Value: fint);
+begin
+  FLogfileDays := Value;
+  CleanupOldLogs();
 
 end;
 
@@ -699,7 +838,14 @@ begin
   if s = '' then exit;
   try
     strm.Seek(0, soEnd);
+    LimitLogSize(strm);
     stream_GuaranteeWrite(strm, @s[STRZ], sizeof(s[STRZ])*length(s));
+    if strm.Size > 10*BILLION then begin
+      strm.Size := 0;
+      {$IFDEF HALT_ON_LOG_OVERFLOW}
+      halt;
+      {$ENDIF}
+    end;
   finally
     strm.free;
     strm := nil;
@@ -713,6 +859,7 @@ begin
     var cl: TCommandline;
     cl.ParseCommandLine();
     var logfileprefix := cl.GetNamedParameterEx('-lfp', '--log-file-prefix', '');
+    prefix := logfileprefix;
     SaveStringAsFile(dllpath+slash(LogFilePrefix,'.')+'check.heartbeat','');
   except
   end;
@@ -724,6 +871,8 @@ var
 begin
   cl.ParseCommandLine();
   var logfileprefix := cl.GetNamedParameterEx('-lfp', '--log-file-prefix', '');
+  prefix := logfileprefix;
+
 
 
   var sFile := MergedLogFileName;
@@ -828,6 +977,7 @@ begin
 
   fs.seek(0, soEnd);
   ss := ansistring(s)+ansichar(#13)+ansichar(#10);
+  LimitLogSize(fs);
   stream_GuaranteeWrite(fs, @ss[STRZ], length(ss));
   fs.Free;
 {$ENDIF}

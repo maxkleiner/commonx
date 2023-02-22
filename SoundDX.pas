@@ -101,7 +101,7 @@ procedure ShutDownAudio;
 
 
 var
-  DXS: TDXSoundEngine;
+  DXS: TDXSoundEngine = nil;
 
 
 implementation
@@ -521,7 +521,8 @@ end;
 
 procedure ShutDownAudio;
 begin
-  DXS.Free;
+  if assigned(DXS) then
+    DXS.Free;
   DXS := nil;
 
 end;

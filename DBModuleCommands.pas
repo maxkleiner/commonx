@@ -99,9 +99,7 @@ begin
   slProblemLog := TStringlist.create;
   dbm := TBestDatabaseDM.create;
   try
-//  dbm.Context := 'simple;db=mmm_crimp_hd;host=crimp-hd.mysql.database.azure.com;user=crimpdbadmin@crimp-hd;pass=B@W@v}B5y^ue';
     dbm.Context := DBContext;
-//    dbm.ConfigureFromContext;
     dbm.ConnectWrite;
     CreateBackupSystem;
     DBExecute;

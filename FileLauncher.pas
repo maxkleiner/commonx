@@ -7,7 +7,7 @@ uses
 Winapi.ShellAPI, Winapi.Windows;
 {$ENDIF MSWINDOWS}
 {$IFDEF MACOS}
-Posix.Stdlib;
+ macapi.appkit, macapi.foundation, Posix.Stdlib;
 {$ENDIF MACOS}
 
 type
@@ -24,7 +24,12 @@ ShellExecute(0, 'OPEN', PChar(FilePath), '', '', SW_SHOWNORMAL);
 {$ENDIF MSWINDOWS}
 
 {$IFDEF MACOS}
-_system(PAnsiChar('open '+'"'+AnsiString(FilePath)+'"'));
+  begin
+    var Workspace: NSWorkspace; // interface, no need for explicit destruction
+    Workspace := TNSWorkspace.Create;
+    Workspace.openFile(NSSTR(FilePath));
+  end;
+//_system(PAnsiChar('open '+'"'+AnsiString(FilePath)+'"'));
 {$ENDIF MACOS}
 end;
 

@@ -2,7 +2,7 @@ unit Spider;
 
 interface
 
-uses SharedObject, ManagedThread, ThreadManager, classes, comctrls, stdctrls, ExtCtrls, windows, commandprocessor, generics.collections, https;
+uses HTTPClient_2020, SharedObject, ManagedThread, ThreadManager, classes, comctrls, stdctrls, ExtCtrls, windows, commandprocessor, generics.collections, https;
 
 const
   THREADS_MAX = 70;

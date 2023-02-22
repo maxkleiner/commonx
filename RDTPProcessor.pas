@@ -6,7 +6,7 @@ interface
 {x$DEFINE HIT_SESSION}
 {xLIMIT_PROGRESS} //puts a limit on how often progress packets are sent
 uses
-  helpers_winsock,
+  helpers_winsock, packetabstract,
   numbers, simpleabstractconnection, packet, systemx, typex, sysutils, windows, classes, betterobject, sharedobject, SQLExpr, stringx, AbstractRDTPDataModule, DtNetConst, simplewinsock, exceptions, commandprocessor,orderlyinit, helpers.list, storageenginetypes;
 {x$DEFINE ALLOW_WRITEBEHIND}//<<---currently has problems when connection is terminated
 
@@ -155,7 +155,7 @@ type
 
 
 var
-  RDTPFF: TRDTPFunctions;
+  RDTPFF: TRDTPFunctions = nil;
 
 implementation
 
@@ -171,8 +171,9 @@ end;
 procedure TRDTPProcessor.CheckContextSet;
 begin
   if FContext = '' then begin
-
+  {$IFDEF ALLOW_CALLBACKS}
     FContext := self.GetClientContext;
+  {$Endif}
     if fcontext = '' then begin
       raise EClassException.create('Context not set, could not be read... in '+self.classname);
     end;
@@ -855,7 +856,8 @@ begin
 
 
 {$IFDEF DO_PEEK}
-//  status := 'In ReadMore:{DO_PEEK}';
+//  status := 'In ReadMore:{DO_PEEK}';      zzz
+xxx
   i := Fsocket.PeekBuf(iBuf, sizeof(integer));
   Debug.Log('Peekbuf shows '+inttostr(i)+' bytes in ReadMore','RDTPPLUMBING');
   Debug.Log('Peekbuf data is '+inttohex(iBuf, 8),'RDTPPLUMBING');
@@ -1112,7 +1114,8 @@ end;
 
 procedure ofinal;
 begin
-  RDTPFF.free;
+  if assigned(RDTPFF) then
+    RDTPFF.free;
 
 end;
 

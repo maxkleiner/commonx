@@ -5,7 +5,7 @@ unit better_collections;
 {$DEFINE USE_FAST_LIST}
 {$ENDIF}
 {$DEFINE DEBUG_ITEMS}
-{$D-}
+{$D+}
 interface
 
 
@@ -25,15 +25,29 @@ type
   TBetterList<T: class> = class(TList<T>)
 {$ENDIF}
   private
-    function GetLast: T;
+    FOwnsObjects: boolean;
+    function GetLastItem: T;
   public
-    constructor Create;
+    type TStoppableIterateProc = reference to procedure (a: T; var bStop: boolean);
+    constructor Create;reintroduce;virtual;
     function Has(obj: T): boolean;
     procedure ClearandFree;
     procedure Replace(old, nu: T);
     procedure BetterRemove(obj: T);
     procedure AddList(list: TBetterList<T>);
-    property Last: T read GetLast;
+    procedure AddListSorted(list: TBetterList<T>;CompareProc_1isAgtB: TFunc<T,T, ni>);
+    property LastItem: T read GetLastItem;
+    function SortAnon(CompareProc_1isAgtB: TFunc<T,T, ni>): boolean;
+    function SortAnonMT(CompareProc_1isAgtB: TFunc<T,T, ni>): boolean;
+    function SortAnon_Bubble(CompareProc_1isAgtB: TFunc<T,T,ni>): boolean;
+    procedure SortAnon_Quick(CompareProc_1isAgtB: TFunc<T,T,ni>;iLo,iHi: ni);
+
+    property OwnsObjects: boolean read FOwnsObjects write FOwnsObjects;
+    procedure Iterate(p: TProc<T>);overload;
+    procedure Iterate(p: TStoppableIterateProc);overload;
+    function SplitintoEqualParts(cnt: ni): TArray<IHolder<TBetterList<T>>>;
+
+
   end;
 
   TBetterStack<T: class> = class(TStack<T>)
@@ -53,7 +67,8 @@ type
     FVolatileCount: ni;
     function GetCount: nativeint;virtual;
   public
-    RestrictedtoThreadID: int64;
+
+    RestrictedtoThreadID: nativeuint;
     constructor Create;override;
     destructor Destroy;override;
 
@@ -83,15 +98,20 @@ type
     procedure Setitem(idx: ni; const Value: string);
     function GetText: string;
     procedure SetText(const Value: string);
+    function GetCount: ni;
   public
+    constructor Create; override;
+    destructor Destroy; override;
+
     property Text: string read GetText write SetText;
     procedure Add(s: string);
     procedure Remove(s: string);
     property Items[idx: ni]: string read GetItem write Setitem;default;
     procedure Delete(i: ni);
     function IndexOf(s: string): ni;
-
-
+    property Count: ni read GetCount;
+    procedure Clear;
+    function GetStringList_UseOnlyUnderLock: TStringlist;
   end;
 
 
@@ -135,7 +155,7 @@ implementation
 
 {$IFDEF DEBUG_ITEMS}
 uses
-  JSONHelpers;
+  JSONHelpers, AnonCommand;
 {$ENDIF}
 
 { TBetterList<T> }
@@ -148,6 +168,35 @@ begin
     self.Add(list[t]);
   end;
 
+end;
+
+procedure TBetterList<T>.AddListSorted(list: TBetterList<T>;
+  CompareProc_1isAgtB: TFunc<T, T, ni>);
+begin
+  var a := Self.SplitintoEqualParts(1);
+  var tl := a[0].o;
+  var cx := list.count + tl.count;
+  var ix1, ix2: ni;
+  ix1 := 0;
+  ix2 := 0;
+  self.clear;
+  while cx > 0 do begin
+    var comp := 0;
+    if ix1 > tl.count then
+      comp := -1
+    else
+    if ix2 > list.count then
+      comp := 1
+    else
+      comp := CompareProc_1isAgtB(tl[ix1],list[ix2]);
+    if comp<0 then begin
+      self.add(tl[ix1]);
+      inc(ix1);
+    end else begin
+      self.add(list[ix2]);
+      inc(ix2);
+    end;
+  end;
 end;
 
 procedure TBetterList<T>.BetterRemove(obj: T);
@@ -182,7 +231,7 @@ begin
   inherited;
 end;
 
-function TBetterList<T>.GetLast: T;
+function TBetterList<T>.GetLastItem: T;
 begin
   result := self[self.count-1];
 end;
@@ -193,6 +242,24 @@ begin
 end;
 
 
+procedure TBetterList<T>.Iterate(p: TStoppableIterateProc);
+begin
+  var stop := false;
+  for var t := 0 to count-1 do begin
+    p(self[t],stop);
+    if stop then
+      break;
+  end;
+
+end;
+
+procedure TBetterList<T>.Iterate(p: TProc<T>);
+begin
+  for var t := 0 to count-1 do begin
+    p(self[t]);
+  end;
+end;
+
 procedure TBetterList<T>.Replace(old, nu: T);
 var
   t: ni;
@@ -201,6 +268,130 @@ begin
     if Self.Items[t] = old then
       self.items[t] := nu;
   end;
+end;
+
+function TBetterList<T>.SortAnon(CompareProc_1isAgtB: TFunc<T, T, ni>): boolean;
+begin
+  //Todo 1: implement Sort() in TBetterList with something better than a bubble sort
+  result := true;
+  SortAnon_Quick(CompareProc_1isAgtB,0,count-1);
+end;
+
+
+function TBetterList<T>.SortAnonMT(
+  CompareProc_1isAgtB: TFunc<T, T, ni>): boolean;
+var
+  a: TArray<IHolder<TBetterList<T>>>;
+begin
+  var cpus := GetNumberOfLogicalProcessors;
+  a := Self.SplitintoEqualParts(cpus);
+  ForX(0,length(a),1, procedure (idx: int64) begin
+    a[idx].o.SortAnon(CompareProc_1isAgtB);
+  end);
+
+  while length(a) > 1 do begin
+    ForX(0,length(a) shr 1,1, procedure (idx: int64) begin
+      var iix := idx * 2;
+      if iix < high(a) then begin
+        a[iix].o.AddListSorted(a[iix+1].o,Compareproc_1isAgtB);
+      end;
+    end);
+    //remove odd numbered lists
+    var last := 0;
+    for var tt := 0 to high(a) do begin
+      if (tt and 1) = 0 then begin
+        last := tt shr 1;
+        a[last] := a[tt];
+      end;
+    end;
+    setlength(a,last+1);
+  end;
+
+
+
+end;
+
+function TBetterList<T>.SortAnon_Bubble(CompareProc_1isAgtB: TFunc<T, T, ni>): boolean;
+var solved: boolean;
+//returns TRUE if anything changed, else FALSE if already sorted
+begin
+  result := false;
+  repeat
+    solved := true;
+
+    for var t:= 0 to count-2 do begin
+      var comp := CompareProc_1isAgtB(items[t], items[t+1]);
+      if comp > 0 then begin
+        var c := items[t];
+        items[t] := items[t+1];
+        items[t+1] := c;
+        solved := false;
+        result := true;
+      end;
+    end;
+
+  until solved;
+
+end;
+
+procedure TBetterList<T>.SortAnon_Quick(CompareProc_1isAgtB: TFunc<T, T, ni>; iLo, iHi: ni);
+var
+   Lo, Hi: ni;
+  TT,Pivot: T;
+begin
+   Lo := iLo;
+   Hi := iHi;
+   var pvtIDX := (Lo + Hi) shr 1;
+   if pvtIDX > (self.Count-1) then
+    exit;
+   Pivot := self[pvtIDX];
+   repeat
+      while CompareProc_1isAgtB(self[lo],pivot) < 0 do
+        begin
+          inc(lo);
+          if lo > (count-1) then break;
+        end;
+      while CompareProc_1isAgtB(self[hi],pivot) > 0 do
+        begin
+          dec(hi);
+          if hi < 0 then break;
+        end;
+      if Lo <= Hi then
+      begin
+        TT := self[Lo];
+        self[Lo] := self[Hi];
+        self[Hi] := TT;
+        Inc(Lo) ;
+        Dec(Hi) ;
+      end;
+   until Lo > Hi;
+   if Hi > iLo then SortAnon_Quick(CompareProc_1isAgtB, iLo, Hi) ;
+   if Lo < iHi then SortAnon_Quick(CompareProc_1isAgtB, Lo, iHi) ;
+end;
+
+function TBetterList<T>.SplitintoEqualParts(cnt: ni): TArray<IHolder<TBetterList<T>>>;
+begin
+  var chunksize := (count div cnt)+1;
+  setlength(result, cnt);
+  for var tt:= 0 to cnt-1 do begin
+    result[tt] := THolder<TBetterList<T>>.create(TBetterList<T>.create());
+  end;
+
+  var cx := chunksize;
+  var idx := 0;
+  for var x := 0 to count-1 do begin
+    result[idx].o.add(self[idx]);
+    dec(cx);
+    if (cx = 0) then begin
+      cx := chunksize;
+      if idx < high(result) then
+        inc(idx);
+    end;
+  end;
+
+
+
+
 end;
 
 { TSharedList<T> }
@@ -546,6 +737,21 @@ begin
   FList.add(s);
 end;
 
+procedure TSharedStringList.Clear;
+var
+  l: ILock;
+begin
+  l := self.locki;
+  FList.clear;
+
+end;
+
+constructor TSharedStringList.Create;
+begin
+  inherited;
+  FList := TStringlist.create;
+end;
+
 procedure TSharedStringList.Delete(i: ni);
 var
   l: ILock;
@@ -554,12 +760,32 @@ begin
   FList.delete(i);
 end;
 
+destructor TSharedStringList.Destroy;
+begin
+  FList.free;
+  inherited;
+end;
+
+function TSharedStringList.GetCount: ni;
+var
+  l: ILock;
+begin
+  l := self.locki;
+  result := FList.count;
+
+end;
+
 function TSharedStringList.GetItem(idx: ni): string;
 var
   l: ILock;
 begin
   l := self.LockI;
   result := FList[idx];
+end;
+
+function TSharedStringList.GetStringList_UseOnlyUnderLock: TStringlist;
+begin
+  result := FList;
 end;
 
 function TSharedStringList.GetText: string;

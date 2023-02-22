@@ -4,19 +4,22 @@ unit helpers_stream;
 interface
 
 uses
-  classes, sysutils, debug, numbers, systemx, variants, tickcount,
+  classes, sysutils, debug, numbers, systemx, variants, tickcount, betterobject,
 {$IFDEF MSWINDOWS}
   queuestream,
 {$ENDIF}
-  typex, ios.stringx.iosansi;
+  typex, ios.stringx.iosansi, netencoding;
 
 const
   STREAM_CHUNK_SIZE = 262144*8;
 
-function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;overload;
-function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;overload;
+function FileStream_guaranteeOpen(sFile: string; Mode: word; bCreateIfNecessary: boolean = false): TfileStream;
+
+function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; iStartingPositionHint:int64 = 0): nativeint;overload;
+function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0): nativeint;overload;
+function Stream_GuaranteeWriteWithPreAlign(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;
 {$IFDEF MSWINDOWS}
-function Stream_GuaranteeWrite(const s: TAdaptiveQueuedFileSTream; const p: PByte; const iSize: nativeint): nativeint;overload;
+function Stream_GuaranteeWrite(const s: TAdaptiveQueuedFileStream; const p: PByte; const iSize: nativeint): nativeint;overload;
 function Stream_GuaranteeWrite(const s: TAdaptiveQueuedSTream; const p: PByte; const iSize: nativeint): nativeint;overload;inline;
 {$ENDIF}
 
@@ -25,7 +28,7 @@ function Stream_GuaranteeRead_NoExceptions(const s: TStream; const p: PByte; con
 function Stream_GuaranteeRead(const s: TUnbufferedFileStream; const p: PByte; const iSize: nativeint; const bThrowExceptions: boolean = true): nativeint;overload;inline;
 {$ENDIF}
 function Stream_GuaranteeRead(const s: TStream; const p: PByte; const iSize: nativeint; const bThrowExceptions: boolean = true): nativeint;overload;inline;
-function Stream_GuaranteeRead(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; const bThrowExceptions: boolean = true): nativeint;overload;
+function Stream_GuaranteeRead(const s: TStream; const p: PByte; const i_Size: nativeint; prog: PProgress; const bThrowExceptions: boolean = true): nativeint;overload;
 {$IFDEF WINDOWS}
 function Stream_GuaranteeRead(const s: TAdaptiveQueuedSTream; const p: PByte; const iSize: nativeint; const bThrowExceptions: boolean = true; bForget: boolean = false): nativeint;overload;
 function Stream_GuaranteeRead(const s: TAdaptiveQueuedFileSTream; const p: PByte; const iSize: nativeint; const bThrowExceptions: boolean = true): nativeint;overload;
@@ -46,6 +49,7 @@ procedure Stream_Grow(const s: TAdaptiveQueuedFileStream; iSize: int64);overload
 
 function stream_Compare(const s1, s2: TStream): integer;overload;
 function stream_Compare(const s1, s2: TStream; out dif_addr: int64): integer;overload;
+function stream_ToByteArray(s: TStream): TArray<byte>;
 
 procedure ScrambleFile(f1: string);
 
@@ -55,6 +59,9 @@ function LoadFileAsByteArray(sFile: string): TDynByteArray;
 function OleVariantToMemoryStream(OV: OleVariant): TMemoryStream;
 
 function Stream_ReadString(const s: TStream; terminator: byte = 10; nobacktrack: boolean = false): ansistring;
+function SaveBytesToStream(b: TArray<byte>): IHolder<TStream>;
+function EncodeBase64Stream(s: TStream): string;
+function DecodeBAse64Stream(const base64: String): IHolder<TStream>;
 
 
 
@@ -103,11 +110,61 @@ begin
 
 end;
 
-function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;overload;
+function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; iStartingPositionHint:int64 = 0): nativeint;overload;
 begin
-  result := Stream_GuaranteeWrite(s, p, iSize, nil, iStartingPositionHint, iAlign);
+  result := Stream_GuaranteeWrite(s, p, iSize, nil, iStartingPositionHint);
 end;
-function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;
+
+function Stream_GuaranteeWrite(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0): nativeint;
+var
+  ijustwrote: integer;
+  iLEft: int64;
+  wptr:pbyte;
+  blocksize: int64;
+  iToWrite: int64;
+begin
+  if iSize = 1 then begin
+    ijustwrote := s.Write(p^, 1);
+    if (ijustwrote = 0) then
+      raise EStreamGuarantee.create('Unable to guarantee WRITE of SINGLE BYTE in '+s.classname+' at position '+inttostr(s.Position)+'.  where size='+inttostr(s.Size));
+    exit(iJustWrote);
+  end;
+
+
+  result := 0;
+  iLeft := iSize;
+  if iSize = 0 then  exit;
+  wptr := p;
+  //blocksize := 65536;
+  blocksize := 262144*128;
+
+  if prog <> nil then begin
+    prog.step := 0;
+    prog.stepcount := iSize;
+  end;
+  while iLEft > 0 do begin
+    iToWrite := iLEft;
+    if itowrite = 0 then
+      iToWrite := blocksize;
+    ijustwrote := s.Write(wptr^, iToWrite);
+    if ijustwrote <= 0 then begin
+      if s is TFileStream then
+        raise EStreamGuarantee.create('Unable to guarantee write to: '+TFileStream(s).FileName+' Err='+inttostr(GetLAstError)+' Pos='+inttostr(s.position)+' Size='+inttostr(s.size)+' Len='+inttostr(iSize)+' After Written='+inttostr(ni(wptr-ni(p))))
+      else
+        raise EStreamGuarantee.create('Unable to guarantee write Err='+inttostr(GetLAstError)+' Pos='+inttostr(s.position)+' Size='+inttostr(s.size)+' Len='+inttostr(iSize)+' After Written='+inttostr(ni(wptr-ni(p))))
+    end;
+    inc(wptr, iJustWrote);
+    dec(iLeft, ijustwrote);
+    if prog <> nil then begin
+      inc(prog.step, iJustWrote);
+    end;
+  end;
+
+  result := ni(wptr-ni(p));
+
+end;
+
+function Stream_GuaranteeWriteWithPreAlign(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; iStartingPositionHint:int64 = 0; iAlign:int64 =65536): nativeint;
 var
   ijustwrote: integer;
   iLEft: int64;
@@ -170,24 +227,48 @@ begin
 end;
 
 
-function Stream_GuaranteeRead(const s: TStream; const p: PByte; const iSize: nativeint; prog: PProgress; const bThrowExceptions: boolean = true): nativeint;overload;
-var
-  iLeft, iRead, iJustRead: int64;
-  op, rptr: Pbyte;
-begin
-  //if reading just 1 byte, use a simpler path (faster)
+function Stream_GuaranteeRead(const s: TStream; const p: PByte; const i_Size: nativeint; prog: PProgress; const bThrowExceptions: boolean = true): nativeint;overload;
 
+var
+  rptr: Pbyte;
+begin
+  rptr := p;
+  var iSize := i_Size;
+{x$DEFINE MIN_READ_AHEAD}
+{$IFDEF MIN_READ_AHEAD}
+  var c: char;
+  if rptr = nil then begin
+    rptr  := @c;
+    iSize := 1;
+
+  end;
+{$ENDIF}
+
+  //if reading just 1 byte, use a simpler path (faster)
+  var iJustRead: int64;
   if iSize = 1 then begin
-    iJustRead := s.Read(p^, 1);
-    if (iJustRead = 0) and bThrowExceptions then
-      raise EStreamGuarantee.create('Unable to guarantee read of SINGLE BYTE in '+s.classname+' at position '+inttostr(s.Position)+'.  where size='+inttostr(s.Size));
-    exit(iJustRead);
+    if rptr = nil then begin
+      var c: byte;
+      exit(s.Read(c, 1));
+    end else begin
+      iJustRead := s.Read(rptr^, 1);
+      if (iJustRead = 0) and bThrowExceptions then
+        raise EStreamGuarantee.create('Unable to guarantee read of SINGLE BYTE in '+s.classname+' at position '+inttostr(s.Position)+'.  where size='+inttostr(s.Size));
+      exit(iJustRead);
+    end;
   end;
   //ELSE do the more complex stuff
+  var iLeft, iRead: int64;
   rptr := p;
-  if rptr = nil then
-    rptr  := GetMemory(iSize);
-  op := rptr;
+  if rptr = nil then begin
+{$IFDEF MIN_READ_AHEAD}
+    rptr  := @c;
+    iSize := 1;
+{$ELSE}
+    rptr := GetMemory(iSize);
+{$ENDIF}
+  end;
+  var op := rptr;
   try
     result := 0;
     if iSize = 0 then  exit;
@@ -211,9 +292,12 @@ begin
 
       //extra checking.
       if ijustread <= 0 then begin
-        if bThrowExceptions then
-          raise EStreamGuarantee.create('Unable to guarantee read of '+s.classname+' at position '+inttostr(s.Position)+' after ' +inttostr(nativeint(rptr-ni(p)))+' bytes.  (justread='+ijustread.tostring()+') where size='+inttostr(s.Size))
-        else begin
+        if bThrowExceptions then begin
+          if s is TFileStream then
+            raise EStreamGuarantee.create('Unable to guarantee read of '+s.classname+' '+TfileStream(s).filename+' at position '+inttostr(s.Position)+' after ' +inttostr(nativeint(rptr-ni(p)))+' bytes.  (justread='+ijustread.tostring()+') where size='+inttostr(s.Size))
+          else
+            raise EStreamGuarantee.create('Unable to guarantee read of '+s.classname+' at position '+inttostr(s.Position)+' after ' +inttostr(nativeint(rptr-ni(p)))+' bytes.  (justread='+ijustread.tostring()+') where size='+inttostr(s.Size))
+        end else begin
           result := 0;
           exit;
         end;
@@ -221,7 +305,11 @@ begin
     end;
   finally
     if p = nil then begin
-      FreeMemory(op);
+      {$IFDEF MIN_READ_AHEAD}
+      {$ELSE}
+        FreeMemory(op);
+      {$ENDIF}
+
     end;
   end;
 end;
@@ -771,6 +859,82 @@ begin
     end;
   end;
 end;
+
+function FileStream_guaranteeOpen(sFile: string; Mode: word; bCreateIfNecessary: boolean = false): TfileStream;
+var
+  bsuccess: boolean;
+  bExists: boolean;
+  tmStart: ticker;
+const
+  OPEN_TIMEOUT = 15000;
+begin
+  result := nil;
+  bSuccess := false;
+  tmStart := GetTicker;
+  repeat
+    try
+      bExists := fileexists(sFile);
+      if bExists then
+        result := TfileStream.Create(sFile, Mode)
+      else begin
+        if bCreateIfNecessary then begin
+          ForceDirectories(extractfilepath(sfile));
+          result := TfileStream.Create(sFile, fmCreate);
+        end else
+          raise ECritical.create('file does not exist '+sfile);
+      end;
+      bSuccess := true;
+      if not (bSuccess) and (GetTimeSince(tmStart) > 1500) then begin
+//        sleep(100);
+        raise ECritical.create('failed to open: '+sFile);
+      end;
+    except
+      if GetTimeSince(tmStart) > 6000 then
+        raise
+      else
+        sleep(100);
+    end;
+  until bSuccess;
+end;
+
+function SaveBytesToStream(b: TArray<byte>): IHolder<TStream>;
+begin
+  result := THolder<TStream>.create(TMemoryStream.create);
+  Stream_GuaranteeWrite(result.o,@b[0],length(b));
+end;
+
+
+function EncodeBase64Stream(s: TStream): string;
+var
+  stream: TBytesStream;
+begin
+  s.seek(0,soBeginning);
+  var ba := stream_ToByteArray(s);
+  result := TNetEncoding.Base64.EncodeBytesToString(ba);
+  result := StringReplace(result, #13#10,'',[rfReplaceAll]);
+  result := StringReplace(result, #13,'',[rfReplaceAll]);
+  result := StringReplace(result, #10,'',[rfReplaceAll]);
+
+end;
+
+
+function DecodeBAse64Stream(const base64: String): IHolder<TStream>;
+var
+  stream: TBytesStream;
+begin
+  stream := TBytesStream.Create(TNetEncoding.Base64.DecodeStringToBytes(base64));
+  result := Tholder<TStream>.create(stream);
+end;
+
+function stream_ToByteArray(s: TStream): TArray<byte>;
+begin
+  var len := s.Size-s.Position;
+  setlength(result,len);
+  stream_GuaranteeRead(s, @result[0], len);
+
+end;
+
+
 
 end.
 

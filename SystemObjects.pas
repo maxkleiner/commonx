@@ -90,9 +90,8 @@ begin
   inherited;
   FieldCapacity := 2;
   AddFieldDef('UserID', TLongIntDatafield, 0);
-  AddFieldDef('IdleTime', TLongintDatafield, 0);
-  AddFieldDef('Bookmark', TstringDataField, '');
-  AddFieldDef('LastHit', TMySqlDateTimeDAtaField, now());
+  AddFieldDef('LastSeen', TMySqlDateTimeDataField, now());
+  AddFieldDef('Expired', TBooleanDataField, now());
   AddAssociate('user');
 
 end;
@@ -186,25 +185,12 @@ constructor TdoUser.create(AOwner: Tobject; params: variant;
   ACache: TObject; extended: TExtendedDOVars);
 begin
   inherited;
-  AddFieldDef('FirstName', TStringDataField, '');
-  AddFieldDef('LastName', TStringDataField, '');
-  AddFieldDef('Phone', TStringDataField, '');
   AddFieldDef('Email', TStringDataField, '');
-  AddFieldDef('State', TStringDataField, '');
-  AddFieldDef('Zip', TStringDataField, '');
   AddFieldDef('Password', TStringDataField, '');
   AddFieldDef('RoleID', TLongintDataField, '');
-  AddFieldDef('Title', TStringDataField, '');
-  AddFieldDef('SponsorPassword', TStringDataField, '');
-  AddFieldDef('Gender', TStringDataField, '');
-  AddFieldDef('PIN', TStringDataField, '');
-  AddFieldDef('DistributorID', TLongintDataField, 0);
-  AddFieldDef('BirthDate', TMYSQLDateTimeDataField, 0.0);
-  AddCalculatedField('FullName', TStringDataField);
+  AddFieldDef('nickname', TStringDataField, '');
   AddCalculatedField('RoleName', TStringDataField);
-  AddCalculatedField('FitnessLevel', TFloatingPointDatafield);
-  AddCalculatedField('Age', TFloatingPointDatafield);
-
+  AddAssociate('Role');
 
 end;
 

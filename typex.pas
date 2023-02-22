@@ -11,7 +11,58 @@ uses
 
 
 const
+  SIMPLE_BATCH_SIZE = 16384;
+  CALENDAR_GRID_COUNT = 42;
+  SUNDAY='Sunday';
+  MONDAY='Monday';
+  TUESDAY='Tuesday';
+  WEDNESDAY='Wednesday';
+  THURSDAY='Thursday';
+  FRIDAY='Friday';
+  SATURDAY='Saturday';
+  day_list:array of string= [
+                             'n/a',
+                             'Sunday',
+                             'Monday',
+                             'Tuesday',
+                             'Wednesday',
+                             'Thursday',
+                             'Friday',
+                             'Saturday',
+                             'Sunday',
+                             'Monday',
+                             'Tuesday',
+                             'Wednesday',
+                             'Thursday',
+                             'Friday',
+                             'Saturday'
+                            ];
+  month_list: array of string =
+                            [
+                              'n/a',
+                              'January',
+                              'February',
+                              'March',
+                              'April',
+                              'May',
+                              'June',
+                              'July',
+                              'August',
+                              'September',
+                              'October',
+                              'November',
+                              'December'
+                            ];
+
+
+
+  DT_MINUTES = 1/(24*60);
+  DT_HOURS = 1/24;
+  DT_DAYS = 1.0;
+  DT_SECONDS = 1/(24*60*60);
   ESCIRC = #26;
+  ESCIRC_CON = #05;
+  ESCIRC_CMD = #04;
   IRCCR = #27;
   IRCCONT = #25;
 
@@ -110,6 +161,7 @@ type
 {$ELSE}
   TSize = cardinal;
 {$ENDIF}
+  ESocketsDisabled = class(Exception);
   TriBool = (tbNull, tbFalse, tbTrue);
   EClassException = class(Exception);
   EBetterException = class(Exception);
@@ -129,7 +181,16 @@ type
   PDWORD = ^DWORD;
   BOOL = wordbool;
   ni = nativeint;
-  fi = integer;
+  nint = nativeint;
+{$IFDEF FINT_IS_32}
+  xxfi = integer;
+  fint = integer;
+{$ELSE}
+  fi = nativeint;
+  fint = nativeint;
+{$ENDIF}
+
+
   TDynVariantArray = array of variant;
   TDynByteArray = TArray<byte>;
   TDynInt64Array = array of Int64;
@@ -152,6 +213,12 @@ type
     function Dif: single;
     function Center: single;
   end;
+  TRunningAverage = record
+    total: double;
+    count: double;
+    function Avg: double;
+
+  end;
 
   TRegionD = record
     startpoint: double;
@@ -160,6 +227,20 @@ type
     function Center: double;
     class operator Add(a: TRegionD; b: double): TRegionD;
     class operator Subtract(a: TRegionD; b: double): TRegionD;
+  end;
+
+  TTightFlags = record
+  strict private
+    F: array of byte;
+    FFlagCount: ni;
+    procedure SetFlagCount(const v: ni);
+    function GetFlag(idx: ni): boolean;
+    procedure SetFlag(idx: ni; val: boolean);
+  public
+    property FlagCount: ni read FFlagCount write SetFlagCount;
+    property Flags[idx: ni]: boolean read GetFlag write SetFlag;default;
+    procedure Reset;
+
   end;
 
 
@@ -177,7 +258,8 @@ const STRZERO = 1;
 
 {$IFDEF GT_XE3}
 type
-
+  TForXoption = (fxRaiseExceptions,fxNoCPUExpense, fxEndInclusive, fxLimit1Thread, fxLimit2Threads,fxLimit4Threads,fxLimit8Threads,fxLimit16Threads,fxLimit32Threads,fxLimit64Threads,fxLimit256Threads,fxLimit1024Threads);
+  TForXOptions = set of TForXOption;
 
   TVolatileProgression = record
     StepsCompleted: nativeint;
@@ -214,12 +296,14 @@ type
 
 
   complex = packed record
-    r: double;
-    i: double;
+    re: double;
+    im: double;
+    property r: double read re write re;
+    property i: double read im write im;
   end;
   complexSingle = packed record
-    r: single;
-    i: single;
+    re: single;
+    im: single;
   end;
 
   TNativeFloatRect = record
@@ -228,12 +312,36 @@ type
 
   PComplex = ^complex;
 
+
+
+
   TProgress = record
     step, stepcount: int64;
+    function close: boolean;
+    function PercentComplete: single;
+{$IFDEF ALLOW_TPROGRESS_NEW}//triggered internal errors in JSONhelpers.pas
+    class function New(step, stepcount:int64): TProgress;static;
+{$ENDIF}
+  end;
+  TProgressAndStatus = record
+    status: string;
+    prog: TProgress;
+  end;
+
+  TProgressStatuses = Tarray<TProgressAndStatus>;
+
+
+
+  TProgressF = record
+    step, stepcount: double;
+    function close: boolean;
     function PercentComplete: single;
   end;
 
+
   PProgress = ^TProgress;
+
+  TProgMethod = procedure (prog: TProgress) of object;
 
   TPixelRect = record
     //this rect behaves more like you'd expect TRect to behave in the Pixel context
@@ -288,6 +396,8 @@ function JavaScriptStringToTypedVariant(s: string): variant;
 function VartoStrEx(v: variant): string;
 function VarTypeDesc(v: variant): string;
 function IsVarString(v: variant): boolean;
+function StringArrayToInt64Array(a: TArray<string>): TArray<int64>;
+function Int64ArrayToStringArray(a: TArray<int64>): TArray<string>;
 
 function rect_notdumb(x1,y1,x2,y2: int64): TRect;
 function PixelRect(x1,y1,x2,y2: int64): TPixelRect;
@@ -315,6 +425,40 @@ begin
 
 end;
 
+function TTightFlags.GetFlag(idx: ni): boolean;
+begin
+  var i := idx shr 3;
+  var b := idx and 7;
+  result := 0<>(F[i] and (1 shl b));
+end;
+
+
+procedure TTightFlags.Reset;
+begin
+  for var t:= 0 to high(F) do
+    F[t] := 0;
+
+end;
+
+procedure TTightFlags.SetFlag(idx: ni; val: boolean);
+begin
+  var i := idx shr 3;
+  var b := idx and 7;
+  if val then
+    F[i] := F[i] or (1 shl b)
+  else
+    F[i] := F[i] and (not (1 shl b));
+
+end;
+
+procedure TTightFlags.SetFlagCount(const v: ni);
+begin
+  if flagcount = v then
+    exit;
+  setlength(F, 1+(v shr 3));
+  Fflagcount := v;
+end;
+
 function objaddr(o: TObject): string;
 begin
   result := '@'+inttohex(nativeint(pointer(o)),1);
@@ -333,6 +477,8 @@ begin
   if VarIsStr(v) then
     if v = '' then
       exit(0);
+
+  exit(v);
 end;
 
 
@@ -459,6 +605,21 @@ begin
 
 
 end;
+function Int64ArrayToStringArray(a: TArray<int64>): TArray<string>;
+begin
+  setlength(result,length(a));
+  for var t:= 0 to high(a) do begin
+    result[t] := inttostr(a[t]);
+  end;
+end;
+
+function StringArrayToInt64Array(a: TArray<string>): TArray<int64>;
+begin
+  setlength(result,length(a));
+  for var t:= 0 to high(a) do begin
+    result[t] := strtoint64(a[t]);
+  end;
+end;
 
 function IsVarString(v: variant): boolean;
 begin
@@ -479,6 +640,35 @@ begin
   else
     result := Step/StepCount;
 end;
+
+{$IFDEF ALLOW_TPROGRESS_NEW}//triggered internal errors in JSONhelpers.pas
+class function Tprogress.New(step, stepcount: int64): TProgress;
+begin
+  result.step := step;
+  result.stepcount := stepcount;
+
+end;
+{$ENDIF}
+
+function TProgressF.PercentComplete: single;
+begin
+  if StepCount = 0 then
+    result := 0
+  else
+    result := Step/StepCount;
+end;
+
+
+function  TProgress.close: boolean;
+begin
+  result := step < 0;
+end;
+
+function  TProgressF.close: boolean;
+begin
+  result := step < 0;
+end;
+
 
 
 procedure TVolatileProgression.Reset;
@@ -664,6 +854,13 @@ begin
   result.Top := round(rf.Top);
   result.Width := round(rf.Width);
   result.Height := round(rf.height);
+end;
+
+function TrunningAverage.Avg: double;
+begin
+  result := 0;
+  if Count > 0 then
+    result := total/count;
 end;
 
 initialization

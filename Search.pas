@@ -3,7 +3,7 @@ unit Search;
 interface
 
 uses
-  typex;
+  typex, classes, sysutils;
 
 
 type
@@ -13,9 +13,56 @@ type
 
 function BinarySearch(func: TBinarySearchFunctionEVal; data: pointer; out res: TBinarySearchOp): nativeint;overload;
 function BinarySearch(func: TBinarySearchFunctionEValOfObject; out res: TBinarySearchOp): int64;overload;
+function BinarySearchStringList(sl: TStringlist; sFor: string; bIgnoreCase: boolean = false): int64;
 
 
 implementation
+
+function BinarySearchStringList(sl: TStringlist; sFor: string; bIgnoreCase: boolean = false): int64;
+var
+  ipos: nativeint;
+  finalIdx, testIdx: int64;
+  iTemp: nativeint;
+begin
+  iPos := 63;
+  ipos := 0;
+  var cnt := sl.count;
+  testIdx := 0;
+  finalIdx := 0;
+
+  for iPos := 63 downto 0 do begin
+    testIdx :=   finalIdx or (1 shl iPos);//propose to add a bit to the index
+
+    //if index in range
+    if testIdx < cnt then begin //Never put a 1 in for indexes greater than the count
+      //if search > testcase, keep value
+      if bIgnoreCase then
+        iTemp := CompareText(sFor, sl[testIdx])
+      else
+        iTemp := CompareStr(sFor, sl[testIdx]);
+
+      if itemp >= 0 then
+        finalIdx := testIdx;
+
+      if itemp = 0 then
+        exit(finalIdx);
+
+
+    end;
+  end;
+
+  if bIgnoreCase then
+    iTemp := CompareText(sFor, sl[finalIdx])
+  else
+    iTemp := CompareStr(sFor, sl[finalIdx]);
+
+
+  if iTemp = 0 then
+    exit(finalIdx);
+
+  exit(-1);
+
+end;
 
 function BinarySearch(func: TBinarySearchFunctionEVal; data: pointer; out res: TBinarySearchOp): nativeint;
 var

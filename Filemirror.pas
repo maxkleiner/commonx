@@ -668,7 +668,7 @@ end;
 function TFileReplicator.AdjustPathXX(sPath: string): string;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

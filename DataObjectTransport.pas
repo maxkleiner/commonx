@@ -146,8 +146,6 @@ begin
     //Connect
 
     if not Connect then begin
-//      SetLastServerError(999, 'Unable to connect to server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
-            //raise ETransPortError.create('Unable to connect to Pathways server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
       result := false;
       exit;
     end;

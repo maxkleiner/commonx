@@ -10,7 +10,7 @@ interface
 
 
 uses
-  packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -62,7 +62,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPAmbassadorClient.RouteMe(ComputerNAme:string; ApplicationName:string; myport:int64);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -89,7 +89,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPAmbassadorClient.RouteMe_Async(ComputerNAme:string; ApplicationName:string; myport:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -112,7 +112,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPAmbassadorClient.HasRoute(ComputerNAme:string; ApplicationName:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -141,7 +141,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPAmbassadorClient.HasRoute_Async(ComputerNAme:string; ApplicationName:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -163,7 +163,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPAmbassadorClient.HasRoute_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -179,7 +179,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPAmbassadorClient.CrossPing(ComputerName:string; ApplicationNAme:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -205,7 +205,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPAmbassadorClient.CrossPing_Async(ComputerName:string; ApplicationNAme:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');

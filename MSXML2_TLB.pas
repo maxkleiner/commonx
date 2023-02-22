@@ -11,62 +11,46 @@ unit MSXML2_TLB;
 // manual modifications will be lost.                                         
 // ************************************************************************ //
 
-// $Rev: 52393 $
-// File generated on 5/17/2014 1:58:31 PM from Type Library described below.
+// PASTLWTR : 1.2
+// File generated on 10/5/2015 12:31:08 PM from Type Library described below.
 
 // ************************************************************************  //
-// Type Lib: C:\Windows\System32\msxml6.dll (1)
+// Type Lib: C:\WINDOWS\system32\msxml3.dll (1)
 // LIBID: {F5078F18-C551-11D3-89B9-0000F81FE221}
 // LCID: 0
 // Helpfile: 
-// HelpString: Microsoft XML, v6.0
+// HelpString: Microsoft XML, v3.0
 // DepndLst: 
-//   (1) v2.0 stdole, (C:\Windows\SysWOW64\stdole2.tlb)
-// SYS_KIND: SYS_WIN32
+//   (1) v2.0 stdole, (C:\WINDOWS\system32\stdole2.tlb)
 // Errors:
-//   Hint: Symbol 'DOMDocument' renamed to 'msDOMDocument'
-//   Hint: Symbol 'DOMDocument26' renamed to 'msDOMDocument26'
-//   Hint: Symbol 'DOMDocument30' renamed to 'msDOMDocument30'
-//   Hint: Symbol 'FreeThreadedDOMDocument' renamed to 'msFreeThreadedDOMDocument'
-//   Hint: Symbol 'FreeThreadedDOMDocument26' renamed to 'msFreeThreadedDOMDocument26'
-//   Hint: Symbol 'FreeThreadedDOMDocument30' renamed to 'msFreeThreadedDOMDocument30'
-//   Hint: Symbol 'XMLSchemaCache' renamed to 'msXMLSchemaCache'
-//   Hint: Symbol 'XMLSchemaCache26' renamed to 'msXMLSchemaCache26'
-//   Hint: Symbol 'XMLSchemaCache30' renamed to 'msXMLSchemaCache30'
-//   Hint: Symbol 'XSLTemplate' renamed to 'msXSLTemplate'
-//   Hint: Symbol 'XSLTemplate26' renamed to 'msXSLTemplate26'
-//   Hint: Symbol 'XSLTemplate30' renamed to 'msXSLTemplate30'
-//   Hint: Symbol 'DSOControl' renamed to 'msDSOControl'
-//   Hint: Symbol 'DSOControl26' renamed to 'msDSOControl26'
-//   Hint: Symbol 'DSOControl30' renamed to 'msDSOControl30'
-//   Hint: Symbol 'XMLHTTP' renamed to 'msXMLHTTP'
-//   Hint: Symbol 'XMLHTTP26' renamed to 'msXMLHTTP26'
-//   Hint: Symbol 'XMLHTTP30' renamed to 'msXMLHTTP30'
-//   Hint: Symbol 'ServerXMLHTTP' renamed to 'msServerXMLHTTP'
-//   Hint: Symbol 'ServerXMLHTTP30' renamed to 'msServerXMLHTTP30'
-//   Hint: Symbol 'SAXXMLReader' renamed to 'msSAXXMLReader'
-//   Hint: Symbol 'SAXXMLReader30' renamed to 'msSAXXMLReader30'
-//   Hint: Symbol 'MXXMLWriter' renamed to 'msMXXMLWriter'
-//   Hint: Symbol 'MXXMLWriter30' renamed to 'msMXXMLWriter30'
-//   Hint: Symbol 'SAXAttributes' renamed to 'msSAXAttributes'
-//   Hint: Symbol 'SAXAttributes30' renamed to 'msSAXAttributes30'
 //   Hint: Parameter 'type' of IXMLDOMNode.nodeType changed to 'type_'
 //   Hint: Member 'implementation' of 'IXMLDOMDocument' changed to 'implementation_'
 //   Hint: Parameter 'type' of IXMLDOMDocument.createNode changed to 'type_'
 //   Hint: Parameter 'var' of IXMLDOMSchemaCollection.add changed to 'var_'
 //   Hint: Symbol 'type' renamed to 'type_'
 //   Hint: Parameter 'type' of ISchemaElement.type changed to 'type_'
+//   Hint: Symbol 'type' renamed to 'type_'
 //   Hint: Parameter 'type' of ISchemaAttribute.type changed to 'type_'
+//   Hint: Symbol 'type' renamed to 'type_'
+//   Hint: Symbol 'type' renamed to 'type_'
 // ************************************************************************ //
+// *************************************************************************//
+// NOTE:                                                                      
+// Items guarded by $IFDEF_LIVE_SERVER_AT_DESIGN_TIME are used by properties  
+// which return objects that may need to be explicitly created via a function 
+// call prior to any access via the property. These items have been disabled  
+// in order to prevent accidental use from within the object inspector. You   
+// may enable them by defining LIVE_SERVER_AT_DESIGN_TIME or by selectively   
+// removing them from the $IFDEF blocks. However, such items must still be    
+// programmatically created via a method of the appropriate CoClass before    
+// they can be used.                                                          
 {$TYPEDADDRESS OFF} // Unit must be compiled without type-checked pointers. 
 {$WARN SYMBOL_PLATFORM OFF}
 {$WRITEABLECONST ON}
 {$VARPROPSETTER ON}
-{$ALIGN 4}
-
 interface
 
-uses Winapi.Windows, System.Classes, System.Variants, System.Win.StdVCL, Vcl.Graphics, Vcl.OleServer, Winapi.ActiveX;
+uses Windows, ActiveX, Classes, Graphics, OleServer, StdVCL, Variants;
   
 
 // *********************************************************************//
@@ -78,7 +62,7 @@ uses Winapi.Windows, System.Classes, System.Variants, System.Win.StdVCL, Vcl.Gra
 // *********************************************************************//
 const
   // TypeLibrary Major and minor versions
-  MSXML2MajorVersion = 6;
+  MSXML2MajorVersion = 3;
   MSXML2MinorVersion = 0;
 
   LIBID_MSXML2: TGUID = '{F5078F18-C551-11D3-89B9-0000F81FE221}';
@@ -149,6 +133,13 @@ const
   IID_ISchemaAttributeGroup: TGUID = '{50EA08BA-DD1B-4664-9A50-C2F40F4BD79A}';
   IID_ISchemaIdentityConstraint: TGUID = '{50EA08BD-DD1B-4664-9A50-C2F40F4BD79A}';
   IID_ISchemaNotation: TGUID = '{50EA08BE-DD1B-4664-9A50-C2F40F4BD79A}';
+  IID_IXMLElementCollection: TGUID = '{65725580-9B5D-11D0-9BFE-00C04FC99C8E}';
+  IID_IXMLDocument: TGUID = '{F52E2B61-18A1-11D1-B105-00805F49916B}';
+  IID_IXMLElement: TGUID = '{3F7F31AC-E15F-11D0-9C25-00C04FC99C8E}';
+  IID_IXMLDocument2: TGUID = '{2B8DE2FE-8D2D-11D1-B2FC-00C04FD915A9}';
+  IID_IXMLElement2: TGUID = '{2B8DE2FF-8D2D-11D1-B2FC-00C04FD915A9}';
+  IID_IXMLAttribute: TGUID = '{D4D4A0FC-3B73-11D1-B2B4-00C04FB92596}';
+  IID_IXMLError: TGUID = '{948C5AD3-C58D-11D0-9C0B-00C04FC99C8E}';
   IID_IXMLDOMSelection: TGUID = '{AA634FC7-5888-44A7-A257-3A47150D3A0E}';
   DIID_XMLDOMDocumentEvents: TGUID = '{3EFAA427-272F-11D2-836F-0000F87A7782}';
   IID_IDSOControl: TGUID = '{310AFA62-0575-11D2-9CA9-0060B0EC3D39}';
@@ -158,58 +149,59 @@ const
   IID_IMXNamespacePrefixes: TGUID = '{C90352F4-643C-4FBC-BB23-E996EB2D51FD}';
   IID_IVBMXNamespaceManager: TGUID = '{C90352F5-643C-4FBC-BB23-E996EB2D51FD}';
   IID_IMXNamespaceManager: TGUID = '{C90352F6-643C-4FBC-BB23-E996EB2D51FD}';
-  CLASS_msDOMDocument: TGUID = '{F6D90F11-9C73-11D3-B32E-00C04F990BB4}';
-  CLASS_msDOMDocument26: TGUID = '{F5078F1B-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msDOMDocument30: TGUID = '{F5078F32-C551-11D3-89B9-0000F81FE221}';
+  CLASS_DOMDocument: TGUID = '{F6D90F11-9C73-11D3-B32E-00C04F990BB4}';
+  CLASS_DOMDocument26: TGUID = '{F5078F1B-C551-11D3-89B9-0000F81FE221}';
+  CLASS_DOMDocument30: TGUID = '{F5078F32-C551-11D3-89B9-0000F81FE221}';
   CLASS_DOMDocument40: TGUID = '{88D969C0-F192-11D4-A65F-0040963251E5}';
   CLASS_DOMDocument60: TGUID = '{88D96A05-F192-11D4-A65F-0040963251E5}';
-  CLASS_msFreeThreadedDOMDocument: TGUID = '{F6D90F12-9C73-11D3-B32E-00C04F990BB4}';
-  CLASS_msFreeThreadedDOMDocument26: TGUID = '{F5078F1C-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msFreeThreadedDOMDocument30: TGUID = '{F5078F33-C551-11D3-89B9-0000F81FE221}';
+  CLASS_FreeThreadedDOMDocument: TGUID = '{F6D90F12-9C73-11D3-B32E-00C04F990BB4}';
+  CLASS_FreeThreadedDOMDocument26: TGUID = '{F5078F1C-C551-11D3-89B9-0000F81FE221}';
+  CLASS_FreeThreadedDOMDocument30: TGUID = '{F5078F33-C551-11D3-89B9-0000F81FE221}';
   CLASS_FreeThreadedDOMDocument40: TGUID = '{88D969C1-F192-11D4-A65F-0040963251E5}';
   CLASS_FreeThreadedDOMDocument60: TGUID = '{88D96A06-F192-11D4-A65F-0040963251E5}';
-  CLASS_msXMLSchemaCache: TGUID = '{373984C9-B845-449B-91E7-45AC83036ADE}';
-  CLASS_msXMLSchemaCache26: TGUID = '{F5078F1D-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msXMLSchemaCache30: TGUID = '{F5078F34-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XMLSchemaCache: TGUID = '{373984C9-B845-449B-91E7-45AC83036ADE}';
+  CLASS_XMLSchemaCache26: TGUID = '{F5078F1D-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XMLSchemaCache30: TGUID = '{F5078F34-C551-11D3-89B9-0000F81FE221}';
   CLASS_XMLSchemaCache40: TGUID = '{88D969C2-F192-11D4-A65F-0040963251E5}';
   CLASS_XMLSchemaCache60: TGUID = '{88D96A07-F192-11D4-A65F-0040963251E5}';
-  CLASS_msXSLTemplate: TGUID = '{2933BF94-7B36-11D2-B20E-00C04F983E60}';
-  CLASS_msXSLTemplate26: TGUID = '{F5078F21-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msXSLTemplate30: TGUID = '{F5078F36-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XSLTemplate: TGUID = '{2933BF94-7B36-11D2-B20E-00C04F983E60}';
+  CLASS_XSLTemplate26: TGUID = '{F5078F21-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XSLTemplate30: TGUID = '{F5078F36-C551-11D3-89B9-0000F81FE221}';
   CLASS_XSLTemplate40: TGUID = '{88D969C3-F192-11D4-A65F-0040963251E5}';
   CLASS_XSLTemplate60: TGUID = '{88D96A08-F192-11D4-A65F-0040963251E5}';
-  CLASS_msDSOControl: TGUID = '{F6D90F14-9C73-11D3-B32E-00C04F990BB4}';
-  CLASS_msDSOControl26: TGUID = '{F5078F1F-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msDSOControl30: TGUID = '{F5078F39-C551-11D3-89B9-0000F81FE221}';
+  CLASS_DSOControl: TGUID = '{F6D90F14-9C73-11D3-B32E-00C04F990BB4}';
+  CLASS_DSOControl26: TGUID = '{F5078F1F-C551-11D3-89B9-0000F81FE221}';
+  CLASS_DSOControl30: TGUID = '{F5078F39-C551-11D3-89B9-0000F81FE221}';
   CLASS_DSOControl40: TGUID = '{88D969C4-F192-11D4-A65F-0040963251E5}';
-  CLASS_msXMLHTTP: TGUID = '{F6D90F16-9C73-11D3-B32E-00C04F990BB4}';
-  CLASS_msXMLHTTP26: TGUID = '{F5078F1E-C551-11D3-89B9-0000F81FE221}';
-  CLASS_msXMLHTTP30: TGUID = '{F5078F35-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XMLHTTP: TGUID = '{F6D90F16-9C73-11D3-B32E-00C04F990BB4}';
+  CLASS_XMLHTTP26: TGUID = '{F5078F1E-C551-11D3-89B9-0000F81FE221}';
+  CLASS_XMLHTTP30: TGUID = '{F5078F35-C551-11D3-89B9-0000F81FE221}';
   CLASS_XMLHTTP40: TGUID = '{88D969C5-F192-11D4-A65F-0040963251E5}';
   CLASS_XMLHTTP60: TGUID = '{88D96A0A-F192-11D4-A65F-0040963251E5}';
-  CLASS_msServerXMLHTTP: TGUID = '{AFBA6B42-5692-48EA-8141-DC517DCF0EF1}';
-  CLASS_msServerXMLHTTP30: TGUID = '{AFB40FFD-B609-40A3-9828-F88BBE11E4E3}';
+  CLASS_ServerXMLHTTP: TGUID = '{AFBA6B42-5692-48EA-8141-DC517DCF0EF1}';
+  CLASS_ServerXMLHTTP30: TGUID = '{AFB40FFD-B609-40A3-9828-F88BBE11E4E3}';
   CLASS_ServerXMLHTTP40: TGUID = '{88D969C6-F192-11D4-A65F-0040963251E5}';
   CLASS_ServerXMLHTTP60: TGUID = '{88D96A0B-F192-11D4-A65F-0040963251E5}';
-  CLASS_msSAXXMLReader: TGUID = '{079AA557-4A18-424A-8EEE-E39F0A8D41B9}';
-  CLASS_msSAXXMLReader30: TGUID = '{3124C396-FB13-4836-A6AD-1317F1713688}';
+  CLASS_SAXXMLReader: TGUID = '{079AA557-4A18-424A-8EEE-E39F0A8D41B9}';
+  CLASS_SAXXMLReader30: TGUID = '{3124C396-FB13-4836-A6AD-1317F1713688}';
   CLASS_SAXXMLReader40: TGUID = '{7C6E29BC-8B8B-4C3D-859E-AF6CD158BE0F}';
   CLASS_SAXXMLReader60: TGUID = '{88D96A0C-F192-11D4-A65F-0040963251E5}';
-  CLASS_msMXXMLWriter: TGUID = '{FC220AD8-A72A-4EE8-926E-0B7AD152A020}';
-  CLASS_msMXXMLWriter30: TGUID = '{3D813DFE-6C91-4A4E-8F41-04346A841D9C}';
+  CLASS_MXXMLWriter: TGUID = '{FC220AD8-A72A-4EE8-926E-0B7AD152A020}';
+  CLASS_MXXMLWriter30: TGUID = '{3D813DFE-6C91-4A4E-8F41-04346A841D9C}';
   CLASS_MXXMLWriter40: TGUID = '{88D969C8-F192-11D4-A65F-0040963251E5}';
   CLASS_MXXMLWriter60: TGUID = '{88D96A0F-F192-11D4-A65F-0040963251E5}';
   CLASS_MXHTMLWriter: TGUID = '{A4C23EC3-6B70-4466-9127-550077239978}';
   CLASS_MXHTMLWriter30: TGUID = '{853D1540-C1A7-4AA9-A226-4D3BD301146D}';
   CLASS_MXHTMLWriter40: TGUID = '{88D969C9-F192-11D4-A65F-0040963251E5}';
   CLASS_MXHTMLWriter60: TGUID = '{88D96A10-F192-11D4-A65F-0040963251E5}';
-  CLASS_msSAXAttributes: TGUID = '{4DD441AD-526D-4A77-9F1B-9841ED802FB0}';
-  CLASS_msSAXAttributes30: TGUID = '{3E784A01-F3AE-4DC0-9354-9526B9370EBA}';
+  CLASS_SAXAttributes: TGUID = '{4DD441AD-526D-4A77-9F1B-9841ED802FB0}';
+  CLASS_SAXAttributes30: TGUID = '{3E784A01-F3AE-4DC0-9354-9526B9370EBA}';
   CLASS_SAXAttributes40: TGUID = '{88D969CA-F192-11D4-A65F-0040963251E5}';
   CLASS_SAXAttributes60: TGUID = '{88D96A0E-F192-11D4-A65F-0040963251E5}';
   CLASS_MXNamespaceManager: TGUID = '{88D969D5-F192-11D4-A65F-0040963251E5}';
   CLASS_MXNamespaceManager40: TGUID = '{88D969D6-F192-11D4-A65F-0040963251E5}';
   CLASS_MXNamespaceManager60: TGUID = '{88D96A11-F192-11D4-A65F-0040963251E5}';
+  CLASS_XMLDocument: TGUID = '{CFC399AF-D876-11D0-9C10-00C04FC99C8E}';
 
 // *********************************************************************//
 // Declaration of Enumerations defined in Type Library                    
@@ -367,6 +359,18 @@ const
   SCHEMAUSE_PROHIBITED = $00000001;
   SCHEMAUSE_REQUIRED = $00000002;
 
+// Constants for enum tagXMLEMEM_TYPE
+type
+  tagXMLEMEM_TYPE = TOleEnum;
+const
+  XMLELEMTYPE_ELEMENT = $00000000;
+  XMLELEMTYPE_TEXT = $00000001;
+  XMLELEMTYPE_COMMENT = $00000002;
+  XMLELEMTYPE_DOCUMENT = $00000003;
+  XMLELEMTYPE_DTD = $00000004;
+  XMLELEMTYPE_PI = $00000005;
+  XMLELEMTYPE_OTHER = $00000006;
+
 // Constants for enum _SERVERXMLHTTP_OPTION
 type
   _SERVERXMLHTTP_OPTION = TOleEnum;
@@ -523,6 +527,18 @@ type
   ISchemaIdentityConstraintDisp = dispinterface;
   ISchemaNotation = interface;
   ISchemaNotationDisp = dispinterface;
+  IXMLElementCollection = interface;
+  IXMLElementCollectionDisp = dispinterface;
+  IXMLDocument = interface;
+  IXMLDocumentDisp = dispinterface;
+  IXMLElement = interface;
+  IXMLElementDisp = dispinterface;
+  IXMLDocument2 = interface;
+  IXMLElement2 = interface;
+  IXMLElement2Disp = dispinterface;
+  IXMLAttribute = interface;
+  IXMLAttributeDisp = dispinterface;
+  IXMLError = interface;
   IXMLDOMSelection = interface;
   IXMLDOMSelectionDisp = dispinterface;
   XMLDOMDocumentEvents = dispinterface;
@@ -544,64 +560,66 @@ type
 // Declaration of CoClasses defined in Type Library                       
 // (NOTE: Here we map each CoClass to its Default Interface)              
 // *********************************************************************//
-  msDOMDocument = IXMLDOMDocument2;
-  msDOMDocument26 = IXMLDOMDocument2;
-  msDOMDocument30 = IXMLDOMDocument2;
+  DOMDocument = IXMLDOMDocument2;
+  DOMDocument26 = IXMLDOMDocument2;
+  DOMDocument30 = IXMLDOMDocument2;
   DOMDocument40 = IXMLDOMDocument2;
   DOMDocument60 = IXMLDOMDocument3;
-  msFreeThreadedDOMDocument = IXMLDOMDocument2;
-  msFreeThreadedDOMDocument26 = IXMLDOMDocument2;
-  msFreeThreadedDOMDocument30 = IXMLDOMDocument2;
+  FreeThreadedDOMDocument = IXMLDOMDocument2;
+  FreeThreadedDOMDocument26 = IXMLDOMDocument2;
+  FreeThreadedDOMDocument30 = IXMLDOMDocument2;
   FreeThreadedDOMDocument40 = IXMLDOMDocument2;
   FreeThreadedDOMDocument60 = IXMLDOMDocument3;
-  msXMLSchemaCache = IXMLDOMSchemaCollection;
-  msXMLSchemaCache26 = IXMLDOMSchemaCollection;
-  msXMLSchemaCache30 = IXMLDOMSchemaCollection;
+  XMLSchemaCache = IXMLDOMSchemaCollection;
+  XMLSchemaCache26 = IXMLDOMSchemaCollection;
+  XMLSchemaCache30 = IXMLDOMSchemaCollection;
   XMLSchemaCache40 = IXMLDOMSchemaCollection2;
   XMLSchemaCache60 = IXMLDOMSchemaCollection2;
-  msXSLTemplate = IXSLTemplate;
-  msXSLTemplate26 = IXSLTemplate;
-  msXSLTemplate30 = IXSLTemplate;
+  XSLTemplate = IXSLTemplate;
+  XSLTemplate26 = IXSLTemplate;
+  XSLTemplate30 = IXSLTemplate;
   XSLTemplate40 = IXSLTemplate;
   XSLTemplate60 = IXSLTemplate;
-  msDSOControl = IDSOControl;
-  msDSOControl26 = IDSOControl;
-  msDSOControl30 = IDSOControl;
+  DSOControl = IDSOControl;
+  DSOControl26 = IDSOControl;
+  DSOControl30 = IDSOControl;
   DSOControl40 = IDSOControl;
-  msXMLHTTP = IXMLHTTPRequest;
-  msXMLHTTP26 = IXMLHTTPRequest;
-  msXMLHTTP30 = IXMLHTTPRequest;
+  XMLHTTP = IXMLHTTPRequest;
+  XMLHTTP26 = IXMLHTTPRequest;
+  XMLHTTP30 = IXMLHTTPRequest;
   XMLHTTP40 = IXMLHTTPRequest;
   XMLHTTP60 = IXMLHTTPRequest;
-  msServerXMLHTTP = IServerXMLHTTPRequest;
-  msServerXMLHTTP30 = IServerXMLHTTPRequest;
+  ServerXMLHTTP = IServerXMLHTTPRequest;
+  ServerXMLHTTP30 = IServerXMLHTTPRequest;
   ServerXMLHTTP40 = IServerXMLHTTPRequest2;
   ServerXMLHTTP60 = IServerXMLHTTPRequest2;
-  msSAXXMLReader = IVBSAXXMLReader;
-  msSAXXMLReader30 = IVBSAXXMLReader;
+  SAXXMLReader = IVBSAXXMLReader;
+  SAXXMLReader30 = IVBSAXXMLReader;
   SAXXMLReader40 = IVBSAXXMLReader;
   SAXXMLReader60 = IVBSAXXMLReader;
-  msMXXMLWriter = IMXWriter;
-  msMXXMLWriter30 = IMXWriter;
+  MXXMLWriter = IMXWriter;
+  MXXMLWriter30 = IMXWriter;
   MXXMLWriter40 = IMXWriter;
   MXXMLWriter60 = IMXWriter;
   MXHTMLWriter = IMXWriter;
   MXHTMLWriter30 = IMXWriter;
   MXHTMLWriter40 = IMXWriter;
   MXHTMLWriter60 = IMXWriter;
-  msSAXAttributes = IMXAttributes;
-  msSAXAttributes30 = IMXAttributes;
+  SAXAttributes = IMXAttributes;
+  SAXAttributes30 = IMXAttributes;
   SAXAttributes40 = IMXAttributes;
   SAXAttributes60 = IMXAttributes;
   MXNamespaceManager = IVBMXNamespaceManager;
   MXNamespaceManager40 = IVBMXNamespaceManager;
   MXNamespaceManager60 = IVBMXNamespaceManager;
+  XMLDocument = IXMLDocument2;
 
 
 // *********************************************************************//
 // Declaration of structures, unions and aliases.                         
 // *********************************************************************//
   PWord1 = ^Word; {*}
+  PUserType1 = ^_xml_error; {*}
 
   DOMNodeType = tagDOMNodeType; 
   SOMITEMTYPE = _SOMITEMTYPE; 
@@ -611,6 +629,19 @@ type
   SCHEMAPROCESSCONTENTS = _SCHEMAPROCESSCONTENTS; 
   SCHEMACONTENTTYPE = _SCHEMACONTENTTYPE; 
   SCHEMAUSE = _SCHEMAUSE; 
+
+  _xml_error = packed record
+    _nLine: SYSUINT;
+    _pchBuf: WideString;
+    _cchBuf: SYSUINT;
+    _ich: SYSUINT;
+    _pszFound: WideString;
+    _pszExpected: WideString;
+    _reserved1: LongWord;
+    _reserved2: LongWord;
+  end;
+
+  XMLELEM_TYPE = tagXMLEMEM_TYPE; 
   SERVERXMLHTTP_OPTION = _SERVERXMLHTTP_OPTION; 
   SXH_SERVER_CERT_OPTION = _SXH_SERVER_CERT_OPTION; 
   SXH_PROXY_SETTING = _SXH_PROXY_SETTING; 
@@ -694,7 +725,6 @@ type
     property specified: WordBool read Get_specified;
     property definition: IXMLDOMNode read Get_definition;
     property nodeTypedValue: OleVariant read Get_nodeTypedValue write Set_nodeTypedValue;
-    // Skipped Property "dataType"
     property xml: WideString read Get_xml;
     property parsed: WordBool read Get_parsed;
     property namespaceURI: WideString read Get_namespaceURI;
@@ -1248,6 +1278,57 @@ type
 // *********************************************************************//
   IXMLDOMText = interface(IXMLDOMCharacterData)
     ['{2933BF87-7B36-11D2-B20E-00C04F983E60}']
+    procedure GhostMethod_IXMLDOMText_0_1; safecall;
+    procedure GhostMethod_IXMLDOMText_4_2; safecall;
+    procedure GhostMethod_IXMLDOMText_8_3; safecall;
+    procedure GhostMethod_IXMLDOMText_12_4; safecall;
+    procedure GhostMethod_IXMLDOMText_16_5; safecall;
+    procedure GhostMethod_IXMLDOMText_20_6; safecall;
+    procedure GhostMethod_IXMLDOMText_24_7; safecall;
+    procedure GhostMethod_IXMLDOMText_28_8; safecall;
+    procedure GhostMethod_IXMLDOMText_32_9; safecall;
+    procedure GhostMethod_IXMLDOMText_36_10; safecall;
+    procedure GhostMethod_IXMLDOMText_40_11; safecall;
+    procedure GhostMethod_IXMLDOMText_44_12; safecall;
+    procedure GhostMethod_IXMLDOMText_48_13; safecall;
+    procedure GhostMethod_IXMLDOMText_52_14; safecall;
+    procedure GhostMethod_IXMLDOMText_56_15; safecall;
+    procedure GhostMethod_IXMLDOMText_60_16; safecall;
+    procedure GhostMethod_IXMLDOMText_64_17; safecall;
+    procedure GhostMethod_IXMLDOMText_68_18; safecall;
+    procedure GhostMethod_IXMLDOMText_72_19; safecall;
+    procedure GhostMethod_IXMLDOMText_76_20; safecall;
+    procedure GhostMethod_IXMLDOMText_80_21; safecall;
+    procedure GhostMethod_IXMLDOMText_84_22; safecall;
+    procedure GhostMethod_IXMLDOMText_88_23; safecall;
+    procedure GhostMethod_IXMLDOMText_92_24; safecall;
+    procedure GhostMethod_IXMLDOMText_96_25; safecall;
+    procedure GhostMethod_IXMLDOMText_100_26; safecall;
+    procedure GhostMethod_IXMLDOMText_104_27; safecall;
+    procedure GhostMethod_IXMLDOMText_108_28; safecall;
+    procedure GhostMethod_IXMLDOMText_112_29; safecall;
+    procedure GhostMethod_IXMLDOMText_116_30; safecall;
+    procedure GhostMethod_IXMLDOMText_120_31; safecall;
+    procedure GhostMethod_IXMLDOMText_124_32; safecall;
+    procedure GhostMethod_IXMLDOMText_128_33; safecall;
+    procedure GhostMethod_IXMLDOMText_132_34; safecall;
+    procedure GhostMethod_IXMLDOMText_136_35; safecall;
+    procedure GhostMethod_IXMLDOMText_140_36; safecall;
+    procedure GhostMethod_IXMLDOMText_144_37; safecall;
+    procedure GhostMethod_IXMLDOMText_148_38; safecall;
+    procedure GhostMethod_IXMLDOMText_152_39; safecall;
+    procedure GhostMethod_IXMLDOMText_156_40; safecall;
+    procedure GhostMethod_IXMLDOMText_160_41; safecall;
+    procedure GhostMethod_IXMLDOMText_164_42; safecall;
+    procedure GhostMethod_IXMLDOMText_168_43; safecall;
+    procedure GhostMethod_IXMLDOMText_172_44; safecall;
+    procedure GhostMethod_IXMLDOMText_176_45; safecall;
+    procedure GhostMethod_IXMLDOMText_180_46; safecall;
+    procedure GhostMethod_IXMLDOMText_184_47; safecall;
+    procedure GhostMethod_IXMLDOMText_188_48; safecall;
+    procedure GhostMethod_IXMLDOMText_192_49; safecall;
+    procedure GhostMethod_IXMLDOMText_196_50; safecall;
+    procedure GhostMethod_IXMLDOMText_200_51; safecall;
     function splitText(offset: Integer): IXMLDOMText; safecall;
   end;
 
@@ -1258,6 +1339,57 @@ type
 // *********************************************************************//
   IXMLDOMTextDisp = dispinterface
     ['{2933BF87-7B36-11D2-B20E-00C04F983E60}']
+    procedure GhostMethod_IXMLDOMText_0_1; dispid 1610678272;
+    procedure GhostMethod_IXMLDOMText_4_2; dispid 1610678273;
+    procedure GhostMethod_IXMLDOMText_8_3; dispid 1610678274;
+    procedure GhostMethod_IXMLDOMText_12_4; dispid 1610678275;
+    procedure GhostMethod_IXMLDOMText_16_5; dispid 1610678276;
+    procedure GhostMethod_IXMLDOMText_20_6; dispid 1610678277;
+    procedure GhostMethod_IXMLDOMText_24_7; dispid 1610678278;
+    procedure GhostMethod_IXMLDOMText_28_8; dispid 1610678279;
+    procedure GhostMethod_IXMLDOMText_32_9; dispid 1610678280;
+    procedure GhostMethod_IXMLDOMText_36_10; dispid 1610678281;
+    procedure GhostMethod_IXMLDOMText_40_11; dispid 1610678282;
+    procedure GhostMethod_IXMLDOMText_44_12; dispid 1610678283;
+    procedure GhostMethod_IXMLDOMText_48_13; dispid 1610678284;
+    procedure GhostMethod_IXMLDOMText_52_14; dispid 1610678285;
+    procedure GhostMethod_IXMLDOMText_56_15; dispid 1610678286;
+    procedure GhostMethod_IXMLDOMText_60_16; dispid 1610678287;
+    procedure GhostMethod_IXMLDOMText_64_17; dispid 1610678288;
+    procedure GhostMethod_IXMLDOMText_68_18; dispid 1610678289;
+    procedure GhostMethod_IXMLDOMText_72_19; dispid 1610678290;
+    procedure GhostMethod_IXMLDOMText_76_20; dispid 1610678291;
+    procedure GhostMethod_IXMLDOMText_80_21; dispid 1610678292;
+    procedure GhostMethod_IXMLDOMText_84_22; dispid 1610678293;
+    procedure GhostMethod_IXMLDOMText_88_23; dispid 1610678294;
+    procedure GhostMethod_IXMLDOMText_92_24; dispid 1610678295;
+    procedure GhostMethod_IXMLDOMText_96_25; dispid 1610678296;
+    procedure GhostMethod_IXMLDOMText_100_26; dispid 1610678297;
+    procedure GhostMethod_IXMLDOMText_104_27; dispid 1610678298;
+    procedure GhostMethod_IXMLDOMText_108_28; dispid 1610678299;
+    procedure GhostMethod_IXMLDOMText_112_29; dispid 1610678300;
+    procedure GhostMethod_IXMLDOMText_116_30; dispid 1610678301;
+    procedure GhostMethod_IXMLDOMText_120_31; dispid 1610678302;
+    procedure GhostMethod_IXMLDOMText_124_32; dispid 1610678303;
+    procedure GhostMethod_IXMLDOMText_128_33; dispid 1610678304;
+    procedure GhostMethod_IXMLDOMText_132_34; dispid 1610678305;
+    procedure GhostMethod_IXMLDOMText_136_35; dispid 1610678306;
+    procedure GhostMethod_IXMLDOMText_140_36; dispid 1610678307;
+    procedure GhostMethod_IXMLDOMText_144_37; dispid 1610678308;
+    procedure GhostMethod_IXMLDOMText_148_38; dispid 1610678309;
+    procedure GhostMethod_IXMLDOMText_152_39; dispid 1610678310;
+    procedure GhostMethod_IXMLDOMText_156_40; dispid 1610678311;
+    procedure GhostMethod_IXMLDOMText_160_41; dispid 1610678312;
+    procedure GhostMethod_IXMLDOMText_164_42; dispid 1610678313;
+    procedure GhostMethod_IXMLDOMText_168_43; dispid 1610678314;
+    procedure GhostMethod_IXMLDOMText_172_44; dispid 1610678315;
+    procedure GhostMethod_IXMLDOMText_176_45; dispid 1610678316;
+    procedure GhostMethod_IXMLDOMText_180_46; dispid 1610678317;
+    procedure GhostMethod_IXMLDOMText_184_47; dispid 1610678318;
+    procedure GhostMethod_IXMLDOMText_188_48; dispid 1610678319;
+    procedure GhostMethod_IXMLDOMText_192_49; dispid 1610678320;
+    procedure GhostMethod_IXMLDOMText_196_50; dispid 1610678321;
+    procedure GhostMethod_IXMLDOMText_200_51; dispid 1610678322;
     function splitText(offset: Integer): IXMLDOMText; dispid 123;
     property data: WideString dispid 109;
     property length: Integer readonly dispid 110;
@@ -1373,6 +1505,57 @@ type
 // *********************************************************************//
   IXMLDOMCDATASectionDisp = dispinterface
     ['{2933BF8A-7B36-11D2-B20E-00C04F983E60}']
+    procedure GhostMethod_IXMLDOMText_0_1; dispid 1610678272;
+    procedure GhostMethod_IXMLDOMText_4_2; dispid 1610678273;
+    procedure GhostMethod_IXMLDOMText_8_3; dispid 1610678274;
+    procedure GhostMethod_IXMLDOMText_12_4; dispid 1610678275;
+    procedure GhostMethod_IXMLDOMText_16_5; dispid 1610678276;
+    procedure GhostMethod_IXMLDOMText_20_6; dispid 1610678277;
+    procedure GhostMethod_IXMLDOMText_24_7; dispid 1610678278;
+    procedure GhostMethod_IXMLDOMText_28_8; dispid 1610678279;
+    procedure GhostMethod_IXMLDOMText_32_9; dispid 1610678280;
+    procedure GhostMethod_IXMLDOMText_36_10; dispid 1610678281;
+    procedure GhostMethod_IXMLDOMText_40_11; dispid 1610678282;
+    procedure GhostMethod_IXMLDOMText_44_12; dispid 1610678283;
+    procedure GhostMethod_IXMLDOMText_48_13; dispid 1610678284;
+    procedure GhostMethod_IXMLDOMText_52_14; dispid 1610678285;
+    procedure GhostMethod_IXMLDOMText_56_15; dispid 1610678286;
+    procedure GhostMethod_IXMLDOMText_60_16; dispid 1610678287;
+    procedure GhostMethod_IXMLDOMText_64_17; dispid 1610678288;
+    procedure GhostMethod_IXMLDOMText_68_18; dispid 1610678289;
+    procedure GhostMethod_IXMLDOMText_72_19; dispid 1610678290;
+    procedure GhostMethod_IXMLDOMText_76_20; dispid 1610678291;
+    procedure GhostMethod_IXMLDOMText_80_21; dispid 1610678292;
+    procedure GhostMethod_IXMLDOMText_84_22; dispid 1610678293;
+    procedure GhostMethod_IXMLDOMText_88_23; dispid 1610678294;
+    procedure GhostMethod_IXMLDOMText_92_24; dispid 1610678295;
+    procedure GhostMethod_IXMLDOMText_96_25; dispid 1610678296;
+    procedure GhostMethod_IXMLDOMText_100_26; dispid 1610678297;
+    procedure GhostMethod_IXMLDOMText_104_27; dispid 1610678298;
+    procedure GhostMethod_IXMLDOMText_108_28; dispid 1610678299;
+    procedure GhostMethod_IXMLDOMText_112_29; dispid 1610678300;
+    procedure GhostMethod_IXMLDOMText_116_30; dispid 1610678301;
+    procedure GhostMethod_IXMLDOMText_120_31; dispid 1610678302;
+    procedure GhostMethod_IXMLDOMText_124_32; dispid 1610678303;
+    procedure GhostMethod_IXMLDOMText_128_33; dispid 1610678304;
+    procedure GhostMethod_IXMLDOMText_132_34; dispid 1610678305;
+    procedure GhostMethod_IXMLDOMText_136_35; dispid 1610678306;
+    procedure GhostMethod_IXMLDOMText_140_36; dispid 1610678307;
+    procedure GhostMethod_IXMLDOMText_144_37; dispid 1610678308;
+    procedure GhostMethod_IXMLDOMText_148_38; dispid 1610678309;
+    procedure GhostMethod_IXMLDOMText_152_39; dispid 1610678310;
+    procedure GhostMethod_IXMLDOMText_156_40; dispid 1610678311;
+    procedure GhostMethod_IXMLDOMText_160_41; dispid 1610678312;
+    procedure GhostMethod_IXMLDOMText_164_42; dispid 1610678313;
+    procedure GhostMethod_IXMLDOMText_168_43; dispid 1610678314;
+    procedure GhostMethod_IXMLDOMText_172_44; dispid 1610678315;
+    procedure GhostMethod_IXMLDOMText_176_45; dispid 1610678316;
+    procedure GhostMethod_IXMLDOMText_180_46; dispid 1610678317;
+    procedure GhostMethod_IXMLDOMText_184_47; dispid 1610678318;
+    procedure GhostMethod_IXMLDOMText_188_48; dispid 1610678319;
+    procedure GhostMethod_IXMLDOMText_192_49; dispid 1610678320;
+    procedure GhostMethod_IXMLDOMText_196_50; dispid 1610678321;
+    procedure GhostMethod_IXMLDOMText_200_51; dispid 1610678322;
     function splitText(offset: Integer): IXMLDOMText; dispid 123;
     property data: WideString dispid 109;
     property length: Integer readonly dispid 110;
@@ -2375,7 +2558,6 @@ type
     procedure ignorableWhitespace(var strChars: WideString); safecall;
     procedure processingInstruction(var strTarget: WideString; var strData: WideString); safecall;
     procedure skippedEntity(var strName: WideString); safecall;
-    property documentLocator: IVBSAXLocator write _Set_documentLocator;
   end;
 
 // *********************************************************************//
@@ -2385,7 +2567,6 @@ type
 // *********************************************************************//
   IVBSAXContentHandlerDisp = dispinterface
     ['{2ED7290A-4DD5-4B46-BB26-4E4155E77FAA}']
-    property documentLocator: IVBSAXLocator writeonly dispid 1322;
     procedure startDocument; dispid 1323;
     procedure endDocument; dispid 1324;
     procedure startPrefixMapping(var strPrefix: WideString; var strURI: WideString); dispid 1325;
@@ -2806,6 +2987,20 @@ type
 // *********************************************************************//
   ISchemaParticle = interface(ISchemaItem)
     ['{50EA08B5-DD1B-4664-9A50-C2F40F4BD79A}']
+    procedure GhostMethod_ISchemaParticle_0_1; safecall;
+    procedure GhostMethod_ISchemaParticle_4_2; safecall;
+    procedure GhostMethod_ISchemaParticle_8_3; safecall;
+    procedure GhostMethod_ISchemaParticle_12_4; safecall;
+    procedure GhostMethod_ISchemaParticle_16_5; safecall;
+    procedure GhostMethod_ISchemaParticle_20_6; safecall;
+    procedure GhostMethod_ISchemaParticle_24_7; safecall;
+    procedure GhostMethod_ISchemaParticle_28_8; safecall;
+    procedure GhostMethod_ISchemaParticle_32_9; safecall;
+    procedure GhostMethod_ISchemaParticle_36_10; safecall;
+    procedure GhostMethod_ISchemaParticle_40_11; safecall;
+    procedure GhostMethod_ISchemaParticle_44_12; safecall;
+    procedure GhostMethod_ISchemaParticle_48_13; safecall;
+    procedure GhostMethod_ISchemaParticle_52_14; safecall;
     function Get_minOccurs: OleVariant; safecall;
     function Get_maxOccurs: OleVariant; safecall;
     property minOccurs: OleVariant read Get_minOccurs;
@@ -2819,6 +3014,20 @@ type
 // *********************************************************************//
   ISchemaParticleDisp = dispinterface
     ['{50EA08B5-DD1B-4664-9A50-C2F40F4BD79A}']
+    procedure GhostMethod_ISchemaParticle_0_1; dispid 1610678272;
+    procedure GhostMethod_ISchemaParticle_4_2; dispid 1610678273;
+    procedure GhostMethod_ISchemaParticle_8_3; dispid 1610678274;
+    procedure GhostMethod_ISchemaParticle_12_4; dispid 1610678275;
+    procedure GhostMethod_ISchemaParticle_16_5; dispid 1610678276;
+    procedure GhostMethod_ISchemaParticle_20_6; dispid 1610678277;
+    procedure GhostMethod_ISchemaParticle_24_7; dispid 1610678278;
+    procedure GhostMethod_ISchemaParticle_28_8; dispid 1610678279;
+    procedure GhostMethod_ISchemaParticle_32_9; dispid 1610678280;
+    procedure GhostMethod_ISchemaParticle_36_10; dispid 1610678281;
+    procedure GhostMethod_ISchemaParticle_40_11; dispid 1610678282;
+    procedure GhostMethod_ISchemaParticle_44_12; dispid 1610678283;
+    procedure GhostMethod_ISchemaParticle_48_13; dispid 1610678284;
+    procedure GhostMethod_ISchemaParticle_52_14; dispid 1610678285;
     property minOccurs: OleVariant readonly dispid 1455;
     property maxOccurs: OleVariant readonly dispid 1451;
     property name: WideString readonly dispid 1457;
@@ -2837,6 +3046,22 @@ type
 // *********************************************************************//
   ISchemaElement = interface(ISchemaParticle)
     ['{50EA08B7-DD1B-4664-9A50-C2F40F4BD79A}']
+    procedure GhostMethod_ISchemaElement_0_1; safecall;
+    procedure GhostMethod_ISchemaElement_4_2; safecall;
+    procedure GhostMethod_ISchemaElement_8_3; safecall;
+    procedure GhostMethod_ISchemaElement_12_4; safecall;
+    procedure GhostMethod_ISchemaElement_16_5; safecall;
+    procedure GhostMethod_ISchemaElement_20_6; safecall;
+    procedure GhostMethod_ISchemaElement_24_7; safecall;
+    procedure GhostMethod_ISchemaElement_28_8; safecall;
+    procedure GhostMethod_ISchemaElement_32_9; safecall;
+    procedure GhostMethod_ISchemaElement_36_10; safecall;
+    procedure GhostMethod_ISchemaElement_40_11; safecall;
+    procedure GhostMethod_ISchemaElement_44_12; safecall;
+    procedure GhostMethod_ISchemaElement_48_13; safecall;
+    procedure GhostMethod_ISchemaElement_52_14; safecall;
+    procedure GhostMethod_ISchemaElement_56_15; safecall;
+    procedure GhostMethod_ISchemaElement_60_16; safecall;
     function Get_type_: ISchemaType; safecall;
     function Get_scope: ISchemaComplexType; safecall;
     function Get_defaultValue: WideString; safecall;
@@ -2868,6 +3093,22 @@ type
 // *********************************************************************//
   ISchemaElementDisp = dispinterface
     ['{50EA08B7-DD1B-4664-9A50-C2F40F4BD79A}']
+    procedure GhostMethod_ISchemaElement_0_1; dispid 1610678272;
+    procedure GhostMethod_ISchemaElement_4_2; dispid 1610678273;
+    procedure GhostMethod_ISchemaElement_8_3; dispid 1610678274;
+    procedure GhostMethod_ISchemaElement_12_4; dispid 1610678275;
+    procedure GhostMethod_ISchemaElement_16_5; dispid 1610678276;
+    procedure GhostMethod_ISchemaElement_20_6; dispid 1610678277;
+    procedure GhostMethod_ISchemaElement_24_7; dispid 1610678278;
+    procedure GhostMethod_ISchemaElement_28_8; dispid 1610678279;
+    procedure GhostMethod_ISchemaElement_32_9; dispid 1610678280;
+    procedure GhostMethod_ISchemaElement_36_10; dispid 1610678281;
+    procedure GhostMethod_ISchemaElement_40_11; dispid 1610678282;
+    procedure GhostMethod_ISchemaElement_44_12; dispid 1610678283;
+    procedure GhostMethod_ISchemaElement_48_13; dispid 1610678284;
+    procedure GhostMethod_ISchemaElement_52_14; dispid 1610678285;
+    procedure GhostMethod_ISchemaElement_56_15; dispid 1610678286;
+    procedure GhostMethod_ISchemaElement_60_16; dispid 1610678287;
     property type_: ISchemaType readonly dispid 1476;
     property scope: ISchemaComplexType readonly dispid 1469;
     property defaultValue: WideString readonly dispid 1431;
@@ -2879,6 +3120,20 @@ type
     property disallowedSubstitutions: SCHEMADERIVATIONMETHOD readonly dispid 1433;
     property isAbstract: WordBool readonly dispid 1442;
     property isReference: WordBool readonly dispid 1444;
+    procedure GhostMethod_ISchemaParticle_0_1; dispid 1610678272;
+    procedure GhostMethod_ISchemaParticle_4_2; dispid 1610678273;
+    procedure GhostMethod_ISchemaParticle_8_3; dispid 1610678274;
+    procedure GhostMethod_ISchemaParticle_12_4; dispid 1610678275;
+    procedure GhostMethod_ISchemaParticle_16_5; dispid 1610678276;
+    procedure GhostMethod_ISchemaParticle_20_6; dispid 1610678277;
+    procedure GhostMethod_ISchemaParticle_24_7; dispid 1610678278;
+    procedure GhostMethod_ISchemaParticle_28_8; dispid 1610678279;
+    procedure GhostMethod_ISchemaParticle_32_9; dispid 1610678280;
+    procedure GhostMethod_ISchemaParticle_36_10; dispid 1610678281;
+    procedure GhostMethod_ISchemaParticle_40_11; dispid 1610678282;
+    procedure GhostMethod_ISchemaParticle_44_12; dispid 1610678283;
+    procedure GhostMethod_ISchemaParticle_48_13; dispid 1610678284;
+    procedure GhostMethod_ISchemaParticle_52_14; dispid 1610678285;
     property minOccurs: OleVariant readonly dispid 1455;
     property maxOccurs: OleVariant readonly dispid 1451;
     property name: WideString readonly dispid 1457;
@@ -3157,6 +3412,20 @@ type
     ['{50EA08BC-DD1B-4664-9A50-C2F40F4BD79A}']
     property namespaces: ISchemaStringCollection readonly dispid 1458;
     property processContents: SCHEMAPROCESSCONTENTS readonly dispid 1463;
+    procedure GhostMethod_ISchemaParticle_0_1; dispid 1610678272;
+    procedure GhostMethod_ISchemaParticle_4_2; dispid 1610678273;
+    procedure GhostMethod_ISchemaParticle_8_3; dispid 1610678274;
+    procedure GhostMethod_ISchemaParticle_12_4; dispid 1610678275;
+    procedure GhostMethod_ISchemaParticle_16_5; dispid 1610678276;
+    procedure GhostMethod_ISchemaParticle_20_6; dispid 1610678277;
+    procedure GhostMethod_ISchemaParticle_24_7; dispid 1610678278;
+    procedure GhostMethod_ISchemaParticle_28_8; dispid 1610678279;
+    procedure GhostMethod_ISchemaParticle_32_9; dispid 1610678280;
+    procedure GhostMethod_ISchemaParticle_36_10; dispid 1610678281;
+    procedure GhostMethod_ISchemaParticle_40_11; dispid 1610678282;
+    procedure GhostMethod_ISchemaParticle_44_12; dispid 1610678283;
+    procedure GhostMethod_ISchemaParticle_48_13; dispid 1610678284;
+    procedure GhostMethod_ISchemaParticle_52_14; dispid 1610678285;
     property minOccurs: OleVariant readonly dispid 1455;
     property maxOccurs: OleVariant readonly dispid 1451;
     property name: WideString readonly dispid 1457;
@@ -3187,6 +3456,20 @@ type
   ISchemaModelGroupDisp = dispinterface
     ['{50EA08BB-DD1B-4664-9A50-C2F40F4BD79A}']
     property particles: ISchemaItemCollection readonly dispid 1461;
+    procedure GhostMethod_ISchemaParticle_0_1; dispid 1610678272;
+    procedure GhostMethod_ISchemaParticle_4_2; dispid 1610678273;
+    procedure GhostMethod_ISchemaParticle_8_3; dispid 1610678274;
+    procedure GhostMethod_ISchemaParticle_12_4; dispid 1610678275;
+    procedure GhostMethod_ISchemaParticle_16_5; dispid 1610678276;
+    procedure GhostMethod_ISchemaParticle_20_6; dispid 1610678277;
+    procedure GhostMethod_ISchemaParticle_24_7; dispid 1610678278;
+    procedure GhostMethod_ISchemaParticle_28_8; dispid 1610678279;
+    procedure GhostMethod_ISchemaParticle_32_9; dispid 1610678280;
+    procedure GhostMethod_ISchemaParticle_36_10; dispid 1610678281;
+    procedure GhostMethod_ISchemaParticle_40_11; dispid 1610678282;
+    procedure GhostMethod_ISchemaParticle_44_12; dispid 1610678283;
+    procedure GhostMethod_ISchemaParticle_48_13; dispid 1610678284;
+    procedure GhostMethod_ISchemaParticle_52_14; dispid 1610678285;
     property minOccurs: OleVariant readonly dispid 1455;
     property maxOccurs: OleVariant readonly dispid 1451;
     property name: WideString readonly dispid 1457;
@@ -3415,6 +3698,240 @@ type
   end;
 
 // *********************************************************************//
+// Interface: IXMLElementCollection
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {65725580-9B5D-11D0-9BFE-00C04FC99C8E}
+// *********************************************************************//
+  IXMLElementCollection = interface(IDispatch)
+    ['{65725580-9B5D-11D0-9BFE-00C04FC99C8E}']
+    procedure Set_length(p: Integer); safecall;
+    function Get_length: Integer; safecall;
+    function Get__newEnum: IUnknown; safecall;
+    function item(var1: OleVariant; var2: OleVariant): IDispatch; safecall;
+    property length: Integer read Get_length write Set_length;
+    property _newEnum: IUnknown read Get__newEnum;
+  end;
+
+// *********************************************************************//
+// DispIntf:  IXMLElementCollectionDisp
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {65725580-9B5D-11D0-9BFE-00C04FC99C8E}
+// *********************************************************************//
+  IXMLElementCollectionDisp = dispinterface
+    ['{65725580-9B5D-11D0-9BFE-00C04FC99C8E}']
+    property length: Integer dispid 65537;
+    property _newEnum: IUnknown readonly dispid -4;
+    function item(var1: OleVariant; var2: OleVariant): IDispatch; dispid 65539;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLDocument
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {F52E2B61-18A1-11D1-B105-00805F49916B}
+// *********************************************************************//
+  IXMLDocument = interface(IDispatch)
+    ['{F52E2B61-18A1-11D1-B105-00805F49916B}']
+    function Get_root: IXMLElement; safecall;
+    function Get_fileSize: WideString; safecall;
+    function Get_fileModifiedDate: WideString; safecall;
+    function Get_fileUpdatedDate: WideString; safecall;
+    function Get_url: WideString; safecall;
+    procedure Set_url(const p: WideString); safecall;
+    function Get_mimeType: WideString; safecall;
+    function Get_readyState: Integer; safecall;
+    function Get_charset: WideString; safecall;
+    procedure Set_charset(const p: WideString); safecall;
+    function Get_version: WideString; safecall;
+    function Get_doctype: WideString; safecall;
+    function Get_dtdURL: WideString; safecall;
+    function createElement(vType: OleVariant; var1: OleVariant): IXMLElement; safecall;
+    property root: IXMLElement read Get_root;
+    property fileSize: WideString read Get_fileSize;
+    property fileModifiedDate: WideString read Get_fileModifiedDate;
+    property fileUpdatedDate: WideString read Get_fileUpdatedDate;
+    property url: WideString read Get_url write Set_url;
+    property mimeType: WideString read Get_mimeType;
+    property readyState: Integer read Get_readyState;
+    property charset: WideString read Get_charset write Set_charset;
+    property version: WideString read Get_version;
+    property doctype: WideString read Get_doctype;
+    property dtdURL: WideString read Get_dtdURL;
+  end;
+
+// *********************************************************************//
+// DispIntf:  IXMLDocumentDisp
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {F52E2B61-18A1-11D1-B105-00805F49916B}
+// *********************************************************************//
+  IXMLDocumentDisp = dispinterface
+    ['{F52E2B61-18A1-11D1-B105-00805F49916B}']
+    property root: IXMLElement readonly dispid 65637;
+    property fileSize: WideString readonly dispid 65638;
+    property fileModifiedDate: WideString readonly dispid 65639;
+    property fileUpdatedDate: WideString readonly dispid 65640;
+    property url: WideString dispid 65641;
+    property mimeType: WideString readonly dispid 65642;
+    property readyState: Integer readonly dispid 65643;
+    property charset: WideString dispid 65645;
+    property version: WideString readonly dispid 65646;
+    property doctype: WideString readonly dispid 65647;
+    property dtdURL: WideString readonly dispid 65648;
+    function createElement(vType: OleVariant; var1: OleVariant): IXMLElement; dispid 65644;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLElement
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {3F7F31AC-E15F-11D0-9C25-00C04FC99C8E}
+// *********************************************************************//
+  IXMLElement = interface(IDispatch)
+    ['{3F7F31AC-E15F-11D0-9C25-00C04FC99C8E}']
+    function Get_tagName: WideString; safecall;
+    procedure Set_tagName(const p: WideString); safecall;
+    function Get_parent: IXMLElement; safecall;
+    procedure setAttribute(const strPropertyName: WideString; PropertyValue: OleVariant); safecall;
+    function getAttribute(const strPropertyName: WideString): OleVariant; safecall;
+    procedure removeAttribute(const strPropertyName: WideString); safecall;
+    function Get_children: IXMLElementCollection; safecall;
+    function Get_type_: Integer; safecall;
+    function Get_text: WideString; safecall;
+    procedure Set_text(const p: WideString); safecall;
+    procedure addChild(const pChildElem: IXMLElement; lIndex: Integer; lReserved: Integer); safecall;
+    procedure removeChild(const pChildElem: IXMLElement); safecall;
+    property tagName: WideString read Get_tagName write Set_tagName;
+    property parent: IXMLElement read Get_parent;
+    property children: IXMLElementCollection read Get_children;
+    property type_: Integer read Get_type_;
+    property text: WideString read Get_text write Set_text;
+  end;
+
+// *********************************************************************//
+// DispIntf:  IXMLElementDisp
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {3F7F31AC-E15F-11D0-9C25-00C04FC99C8E}
+// *********************************************************************//
+  IXMLElementDisp = dispinterface
+    ['{3F7F31AC-E15F-11D0-9C25-00C04FC99C8E}']
+    property tagName: WideString dispid 65737;
+    property parent: IXMLElement readonly dispid 65738;
+    procedure setAttribute(const strPropertyName: WideString; PropertyValue: OleVariant); dispid 65739;
+    function getAttribute(const strPropertyName: WideString): OleVariant; dispid 65740;
+    procedure removeAttribute(const strPropertyName: WideString); dispid 65741;
+    property children: IXMLElementCollection readonly dispid 65742;
+    property type_: Integer readonly dispid 65743;
+    property text: WideString dispid 65744;
+    procedure addChild(const pChildElem: IXMLElement; lIndex: Integer; lReserved: Integer); dispid 65745;
+    procedure removeChild(const pChildElem: IXMLElement); dispid 65746;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLDocument2
+// Flags:     (4112) Hidden Dispatchable
+// GUID:      {2B8DE2FE-8D2D-11D1-B2FC-00C04FD915A9}
+// *********************************************************************//
+  IXMLDocument2 = interface(IDispatch)
+    ['{2B8DE2FE-8D2D-11D1-B2FC-00C04FD915A9}']
+    function Get_root(out p: IXMLElement2): HResult; stdcall;
+    function Get_fileSize(out p: WideString): HResult; stdcall;
+    function Get_fileModifiedDate(out p: WideString): HResult; stdcall;
+    function Get_fileUpdatedDate(out p: WideString): HResult; stdcall;
+    function Get_url(out p: WideString): HResult; stdcall;
+    function Set_url(const p: WideString): HResult; stdcall;
+    function Get_mimeType(out p: WideString): HResult; stdcall;
+    function Get_readyState(out pl: Integer): HResult; stdcall;
+    function Get_charset(out p: WideString): HResult; stdcall;
+    function Set_charset(const p: WideString): HResult; stdcall;
+    function Get_version(out p: WideString): HResult; stdcall;
+    function Get_doctype(out p: WideString): HResult; stdcall;
+    function Get_dtdURL(out p: WideString): HResult; stdcall;
+    function createElement(vType: OleVariant; var1: OleVariant; out ppElem: IXMLElement2): HResult; stdcall;
+    function Get_async(out pf: WordBool): HResult; stdcall;
+    function Set_async(pf: WordBool): HResult; stdcall;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLElement2
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {2B8DE2FF-8D2D-11D1-B2FC-00C04FD915A9}
+// *********************************************************************//
+  IXMLElement2 = interface(IDispatch)
+    ['{2B8DE2FF-8D2D-11D1-B2FC-00C04FD915A9}']
+    function Get_tagName: WideString; safecall;
+    procedure Set_tagName(const p: WideString); safecall;
+    function Get_parent: IXMLElement2; safecall;
+    procedure setAttribute(const strPropertyName: WideString; PropertyValue: OleVariant); safecall;
+    function getAttribute(const strPropertyName: WideString): OleVariant; safecall;
+    procedure removeAttribute(const strPropertyName: WideString); safecall;
+    function Get_children: IXMLElementCollection; safecall;
+    function Get_type_: Integer; safecall;
+    function Get_text: WideString; safecall;
+    procedure Set_text(const p: WideString); safecall;
+    procedure addChild(const pChildElem: IXMLElement2; lIndex: Integer; lReserved: Integer); safecall;
+    procedure removeChild(const pChildElem: IXMLElement2); safecall;
+    function Get_attributes: IXMLElementCollection; safecall;
+    property tagName: WideString read Get_tagName write Set_tagName;
+    property parent: IXMLElement2 read Get_parent;
+    property children: IXMLElementCollection read Get_children;
+    property type_: Integer read Get_type_;
+    property text: WideString read Get_text write Set_text;
+    property attributes: IXMLElementCollection read Get_attributes;
+  end;
+
+// *********************************************************************//
+// DispIntf:  IXMLElement2Disp
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {2B8DE2FF-8D2D-11D1-B2FC-00C04FD915A9}
+// *********************************************************************//
+  IXMLElement2Disp = dispinterface
+    ['{2B8DE2FF-8D2D-11D1-B2FC-00C04FD915A9}']
+    property tagName: WideString dispid 65737;
+    property parent: IXMLElement2 readonly dispid 65738;
+    procedure setAttribute(const strPropertyName: WideString; PropertyValue: OleVariant); dispid 65739;
+    function getAttribute(const strPropertyName: WideString): OleVariant; dispid 65740;
+    procedure removeAttribute(const strPropertyName: WideString); dispid 65741;
+    property children: IXMLElementCollection readonly dispid 65742;
+    property type_: Integer readonly dispid 65743;
+    property text: WideString dispid 65744;
+    procedure addChild(const pChildElem: IXMLElement2; lIndex: Integer; lReserved: Integer); dispid 65745;
+    procedure removeChild(const pChildElem: IXMLElement2); dispid 65746;
+    property attributes: IXMLElementCollection readonly dispid 65747;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLAttribute
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {D4D4A0FC-3B73-11D1-B2B4-00C04FB92596}
+// *********************************************************************//
+  IXMLAttribute = interface(IDispatch)
+    ['{D4D4A0FC-3B73-11D1-B2B4-00C04FB92596}']
+    function Get_name: WideString; safecall;
+    function Get_value: WideString; safecall;
+    property name: WideString read Get_name;
+    property value: WideString read Get_value;
+  end;
+
+// *********************************************************************//
+// DispIntf:  IXMLAttributeDisp
+// Flags:     (4432) Hidden Dual OleAutomation Dispatchable
+// GUID:      {D4D4A0FC-3B73-11D1-B2B4-00C04FB92596}
+// *********************************************************************//
+  IXMLAttributeDisp = dispinterface
+    ['{D4D4A0FC-3B73-11D1-B2B4-00C04FB92596}']
+    property name: WideString readonly dispid 65937;
+    property value: WideString readonly dispid 65938;
+  end;
+
+// *********************************************************************//
+// Interface: IXMLError
+// Flags:     (16) Hidden
+// GUID:      {948C5AD3-C58D-11D0-9C0B-00C04FC99C8E}
+// *********************************************************************//
+  IXMLError = interface(IUnknown)
+    ['{948C5AD3-C58D-11D0-9C0B-00C04FC99C8E}']
+    function GetErrorInfo(var pErrorReturn: _xml_error): HResult; stdcall;
+  end;
+
+// *********************************************************************//
 // Interface: IXMLDOMSelection
 // Flags:     (4544) Dual NonExtensible OleAutomation Dispatchable
 // GUID:      {AA634FC7-5888-44A7-A257-3A47150D3A0E}
@@ -3466,8 +3983,8 @@ type
 // *********************************************************************//
   XMLDOMDocumentEvents = dispinterface
     ['{3EFAA427-272F-11D2-836F-0000F87A7782}']
-    function ondataavailable: HResult; dispid 198;
-    function onreadystatechange: HResult; dispid -609;
+    procedure ondataavailable; dispid 198;
+    procedure onreadystatechange; dispid -609;
   end;
 
 // *********************************************************************//
@@ -3731,40 +4248,256 @@ type
   end;
 
 // *********************************************************************//
-// The Class ComsDOMDocument provides a Create and CreateRemote method to          
+// The Class CoDOMDocument provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msDOMDocument. The functions are intended to be used by             
+// the CoClass DOMDocument. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDOMDocument = class
+  CoDOMDocument = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsDOMDocument26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDOMDocument
+// Help String      : W3C-DOM XML Document (Apartment)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDOMDocumentProperties= class;
+{$ENDIF}
+  TDOMDocument = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDOMDocumentProperties;
+    function      GetServerProperties: TDOMDocumentProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDOMDocumentProperties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDOMDocument
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDOMDocumentProperties = class(TPersistent)
+  private
+    FServer:    TDOMDocument;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TDOMDocument);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoDOMDocument26 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msDOMDocument26. The functions are intended to be used by             
+// the CoClass DOMDocument26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDOMDocument26 = class
+  CoDOMDocument26 = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsDOMDocument30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDOMDocument26
+// Help String      : W3C-DOM XML Document (Apartment)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDOMDocument26Properties= class;
+{$ENDIF}
+  TDOMDocument26 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDOMDocument26Properties;
+    function      GetServerProperties: TDOMDocument26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDOMDocument26Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDOMDocument26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDOMDocument26Properties = class(TPersistent)
+  private
+    FServer:    TDOMDocument26;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TDOMDocument26);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoDOMDocument30 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msDOMDocument30. The functions are intended to be used by             
+// the CoClass DOMDocument30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDOMDocument30 = class
+  CoDOMDocument30 = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TDOMDocument30
+// Help String      : W3C-DOM XML Document (Apartment)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDOMDocument30Properties= class;
+{$ENDIF}
+  TDOMDocument30 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDOMDocument30Properties;
+    function      GetServerProperties: TDOMDocument30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDOMDocument30Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDOMDocument30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDOMDocument30Properties = class(TPersistent)
+  private
+    FServer:    TDOMDocument30;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TDOMDocument30);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoDOMDocument40 provides a Create and CreateRemote method to          
@@ -3778,6 +4511,78 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TDOMDocument40
+// Help String      : W3C-DOM XML Document (Apartment)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDOMDocument40Properties= class;
+{$ENDIF}
+  TDOMDocument40 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDOMDocument40Properties;
+    function      GetServerProperties: TDOMDocument40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDOMDocument40Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDOMDocument40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDOMDocument40Properties = class(TPersistent)
+  private
+    FServer:    TDOMDocument40;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TDOMDocument40);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoDOMDocument60 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument3 exposed by              
@@ -3790,41 +4595,320 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMDocument3;
   end;
 
+
 // *********************************************************************//
-// The Class ComsFreeThreadedDOMDocument provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDOMDocument60
+// Help String      : W3C-DOM XML Document 6.0 (Apartment)
+// Default Interface: IXMLDOMDocument3
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDOMDocument60Properties= class;
+{$ENDIF}
+  TDOMDocument60 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument3;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDOMDocument60Properties;
+    function      GetServerProperties: TDOMDocument60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument3;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument3);
+    procedure Disconnect; override;
+    function validateNode(const node: IXMLDOMNode): IXMLDOMParseError;
+    function importNode(const node: IXMLDOMNode; deep: WordBool): IXMLDOMNode;
+    property DefaultInterface: IXMLDOMDocument3 read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDOMDocument60Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDOMDocument60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDOMDocument60Properties = class(TPersistent)
+  private
+    FServer:    TDOMDocument60;
+    function    GetDefaultInterface: IXMLDOMDocument3;
+    constructor Create(AServer: TDOMDocument60);
+  protected
+  public
+    property DefaultInterface: IXMLDOMDocument3 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoFreeThreadedDOMDocument provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msFreeThreadedDOMDocument. The functions are intended to be used by             
+// the CoClass FreeThreadedDOMDocument. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsFreeThreadedDOMDocument = class
+  CoFreeThreadedDOMDocument = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsFreeThreadedDOMDocument26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TFreeThreadedDOMDocument
+// Help String      : W3C-DOM XML Document (Free threaded)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TFreeThreadedDOMDocumentProperties= class;
+{$ENDIF}
+  TFreeThreadedDOMDocument = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TFreeThreadedDOMDocumentProperties;
+    function      GetServerProperties: TFreeThreadedDOMDocumentProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TFreeThreadedDOMDocumentProperties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TFreeThreadedDOMDocument
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TFreeThreadedDOMDocumentProperties = class(TPersistent)
+  private
+    FServer:    TFreeThreadedDOMDocument;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TFreeThreadedDOMDocument);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoFreeThreadedDOMDocument26 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msFreeThreadedDOMDocument26. The functions are intended to be used by             
+// the CoClass FreeThreadedDOMDocument26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsFreeThreadedDOMDocument26 = class
+  CoFreeThreadedDOMDocument26 = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsFreeThreadedDOMDocument30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TFreeThreadedDOMDocument26
+// Help String      : W3C-DOM XML Document (Free threaded)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TFreeThreadedDOMDocument26Properties= class;
+{$ENDIF}
+  TFreeThreadedDOMDocument26 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TFreeThreadedDOMDocument26Properties;
+    function      GetServerProperties: TFreeThreadedDOMDocument26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TFreeThreadedDOMDocument26Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TFreeThreadedDOMDocument26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TFreeThreadedDOMDocument26Properties = class(TPersistent)
+  private
+    FServer:    TFreeThreadedDOMDocument26;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TFreeThreadedDOMDocument26);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoFreeThreadedDOMDocument30 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument2 exposed by              
-// the CoClass msFreeThreadedDOMDocument30. The functions are intended to be used by             
+// the CoClass FreeThreadedDOMDocument30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsFreeThreadedDOMDocument30 = class
+  CoFreeThreadedDOMDocument30 = class
     class function Create: IXMLDOMDocument2;
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TFreeThreadedDOMDocument30
+// Help String      : W3C-DOM XML Document (Free threaded)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TFreeThreadedDOMDocument30Properties= class;
+{$ENDIF}
+  TFreeThreadedDOMDocument30 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TFreeThreadedDOMDocument30Properties;
+    function      GetServerProperties: TFreeThreadedDOMDocument30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TFreeThreadedDOMDocument30Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TFreeThreadedDOMDocument30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TFreeThreadedDOMDocument30Properties = class(TPersistent)
+  private
+    FServer:    TFreeThreadedDOMDocument30;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TFreeThreadedDOMDocument30);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoFreeThreadedDOMDocument40 provides a Create and CreateRemote method to          
@@ -3838,6 +4922,78 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMDocument2;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TFreeThreadedDOMDocument40
+// Help String      : W3C-DOM XML Document (Free threaded)
+// Default Interface: IXMLDOMDocument2
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TFreeThreadedDOMDocument40Properties= class;
+{$ENDIF}
+  TFreeThreadedDOMDocument40 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TFreeThreadedDOMDocument40Properties;
+    function      GetServerProperties: TFreeThreadedDOMDocument40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument2;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument2);
+    procedure Disconnect; override;
+    function validate: IXMLDOMParseError;
+    procedure setProperty(const name: WideString; value: OleVariant);
+    function getProperty(const name: WideString): OleVariant;
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+    property namespaces: IXMLDOMSchemaCollection read Get_namespaces;
+    property schemas: OleVariant read Get_schemas write _Set_schemas;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TFreeThreadedDOMDocument40Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TFreeThreadedDOMDocument40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TFreeThreadedDOMDocument40Properties = class(TPersistent)
+  private
+    FServer:    TFreeThreadedDOMDocument40;
+    function    GetDefaultInterface: IXMLDOMDocument2;
+    constructor Create(AServer: TFreeThreadedDOMDocument40);
+  protected
+    function Get_namespaces: IXMLDOMSchemaCollection;
+    function Get_schemas: OleVariant;
+    procedure _Set_schemas(otherCollection: OleVariant);
+  public
+    property DefaultInterface: IXMLDOMDocument2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoFreeThreadedDOMDocument60 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMDocument3 exposed by              
@@ -3850,41 +5006,302 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMDocument3;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLSchemaCache provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TFreeThreadedDOMDocument60
+// Help String      : W3C-DOM XML Document 6.0 (Free threaded)
+// Default Interface: IXMLDOMDocument3
+// Def. Intf. DISP? : No
+// Event   Interface: XMLDOMDocumentEvents
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TFreeThreadedDOMDocument60Properties= class;
+{$ENDIF}
+  TFreeThreadedDOMDocument60 = class(TOleServer)
+  private
+    FOnondataavailable: TNotifyEvent;
+    FOnonreadystatechange: TNotifyEvent;
+    FIntf:        IXMLDOMDocument3;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TFreeThreadedDOMDocument60Properties;
+    function      GetServerProperties: TFreeThreadedDOMDocument60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMDocument3;
+  protected
+    procedure InitServerData; override;
+    procedure InvokeEvent(DispID: TDispID; var Params: TVariantArray); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMDocument3);
+    procedure Disconnect; override;
+    function validateNode(const node: IXMLDOMNode): IXMLDOMParseError;
+    function importNode(const node: IXMLDOMNode; deep: WordBool): IXMLDOMNode;
+    property DefaultInterface: IXMLDOMDocument3 read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TFreeThreadedDOMDocument60Properties read GetServerProperties;
+{$ENDIF}
+    property Onondataavailable: TNotifyEvent read FOnondataavailable write FOnondataavailable;
+    property Ononreadystatechange: TNotifyEvent read FOnonreadystatechange write FOnonreadystatechange;
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TFreeThreadedDOMDocument60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TFreeThreadedDOMDocument60Properties = class(TPersistent)
+  private
+    FServer:    TFreeThreadedDOMDocument60;
+    function    GetDefaultInterface: IXMLDOMDocument3;
+    constructor Create(AServer: TFreeThreadedDOMDocument60);
+  protected
+  public
+    property DefaultInterface: IXMLDOMDocument3 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLSchemaCache provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMSchemaCollection exposed by              
-// the CoClass msXMLSchemaCache. The functions are intended to be used by             
+// the CoClass XMLSchemaCache. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLSchemaCache = class
+  CoXMLSchemaCache = class
     class function Create: IXMLDOMSchemaCollection;
     class function CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLSchemaCache26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLSchemaCache
+// Help String      : XML Schema Cache
+// Default Interface: IXMLDOMSchemaCollection
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLSchemaCacheProperties= class;
+{$ENDIF}
+  TXMLSchemaCache = class(TOleServer)
+  private
+    FIntf:        IXMLDOMSchemaCollection;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLSchemaCacheProperties;
+    function      GetServerProperties: TXMLSchemaCacheProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMSchemaCollection;
+  protected
+    procedure InitServerData; override;
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+    procedure Disconnect; override;
+    procedure add(const namespaceURI: WideString; var_: OleVariant);
+    function get(const namespaceURI: WideString): IXMLDOMNode;
+    procedure remove(const namespaceURI: WideString);
+    procedure addCollection(const otherCollection: IXMLDOMSchemaCollection);
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+    property length: Integer read Get_length;
+    property namespaceURI[index: Integer]: WideString read Get_namespaceURI; default;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLSchemaCacheProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLSchemaCache
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLSchemaCacheProperties = class(TPersistent)
+  private
+    FServer:    TXMLSchemaCache;
+    function    GetDefaultInterface: IXMLDOMSchemaCollection;
+    constructor Create(AServer: TXMLSchemaCache);
+  protected
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLSchemaCache26 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMSchemaCollection exposed by              
-// the CoClass msXMLSchemaCache26. The functions are intended to be used by             
+// the CoClass XMLSchemaCache26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLSchemaCache26 = class
+  CoXMLSchemaCache26 = class
     class function Create: IXMLDOMSchemaCollection;
     class function CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLSchemaCache30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLSchemaCache26
+// Help String      : XML Schema Cache 2.6
+// Default Interface: IXMLDOMSchemaCollection
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLSchemaCache26Properties= class;
+{$ENDIF}
+  TXMLSchemaCache26 = class(TOleServer)
+  private
+    FIntf:        IXMLDOMSchemaCollection;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLSchemaCache26Properties;
+    function      GetServerProperties: TXMLSchemaCache26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMSchemaCollection;
+  protected
+    procedure InitServerData; override;
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+    procedure Disconnect; override;
+    procedure add(const namespaceURI: WideString; var_: OleVariant);
+    function get(const namespaceURI: WideString): IXMLDOMNode;
+    procedure remove(const namespaceURI: WideString);
+    procedure addCollection(const otherCollection: IXMLDOMSchemaCollection);
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+    property length: Integer read Get_length;
+    property namespaceURI[index: Integer]: WideString read Get_namespaceURI; default;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLSchemaCache26Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLSchemaCache26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLSchemaCache26Properties = class(TPersistent)
+  private
+    FServer:    TXMLSchemaCache26;
+    function    GetDefaultInterface: IXMLDOMSchemaCollection;
+    constructor Create(AServer: TXMLSchemaCache26);
+  protected
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLSchemaCache30 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMSchemaCollection exposed by              
-// the CoClass msXMLSchemaCache30. The functions are intended to be used by             
+// the CoClass XMLSchemaCache30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLSchemaCache30 = class
+  CoXMLSchemaCache30 = class
     class function Create: IXMLDOMSchemaCollection;
     class function CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXMLSchemaCache30
+// Help String      : XML Schema Cache 3.0
+// Default Interface: IXMLDOMSchemaCollection
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLSchemaCache30Properties= class;
+{$ENDIF}
+  TXMLSchemaCache30 = class(TOleServer)
+  private
+    FIntf:        IXMLDOMSchemaCollection;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLSchemaCache30Properties;
+    function      GetServerProperties: TXMLSchemaCache30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMSchemaCollection;
+  protected
+    procedure InitServerData; override;
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+    procedure Disconnect; override;
+    procedure add(const namespaceURI: WideString; var_: OleVariant);
+    function get(const namespaceURI: WideString): IXMLDOMNode;
+    procedure remove(const namespaceURI: WideString);
+    procedure addCollection(const otherCollection: IXMLDOMSchemaCollection);
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+    property length: Integer read Get_length;
+    property namespaceURI[index: Integer]: WideString read Get_namespaceURI; default;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLSchemaCache30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLSchemaCache30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLSchemaCache30Properties = class(TPersistent)
+  private
+    FServer:    TXMLSchemaCache30;
+    function    GetDefaultInterface: IXMLDOMSchemaCollection;
+    constructor Create(AServer: TXMLSchemaCache30);
+  protected
+    function Get_length: Integer;
+    function Get_namespaceURI(index: Integer): WideString;
+  public
+    property DefaultInterface: IXMLDOMSchemaCollection read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoXMLSchemaCache40 provides a Create and CreateRemote method to          
@@ -3898,6 +5315,71 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMSchemaCollection2;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXMLSchemaCache40
+// Help String      : XML Schema Cache 4.0
+// Default Interface: IXMLDOMSchemaCollection2
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLSchemaCache40Properties= class;
+{$ENDIF}
+  TXMLSchemaCache40 = class(TOleServer)
+  private
+    FIntf:        IXMLDOMSchemaCollection2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLSchemaCache40Properties;
+    function      GetServerProperties: TXMLSchemaCache40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMSchemaCollection2;
+  protected
+    procedure InitServerData; override;
+    procedure Set_validateOnLoad(validateOnLoad: WordBool);
+    function Get_validateOnLoad: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMSchemaCollection2);
+    procedure Disconnect; override;
+    procedure validate;
+    function getSchema(const namespaceURI: WideString): ISchema;
+    function getDeclaration(const node: IXMLDOMNode): ISchemaItem;
+    property DefaultInterface: IXMLDOMSchemaCollection2 read GetDefaultInterface;
+    property validateOnLoad: WordBool read Get_validateOnLoad write Set_validateOnLoad;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLSchemaCache40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLSchemaCache40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLSchemaCache40Properties = class(TPersistent)
+  private
+    FServer:    TXMLSchemaCache40;
+    function    GetDefaultInterface: IXMLDOMSchemaCollection2;
+    constructor Create(AServer: TXMLSchemaCache40);
+  protected
+    procedure Set_validateOnLoad(validateOnLoad: WordBool);
+    function Get_validateOnLoad: WordBool;
+  public
+    property DefaultInterface: IXMLDOMSchemaCollection2 read GetDefaultInterface;
+  published
+    property validateOnLoad: WordBool read Get_validateOnLoad write Set_validateOnLoad;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoXMLSchemaCache60 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLDOMSchemaCollection2 exposed by              
@@ -3910,41 +5392,292 @@ type
     class function CreateRemote(const MachineName: string): IXMLDOMSchemaCollection2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXSLTemplate provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLSchemaCache60
+// Help String      : XML Schema Cache 6.0
+// Default Interface: IXMLDOMSchemaCollection2
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLSchemaCache60Properties= class;
+{$ENDIF}
+  TXMLSchemaCache60 = class(TOleServer)
+  private
+    FIntf:        IXMLDOMSchemaCollection2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLSchemaCache60Properties;
+    function      GetServerProperties: TXMLSchemaCache60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLDOMSchemaCollection2;
+  protected
+    procedure InitServerData; override;
+    procedure Set_validateOnLoad(validateOnLoad: WordBool);
+    function Get_validateOnLoad: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLDOMSchemaCollection2);
+    procedure Disconnect; override;
+    procedure validate;
+    function getSchema(const namespaceURI: WideString): ISchema;
+    function getDeclaration(const node: IXMLDOMNode): ISchemaItem;
+    property DefaultInterface: IXMLDOMSchemaCollection2 read GetDefaultInterface;
+    property validateOnLoad: WordBool read Get_validateOnLoad write Set_validateOnLoad;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLSchemaCache60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLSchemaCache60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLSchemaCache60Properties = class(TPersistent)
+  private
+    FServer:    TXMLSchemaCache60;
+    function    GetDefaultInterface: IXMLDOMSchemaCollection2;
+    constructor Create(AServer: TXMLSchemaCache60);
+  protected
+    procedure Set_validateOnLoad(validateOnLoad: WordBool);
+    function Get_validateOnLoad: WordBool;
+  public
+    property DefaultInterface: IXMLDOMSchemaCollection2 read GetDefaultInterface;
+  published
+    property validateOnLoad: WordBool read Get_validateOnLoad write Set_validateOnLoad;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXSLTemplate provides a Create and CreateRemote method to          
 // create instances of the default interface IXSLTemplate exposed by              
-// the CoClass msXSLTemplate. The functions are intended to be used by             
+// the CoClass XSLTemplate. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXSLTemplate = class
+  CoXSLTemplate = class
     class function Create: IXSLTemplate;
     class function CreateRemote(const MachineName: string): IXSLTemplate;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXSLTemplate26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXSLTemplate
+// Help String      : Compiled XSL Stylesheet Cache
+// Default Interface: IXSLTemplate
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXSLTemplateProperties= class;
+{$ENDIF}
+  TXSLTemplate = class(TOleServer)
+  private
+    FIntf:        IXSLTemplate;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXSLTemplateProperties;
+    function      GetServerProperties: TXSLTemplateProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IXSLTemplate;
+  protected
+    procedure InitServerData; override;
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXSLTemplate);
+    procedure Disconnect; override;
+    function createProcessor: IXSLProcessor;
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+    property stylesheet: IXMLDOMNode read Get_stylesheet write _Set_stylesheet;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXSLTemplateProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXSLTemplate
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXSLTemplateProperties = class(TPersistent)
+  private
+    FServer:    TXSLTemplate;
+    function    GetDefaultInterface: IXSLTemplate;
+    constructor Create(AServer: TXSLTemplate);
+  protected
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXSLTemplate26 provides a Create and CreateRemote method to          
 // create instances of the default interface IXSLTemplate exposed by              
-// the CoClass msXSLTemplate26. The functions are intended to be used by             
+// the CoClass XSLTemplate26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXSLTemplate26 = class
+  CoXSLTemplate26 = class
     class function Create: IXSLTemplate;
     class function CreateRemote(const MachineName: string): IXSLTemplate;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXSLTemplate30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXSLTemplate26
+// Help String      : Compiled XSL Stylesheet Cache 2.6
+// Default Interface: IXSLTemplate
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXSLTemplate26Properties= class;
+{$ENDIF}
+  TXSLTemplate26 = class(TOleServer)
+  private
+    FIntf:        IXSLTemplate;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXSLTemplate26Properties;
+    function      GetServerProperties: TXSLTemplate26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXSLTemplate;
+  protected
+    procedure InitServerData; override;
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXSLTemplate);
+    procedure Disconnect; override;
+    function createProcessor: IXSLProcessor;
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+    property stylesheet: IXMLDOMNode read Get_stylesheet write _Set_stylesheet;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXSLTemplate26Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXSLTemplate26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXSLTemplate26Properties = class(TPersistent)
+  private
+    FServer:    TXSLTemplate26;
+    function    GetDefaultInterface: IXSLTemplate;
+    constructor Create(AServer: TXSLTemplate26);
+  protected
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXSLTemplate30 provides a Create and CreateRemote method to          
 // create instances of the default interface IXSLTemplate exposed by              
-// the CoClass msXSLTemplate30. The functions are intended to be used by             
+// the CoClass XSLTemplate30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXSLTemplate30 = class
+  CoXSLTemplate30 = class
     class function Create: IXSLTemplate;
     class function CreateRemote(const MachineName: string): IXSLTemplate;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXSLTemplate30
+// Help String      : Compiled XSL Stylesheet Cache 3.0
+// Default Interface: IXSLTemplate
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXSLTemplate30Properties= class;
+{$ENDIF}
+  TXSLTemplate30 = class(TOleServer)
+  private
+    FIntf:        IXSLTemplate;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXSLTemplate30Properties;
+    function      GetServerProperties: TXSLTemplate30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXSLTemplate;
+  protected
+    procedure InitServerData; override;
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXSLTemplate);
+    procedure Disconnect; override;
+    function createProcessor: IXSLProcessor;
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+    property stylesheet: IXMLDOMNode read Get_stylesheet write _Set_stylesheet;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXSLTemplate30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXSLTemplate30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXSLTemplate30Properties = class(TPersistent)
+  private
+    FServer:    TXSLTemplate30;
+    function    GetDefaultInterface: IXSLTemplate;
+    constructor Create(AServer: TXSLTemplate30);
+  protected
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoXSLTemplate40 provides a Create and CreateRemote method to          
@@ -3958,6 +5691,68 @@ type
     class function CreateRemote(const MachineName: string): IXSLTemplate;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXSLTemplate40
+// Help String      : Compiled XSL Stylesheet Cache 4.0
+// Default Interface: IXSLTemplate
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXSLTemplate40Properties= class;
+{$ENDIF}
+  TXSLTemplate40 = class(TOleServer)
+  private
+    FIntf:        IXSLTemplate;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXSLTemplate40Properties;
+    function      GetServerProperties: TXSLTemplate40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXSLTemplate;
+  protected
+    procedure InitServerData; override;
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXSLTemplate);
+    procedure Disconnect; override;
+    function createProcessor: IXSLProcessor;
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+    property stylesheet: IXMLDOMNode read Get_stylesheet write _Set_stylesheet;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXSLTemplate40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXSLTemplate40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXSLTemplate40Properties = class(TPersistent)
+  private
+    FServer:    TXSLTemplate40;
+    function    GetDefaultInterface: IXSLTemplate;
+    constructor Create(AServer: TXSLTemplate40);
+  protected
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoXSLTemplate60 provides a Create and CreateRemote method to          
 // create instances of the default interface IXSLTemplate exposed by              
@@ -3970,41 +5765,316 @@ type
     class function CreateRemote(const MachineName: string): IXSLTemplate;
   end;
 
+
 // *********************************************************************//
-// The Class ComsDSOControl provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXSLTemplate60
+// Help String      : XSL Stylesheet Cache 6.0
+// Default Interface: IXSLTemplate
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXSLTemplate60Properties= class;
+{$ENDIF}
+  TXSLTemplate60 = class(TOleServer)
+  private
+    FIntf:        IXSLTemplate;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXSLTemplate60Properties;
+    function      GetServerProperties: TXSLTemplate60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXSLTemplate;
+  protected
+    procedure InitServerData; override;
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXSLTemplate);
+    procedure Disconnect; override;
+    function createProcessor: IXSLProcessor;
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+    property stylesheet: IXMLDOMNode read Get_stylesheet write _Set_stylesheet;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXSLTemplate60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXSLTemplate60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXSLTemplate60Properties = class(TPersistent)
+  private
+    FServer:    TXSLTemplate60;
+    function    GetDefaultInterface: IXSLTemplate;
+    constructor Create(AServer: TXSLTemplate60);
+  protected
+    procedure _Set_stylesheet(const stylesheet: IXMLDOMNode);
+    function Get_stylesheet: IXMLDOMNode;
+  public
+    property DefaultInterface: IXSLTemplate read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoDSOControl provides a Create and CreateRemote method to          
 // create instances of the default interface IDSOControl exposed by              
-// the CoClass msDSOControl. The functions are intended to be used by             
+// the CoClass DSOControl. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDSOControl = class
+  CoDSOControl = class
     class function Create: IDSOControl;
     class function CreateRemote(const MachineName: string): IDSOControl;
   end;
 
+
 // *********************************************************************//
-// The Class ComsDSOControl26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDSOControl
+// Help String      : XML Data Source Object
+// Default Interface: IDSOControl
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDSOControlProperties= class;
+{$ENDIF}
+  TDSOControl = class(TOleServer)
+  private
+    FIntf:        IDSOControl;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDSOControlProperties;
+    function      GetServerProperties: TDSOControlProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IDSOControl;
+  protected
+    procedure InitServerData; override;
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IDSOControl);
+    procedure Disconnect; override;
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+    property readyState: Integer read Get_readyState;
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDSOControlProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDSOControl
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDSOControlProperties = class(TPersistent)
+  private
+    FServer:    TDSOControl;
+    function    GetDefaultInterface: IDSOControl;
+    constructor Create(AServer: TDSOControl);
+  protected
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+  published
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoDSOControl26 provides a Create and CreateRemote method to          
 // create instances of the default interface IDSOControl exposed by              
-// the CoClass msDSOControl26. The functions are intended to be used by             
+// the CoClass DSOControl26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDSOControl26 = class
+  CoDSOControl26 = class
     class function Create: IDSOControl;
     class function CreateRemote(const MachineName: string): IDSOControl;
   end;
 
+
 // *********************************************************************//
-// The Class ComsDSOControl30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDSOControl26
+// Help String      : XML Data Source Object
+// Default Interface: IDSOControl
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDSOControl26Properties= class;
+{$ENDIF}
+  TDSOControl26 = class(TOleServer)
+  private
+    FIntf:        IDSOControl;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDSOControl26Properties;
+    function      GetServerProperties: TDSOControl26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IDSOControl;
+  protected
+    procedure InitServerData; override;
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IDSOControl);
+    procedure Disconnect; override;
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+    property readyState: Integer read Get_readyState;
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDSOControl26Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDSOControl26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDSOControl26Properties = class(TPersistent)
+  private
+    FServer:    TDSOControl26;
+    function    GetDefaultInterface: IDSOControl;
+    constructor Create(AServer: TDSOControl26);
+  protected
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+  published
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoDSOControl30 provides a Create and CreateRemote method to          
 // create instances of the default interface IDSOControl exposed by              
-// the CoClass msDSOControl30. The functions are intended to be used by             
+// the CoClass DSOControl30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsDSOControl30 = class
+  CoDSOControl30 = class
     class function Create: IDSOControl;
     class function CreateRemote(const MachineName: string): IDSOControl;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TDSOControl30
+// Help String      : XML Data Source Object
+// Default Interface: IDSOControl
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDSOControl30Properties= class;
+{$ENDIF}
+  TDSOControl30 = class(TOleServer)
+  private
+    FIntf:        IDSOControl;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDSOControl30Properties;
+    function      GetServerProperties: TDSOControl30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IDSOControl;
+  protected
+    procedure InitServerData; override;
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IDSOControl);
+    procedure Disconnect; override;
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+    property readyState: Integer read Get_readyState;
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDSOControl30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDSOControl30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDSOControl30Properties = class(TPersistent)
+  private
+    FServer:    TDSOControl30;
+    function    GetDefaultInterface: IDSOControl;
+    constructor Create(AServer: TDSOControl30);
+  protected
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+  published
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoDSOControl40 provides a Create and CreateRemote method to          
@@ -4018,41 +6088,388 @@ type
     class function CreateRemote(const MachineName: string): IDSOControl;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLHTTP provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TDSOControl40
+// Help String      : XML Data Source Object
+// Default Interface: IDSOControl
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TDSOControl40Properties= class;
+{$ENDIF}
+  TDSOControl40 = class(TOleServer)
+  private
+    FIntf:        IDSOControl;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TDSOControl40Properties;
+    function      GetServerProperties: TDSOControl40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IDSOControl;
+  protected
+    procedure InitServerData; override;
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IDSOControl);
+    procedure Disconnect; override;
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+    property readyState: Integer read Get_readyState;
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TDSOControl40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TDSOControl40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TDSOControl40Properties = class(TPersistent)
+  private
+    FServer:    TDSOControl40;
+    function    GetDefaultInterface: IDSOControl;
+    constructor Create(AServer: TDSOControl40);
+  protected
+    function Get_XMLDocument: IXMLDOMDocument;
+    procedure Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+    function Get_JavaDSOCompatible: Integer;
+    procedure Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+    function Get_readyState: Integer;
+  public
+    property DefaultInterface: IDSOControl read GetDefaultInterface;
+  published
+    property XMLDocument: IXMLDOMDocument read Get_XMLDocument write Set_XMLDocument;
+    property JavaDSOCompatible: Integer read Get_JavaDSOCompatible write Set_JavaDSOCompatible;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLHTTP provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLHTTPRequest exposed by              
-// the CoClass msXMLHTTP. The functions are intended to be used by             
+// the CoClass XMLHTTP. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLHTTP = class
+  CoXMLHTTP = class
     class function Create: IXMLHTTPRequest;
     class function CreateRemote(const MachineName: string): IXMLHTTPRequest;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLHTTP26 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLHTTP
+// Help String      : XML HTTP Request class.
+// Default Interface: IXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLHTTPProperties= class;
+{$ENDIF}
+  TXMLHTTP = class(TOleServer)
+  private
+    FIntf:        IXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLHTTPProperties;
+    function      GetServerProperties: TXMLHTTPProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLHTTPProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLHTTP
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLHTTPProperties = class(TPersistent)
+  private
+    FServer:    TXMLHTTP;
+    function    GetDefaultInterface: IXMLHTTPRequest;
+    constructor Create(AServer: TXMLHTTP);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLHTTP26 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLHTTPRequest exposed by              
-// the CoClass msXMLHTTP26. The functions are intended to be used by             
+// the CoClass XMLHTTP26. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLHTTP26 = class
+  CoXMLHTTP26 = class
     class function Create: IXMLHTTPRequest;
     class function CreateRemote(const MachineName: string): IXMLHTTPRequest;
   end;
 
+
 // *********************************************************************//
-// The Class ComsXMLHTTP30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLHTTP26
+// Help String      : XML HTTP Request class.
+// Default Interface: IXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLHTTP26Properties= class;
+{$ENDIF}
+  TXMLHTTP26 = class(TOleServer)
+  private
+    FIntf:        IXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLHTTP26Properties;
+    function      GetServerProperties: TXMLHTTP26Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLHTTP26Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLHTTP26
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLHTTP26Properties = class(TPersistent)
+  private
+    FServer:    TXMLHTTP26;
+    function    GetDefaultInterface: IXMLHTTPRequest;
+    constructor Create(AServer: TXMLHTTP26);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLHTTP30 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLHTTPRequest exposed by              
-// the CoClass msXMLHTTP30. The functions are intended to be used by             
+// the CoClass XMLHTTP30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsXMLHTTP30 = class
+  CoXMLHTTP30 = class
     class function Create: IXMLHTTPRequest;
     class function CreateRemote(const MachineName: string): IXMLHTTPRequest;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXMLHTTP30
+// Help String      : XML HTTP Request class.
+// Default Interface: IXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLHTTP30Properties= class;
+{$ENDIF}
+  TXMLHTTP30 = class(TOleServer)
+  private
+    FIntf:        IXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLHTTP30Properties;
+    function      GetServerProperties: TXMLHTTP30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLHTTP30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLHTTP30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLHTTP30Properties = class(TPersistent)
+  private
+    FServer:    TXMLHTTP30;
+    function    GetDefaultInterface: IXMLHTTPRequest;
+    constructor Create(AServer: TXMLHTTP30);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoXMLHTTP40 provides a Create and CreateRemote method to          
@@ -4066,6 +6483,98 @@ type
     class function CreateRemote(const MachineName: string): IXMLHTTPRequest;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TXMLHTTP40
+// Help String      : XML HTTP Request class.
+// Default Interface: IXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLHTTP40Properties= class;
+{$ENDIF}
+  TXMLHTTP40 = class(TOleServer)
+  private
+    FIntf:        IXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLHTTP40Properties;
+    function      GetServerProperties: TXMLHTTP40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLHTTP40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLHTTP40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLHTTP40Properties = class(TPersistent)
+  private
+    FServer:    TXMLHTTP40;
+    function    GetDefaultInterface: IXMLHTTPRequest;
+    constructor Create(AServer: TXMLHTTP40);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoXMLHTTP60 provides a Create and CreateRemote method to          
 // create instances of the default interface IXMLHTTPRequest exposed by              
@@ -4078,29 +6587,317 @@ type
     class function CreateRemote(const MachineName: string): IXMLHTTPRequest;
   end;
 
+
 // *********************************************************************//
-// The Class ComsServerXMLHTTP provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TXMLHTTP60
+// Help String      : XML HTTP Request class 6.0
+// Default Interface: IXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TXMLHTTP60Properties= class;
+{$ENDIF}
+  TXMLHTTP60 = class(TOleServer)
+  private
+    FIntf:        IXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TXMLHTTP60Properties;
+    function      GetServerProperties: TXMLHTTP60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TXMLHTTP60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TXMLHTTP60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TXMLHTTP60Properties = class(TPersistent)
+  private
+    FServer:    TXMLHTTP60;
+    function    GetDefaultInterface: IXMLHTTPRequest;
+    constructor Create(AServer: TXMLHTTP60);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoServerXMLHTTP provides a Create and CreateRemote method to          
 // create instances of the default interface IServerXMLHTTPRequest exposed by              
-// the CoClass msServerXMLHTTP. The functions are intended to be used by             
+// the CoClass ServerXMLHTTP. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsServerXMLHTTP = class
+  CoServerXMLHTTP = class
     class function Create: IServerXMLHTTPRequest;
     class function CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
   end;
 
+
 // *********************************************************************//
-// The Class ComsServerXMLHTTP30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TServerXMLHTTP
+// Help String      : Server XML HTTP Request class.
+// Default Interface: IServerXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TServerXMLHTTPProperties= class;
+{$ENDIF}
+  TServerXMLHTTP = class(TOleServer)
+  private
+    FIntf:        IServerXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TServerXMLHTTPProperties;
+    function      GetServerProperties: TServerXMLHTTPProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IServerXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IServerXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    procedure setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; sendTimeout: Integer; 
+                          receiveTimeout: Integer);
+    function waitForResponse: WordBool; overload;
+    function waitForResponse(timeoutInSeconds: OleVariant): WordBool; overload;
+    function getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+    procedure setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+    property DefaultInterface: IServerXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TServerXMLHTTPProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TServerXMLHTTP
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TServerXMLHTTPProperties = class(TPersistent)
+  private
+    FServer:    TServerXMLHTTP;
+    function    GetDefaultInterface: IServerXMLHTTPRequest;
+    constructor Create(AServer: TServerXMLHTTP);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IServerXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoServerXMLHTTP30 provides a Create and CreateRemote method to          
 // create instances of the default interface IServerXMLHTTPRequest exposed by              
-// the CoClass msServerXMLHTTP30. The functions are intended to be used by             
+// the CoClass ServerXMLHTTP30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsServerXMLHTTP30 = class
+  CoServerXMLHTTP30 = class
     class function Create: IServerXMLHTTPRequest;
     class function CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TServerXMLHTTP30
+// Help String      : Server XML HTTP Request class.
+// Default Interface: IServerXMLHTTPRequest
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TServerXMLHTTP30Properties= class;
+{$ENDIF}
+  TServerXMLHTTP30 = class(TOleServer)
+  private
+    FIntf:        IServerXMLHTTPRequest;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TServerXMLHTTP30Properties;
+    function      GetServerProperties: TServerXMLHTTP30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IServerXMLHTTPRequest;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IServerXMLHTTPRequest);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    procedure setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; sendTimeout: Integer; 
+                          receiveTimeout: Integer);
+    function waitForResponse: WordBool; overload;
+    function waitForResponse(timeoutInSeconds: OleVariant): WordBool; overload;
+    function getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+    procedure setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+    property DefaultInterface: IServerXMLHTTPRequest read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TServerXMLHTTP30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TServerXMLHTTP30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TServerXMLHTTP30Properties = class(TPersistent)
+  private
+    FServer:    TServerXMLHTTP30;
+    function    GetDefaultInterface: IServerXMLHTTPRequest;
+    constructor Create(AServer: TServerXMLHTTP30);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IServerXMLHTTPRequest read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoServerXMLHTTP40 provides a Create and CreateRemote method to          
@@ -4114,6 +6911,109 @@ type
     class function CreateRemote(const MachineName: string): IServerXMLHTTPRequest2;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TServerXMLHTTP40
+// Help String      : Server XML HTTP Request class.
+// Default Interface: IServerXMLHTTPRequest2
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TServerXMLHTTP40Properties= class;
+{$ENDIF}
+  TServerXMLHTTP40 = class(TOleServer)
+  private
+    FIntf:        IServerXMLHTTPRequest2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TServerXMLHTTP40Properties;
+    function      GetServerProperties: TServerXMLHTTP40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IServerXMLHTTPRequest2;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IServerXMLHTTPRequest2);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    procedure setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; sendTimeout: Integer; 
+                          receiveTimeout: Integer);
+    function waitForResponse: WordBool; overload;
+    function waitForResponse(timeoutInSeconds: OleVariant): WordBool; overload;
+    function getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+    procedure setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING); overload;
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant); overload;
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant; 
+                       varBypassList: OleVariant); overload;
+    procedure setProxyCredentials(const bstrUserName: WideString; const bstrPassword: WideString);
+    property DefaultInterface: IServerXMLHTTPRequest2 read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TServerXMLHTTP40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TServerXMLHTTP40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TServerXMLHTTP40Properties = class(TPersistent)
+  private
+    FServer:    TServerXMLHTTP40;
+    function    GetDefaultInterface: IServerXMLHTTPRequest2;
+    constructor Create(AServer: TServerXMLHTTP40);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IServerXMLHTTPRequest2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoServerXMLHTTP60 provides a Create and CreateRemote method to          
 // create instances of the default interface IServerXMLHTTPRequest2 exposed by              
@@ -4126,29 +7026,322 @@ type
     class function CreateRemote(const MachineName: string): IServerXMLHTTPRequest2;
   end;
 
+
 // *********************************************************************//
-// The Class ComsSAXXMLReader provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TServerXMLHTTP60
+// Help String      : Server XML HTTP Request 6.0 
+// Default Interface: IServerXMLHTTPRequest2
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TServerXMLHTTP60Properties= class;
+{$ENDIF}
+  TServerXMLHTTP60 = class(TOleServer)
+  private
+    FIntf:        IServerXMLHTTPRequest2;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TServerXMLHTTP60Properties;
+    function      GetServerProperties: TServerXMLHTTP60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IServerXMLHTTPRequest2;
+  protected
+    procedure InitServerData; override;
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IServerXMLHTTPRequest2);
+    procedure Disconnect; override;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant); overload;
+    procedure open(const bstrMethod: WideString; const bstrUrl: WideString; varAsync: OleVariant; 
+                   bstrUser: OleVariant; bstrPassword: OleVariant); overload;
+    procedure setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+    function getResponseHeader(const bstrHeader: WideString): WideString;
+    function getAllResponseHeaders: WideString;
+    procedure send; overload;
+    procedure send(varBody: OleVariant); overload;
+    procedure abort;
+    procedure setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; sendTimeout: Integer; 
+                          receiveTimeout: Integer);
+    function waitForResponse: WordBool; overload;
+    function waitForResponse(timeoutInSeconds: OleVariant): WordBool; overload;
+    function getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+    procedure setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING); overload;
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant); overload;
+    procedure setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant; 
+                       varBypassList: OleVariant); overload;
+    procedure setProxyCredentials(const bstrUserName: WideString; const bstrPassword: WideString);
+    property DefaultInterface: IServerXMLHTTPRequest2 read GetDefaultInterface;
+    property status: Integer read Get_status;
+    property statusText: WideString read Get_statusText;
+    property responseXML: IDispatch read Get_responseXML;
+    property responseText: WideString read Get_responseText;
+    property responseBody: OleVariant read Get_responseBody;
+    property responseStream: OleVariant read Get_responseStream;
+    property readyState: Integer read Get_readyState;
+    property onreadystatechange: IDispatch write Set_onreadystatechange;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TServerXMLHTTP60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TServerXMLHTTP60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TServerXMLHTTP60Properties = class(TPersistent)
+  private
+    FServer:    TServerXMLHTTP60;
+    function    GetDefaultInterface: IServerXMLHTTPRequest2;
+    constructor Create(AServer: TServerXMLHTTP60);
+  protected
+    function Get_status: Integer;
+    function Get_statusText: WideString;
+    function Get_responseXML: IDispatch;
+    function Get_responseText: WideString;
+    function Get_responseBody: OleVariant;
+    function Get_responseStream: OleVariant;
+    function Get_readyState: Integer;
+    procedure Set_onreadystatechange(const Param1: IDispatch);
+  public
+    property DefaultInterface: IServerXMLHTTPRequest2 read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoSAXXMLReader provides a Create and CreateRemote method to          
 // create instances of the default interface IVBSAXXMLReader exposed by              
-// the CoClass msSAXXMLReader. The functions are intended to be used by             
+// the CoClass SAXXMLReader. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsSAXXMLReader = class
+  CoSAXXMLReader = class
     class function Create: IVBSAXXMLReader;
     class function CreateRemote(const MachineName: string): IVBSAXXMLReader;
   end;
 
+
 // *********************************************************************//
-// The Class ComsSAXXMLReader30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TSAXXMLReader
+// Help String      : SAX XML Reader (version independent) coclass
+// Default Interface: IVBSAXXMLReader
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXXMLReaderProperties= class;
+{$ENDIF}
+  TSAXXMLReader = class(TOleServer)
+  private
+    FIntf:        IVBSAXXMLReader;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXXMLReaderProperties;
+    function      GetServerProperties: TSAXXMLReaderProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBSAXXMLReader;
+  protected
+    procedure InitServerData; override;
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBSAXXMLReader);
+    procedure Disconnect; override;
+    function getFeature(const strName: WideString): WordBool;
+    procedure putFeature(const strName: WideString; fValue: WordBool);
+    function getProperty(const strName: WideString): OleVariant;
+    procedure putProperty(const strName: WideString; varValue: OleVariant);
+    procedure parse; overload;
+    procedure parse(varInput: OleVariant); overload;
+    procedure parseURL(const strURL: WideString);
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+    property entityResolver: IVBSAXEntityResolver read Get_entityResolver write _Set_entityResolver;
+    property contentHandler: IVBSAXContentHandler read Get_contentHandler write _Set_contentHandler;
+    property dtdHandler: IVBSAXDTDHandler read Get_dtdHandler write _Set_dtdHandler;
+    property errorHandler: IVBSAXErrorHandler read Get_errorHandler write _Set_errorHandler;
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXXMLReaderProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXXMLReader
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXXMLReaderProperties = class(TPersistent)
+  private
+    FServer:    TSAXXMLReader;
+    function    GetDefaultInterface: IVBSAXXMLReader;
+    constructor Create(AServer: TSAXXMLReader);
+  protected
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+  published
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoSAXXMLReader30 provides a Create and CreateRemote method to          
 // create instances of the default interface IVBSAXXMLReader exposed by              
-// the CoClass msSAXXMLReader30. The functions are intended to be used by             
+// the CoClass SAXXMLReader30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsSAXXMLReader30 = class
+  CoSAXXMLReader30 = class
     class function Create: IVBSAXXMLReader;
     class function CreateRemote(const MachineName: string): IVBSAXXMLReader;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TSAXXMLReader30
+// Help String      : SAX XML Reader 3.0 coclass
+// Default Interface: IVBSAXXMLReader
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXXMLReader30Properties= class;
+{$ENDIF}
+  TSAXXMLReader30 = class(TOleServer)
+  private
+    FIntf:        IVBSAXXMLReader;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXXMLReader30Properties;
+    function      GetServerProperties: TSAXXMLReader30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBSAXXMLReader;
+  protected
+    procedure InitServerData; override;
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBSAXXMLReader);
+    procedure Disconnect; override;
+    function getFeature(const strName: WideString): WordBool;
+    procedure putFeature(const strName: WideString; fValue: WordBool);
+    function getProperty(const strName: WideString): OleVariant;
+    procedure putProperty(const strName: WideString; varValue: OleVariant);
+    procedure parse; overload;
+    procedure parse(varInput: OleVariant); overload;
+    procedure parseURL(const strURL: WideString);
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+    property entityResolver: IVBSAXEntityResolver read Get_entityResolver write _Set_entityResolver;
+    property contentHandler: IVBSAXContentHandler read Get_contentHandler write _Set_contentHandler;
+    property dtdHandler: IVBSAXDTDHandler read Get_dtdHandler write _Set_dtdHandler;
+    property errorHandler: IVBSAXErrorHandler read Get_errorHandler write _Set_errorHandler;
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXXMLReader30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXXMLReader30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXXMLReader30Properties = class(TPersistent)
+  private
+    FServer:    TSAXXMLReader30;
+    function    GetDefaultInterface: IVBSAXXMLReader;
+    constructor Create(AServer: TSAXXMLReader30);
+  protected
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+  published
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoSAXXMLReader40 provides a Create and CreateRemote method to          
@@ -4162,6 +7355,101 @@ type
     class function CreateRemote(const MachineName: string): IVBSAXXMLReader;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TSAXXMLReader40
+// Help String      : SAX XML Reader 4.0 coclass
+// Default Interface: IVBSAXXMLReader
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXXMLReader40Properties= class;
+{$ENDIF}
+  TSAXXMLReader40 = class(TOleServer)
+  private
+    FIntf:        IVBSAXXMLReader;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXXMLReader40Properties;
+    function      GetServerProperties: TSAXXMLReader40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBSAXXMLReader;
+  protected
+    procedure InitServerData; override;
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBSAXXMLReader);
+    procedure Disconnect; override;
+    function getFeature(const strName: WideString): WordBool;
+    procedure putFeature(const strName: WideString; fValue: WordBool);
+    function getProperty(const strName: WideString): OleVariant;
+    procedure putProperty(const strName: WideString; varValue: OleVariant);
+    procedure parse; overload;
+    procedure parse(varInput: OleVariant); overload;
+    procedure parseURL(const strURL: WideString);
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+    property entityResolver: IVBSAXEntityResolver read Get_entityResolver write _Set_entityResolver;
+    property contentHandler: IVBSAXContentHandler read Get_contentHandler write _Set_contentHandler;
+    property dtdHandler: IVBSAXDTDHandler read Get_dtdHandler write _Set_dtdHandler;
+    property errorHandler: IVBSAXErrorHandler read Get_errorHandler write _Set_errorHandler;
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXXMLReader40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXXMLReader40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXXMLReader40Properties = class(TPersistent)
+  private
+    FServer:    TSAXXMLReader40;
+    function    GetDefaultInterface: IVBSAXXMLReader;
+    constructor Create(AServer: TSAXXMLReader40);
+  protected
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+  published
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoSAXXMLReader60 provides a Create and CreateRemote method to          
 // create instances of the default interface IVBSAXXMLReader exposed by              
@@ -4174,29 +7462,332 @@ type
     class function CreateRemote(const MachineName: string): IVBSAXXMLReader;
   end;
 
+
 // *********************************************************************//
-// The Class ComsMXXMLWriter provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TSAXXMLReader60
+// Help String      : SAX XML Reader 6.0
+// Default Interface: IVBSAXXMLReader
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXXMLReader60Properties= class;
+{$ENDIF}
+  TSAXXMLReader60 = class(TOleServer)
+  private
+    FIntf:        IVBSAXXMLReader;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXXMLReader60Properties;
+    function      GetServerProperties: TSAXXMLReader60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBSAXXMLReader;
+  protected
+    procedure InitServerData; override;
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBSAXXMLReader);
+    procedure Disconnect; override;
+    function getFeature(const strName: WideString): WordBool;
+    procedure putFeature(const strName: WideString; fValue: WordBool);
+    function getProperty(const strName: WideString): OleVariant;
+    procedure putProperty(const strName: WideString; varValue: OleVariant);
+    procedure parse; overload;
+    procedure parse(varInput: OleVariant); overload;
+    procedure parseURL(const strURL: WideString);
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+    property entityResolver: IVBSAXEntityResolver read Get_entityResolver write _Set_entityResolver;
+    property contentHandler: IVBSAXContentHandler read Get_contentHandler write _Set_contentHandler;
+    property dtdHandler: IVBSAXDTDHandler read Get_dtdHandler write _Set_dtdHandler;
+    property errorHandler: IVBSAXErrorHandler read Get_errorHandler write _Set_errorHandler;
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXXMLReader60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXXMLReader60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXXMLReader60Properties = class(TPersistent)
+  private
+    FServer:    TSAXXMLReader60;
+    function    GetDefaultInterface: IVBSAXXMLReader;
+    constructor Create(AServer: TSAXXMLReader60);
+  protected
+    function Get_entityResolver: IVBSAXEntityResolver;
+    procedure _Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+    function Get_contentHandler: IVBSAXContentHandler;
+    procedure _Set_contentHandler(const oHandler: IVBSAXContentHandler);
+    function Get_dtdHandler: IVBSAXDTDHandler;
+    procedure _Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+    function Get_errorHandler: IVBSAXErrorHandler;
+    procedure _Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+    function Get_baseURL: WideString;
+    procedure Set_baseURL(const strBaseURL: WideString);
+    function Get_secureBaseURL: WideString;
+    procedure Set_secureBaseURL(const strSecureBaseURL: WideString);
+  public
+    property DefaultInterface: IVBSAXXMLReader read GetDefaultInterface;
+  published
+    property baseURL: WideString read Get_baseURL write Set_baseURL;
+    property secureBaseURL: WideString read Get_secureBaseURL write Set_secureBaseURL;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoMXXMLWriter provides a Create and CreateRemote method to          
 // create instances of the default interface IMXWriter exposed by              
-// the CoClass msMXXMLWriter. The functions are intended to be used by             
+// the CoClass MXXMLWriter. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsMXXMLWriter = class
+  CoMXXMLWriter = class
     class function Create: IMXWriter;
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
 
+
 // *********************************************************************//
-// The Class ComsMXXMLWriter30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TMXXMLWriter
+// Help String      : Microsoft XML Writer (version independent) coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXXMLWriterProperties= class;
+{$ENDIF}
+  TMXXMLWriter = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXXMLWriterProperties;
+    function      GetServerProperties: TMXXMLWriterProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXXMLWriterProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXXMLWriter
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXXMLWriterProperties = class(TPersistent)
+  private
+    FServer:    TMXXMLWriter;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXXMLWriter);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoMXXMLWriter30 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXWriter exposed by              
-// the CoClass msMXXMLWriter30. The functions are intended to be used by             
+// the CoClass MXXMLWriter30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsMXXMLWriter30 = class
+  CoMXXMLWriter30 = class
     class function Create: IMXWriter;
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXXMLWriter30
+// Help String      : Microsoft XML Writer 3.0 coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXXMLWriter30Properties= class;
+{$ENDIF}
+  TMXXMLWriter30 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXXMLWriter30Properties;
+    function      GetServerProperties: TMXXMLWriter30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXXMLWriter30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXXMLWriter30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXXMLWriter30Properties = class(TPersistent)
+  private
+    FServer:    TMXXMLWriter30;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXXMLWriter30);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoMXXMLWriter40 provides a Create and CreateRemote method to          
@@ -4210,6 +7801,110 @@ type
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXXMLWriter40
+// Help String      : Microsoft XML Writer 4.0 coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXXMLWriter40Properties= class;
+{$ENDIF}
+  TMXXMLWriter40 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXXMLWriter40Properties;
+    function      GetServerProperties: TMXXMLWriter40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXXMLWriter40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXXMLWriter40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXXMLWriter40Properties = class(TPersistent)
+  private
+    FServer:    TMXXMLWriter40;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXXMLWriter40);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoMXXMLWriter60 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXWriter exposed by              
@@ -4221,6 +7916,110 @@ type
     class function Create: IMXWriter;
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXXMLWriter60
+// Help String      : Microsoft XML Writer 6.0
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXXMLWriter60Properties= class;
+{$ENDIF}
+  TMXXMLWriter60 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXXMLWriter60Properties;
+    function      GetServerProperties: TMXXMLWriter60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXXMLWriter60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXXMLWriter60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXXMLWriter60Properties = class(TPersistent)
+  private
+    FServer:    TMXXMLWriter60;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXXMLWriter60);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoMXHTMLWriter provides a Create and CreateRemote method to          
@@ -4234,6 +8033,110 @@ type
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXHTMLWriter
+// Help String      : Microsoft HTML Writer (version independent) coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXHTMLWriterProperties= class;
+{$ENDIF}
+  TMXHTMLWriter = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXHTMLWriterProperties;
+    function      GetServerProperties: TMXHTMLWriterProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXHTMLWriterProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXHTMLWriter
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXHTMLWriterProperties = class(TPersistent)
+  private
+    FServer:    TMXHTMLWriter;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXHTMLWriter);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoMXHTMLWriter30 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXWriter exposed by              
@@ -4245,6 +8148,110 @@ type
     class function Create: IMXWriter;
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXHTMLWriter30
+// Help String      : Microsoft HTML Writer 3.0 coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXHTMLWriter30Properties= class;
+{$ENDIF}
+  TMXHTMLWriter30 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXHTMLWriter30Properties;
+    function      GetServerProperties: TMXHTMLWriter30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXHTMLWriter30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXHTMLWriter30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXHTMLWriter30Properties = class(TPersistent)
+  private
+    FServer:    TMXHTMLWriter30;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXHTMLWriter30);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoMXHTMLWriter40 provides a Create and CreateRemote method to          
@@ -4258,6 +8265,110 @@ type
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXHTMLWriter40
+// Help String      : Microsoft HTML Writer 4.0 coclass
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXHTMLWriter40Properties= class;
+{$ENDIF}
+  TMXHTMLWriter40 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXHTMLWriter40Properties;
+    function      GetServerProperties: TMXHTMLWriter40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXHTMLWriter40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXHTMLWriter40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXHTMLWriter40Properties = class(TPersistent)
+  private
+    FServer:    TMXHTMLWriter40;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXHTMLWriter40);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoMXHTMLWriter60 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXWriter exposed by              
@@ -4270,29 +8381,275 @@ type
     class function CreateRemote(const MachineName: string): IMXWriter;
   end;
 
+
 // *********************************************************************//
-// The Class ComsSAXAttributes provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TMXHTMLWriter60
+// Help String      : Microsoft HTML Writer 6.0
+// Default Interface: IMXWriter
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXHTMLWriter60Properties= class;
+{$ENDIF}
+  TMXHTMLWriter60 = class(TOleServer)
+  private
+    FIntf:        IMXWriter;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXHTMLWriter60Properties;
+    function      GetServerProperties: TMXHTMLWriter60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXWriter;
+  protected
+    procedure InitServerData; override;
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXWriter);
+    procedure Disconnect; override;
+    procedure flush;
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+    property output: OleVariant read Get_output write Set_output;
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXHTMLWriter60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXHTMLWriter60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXHTMLWriter60Properties = class(TPersistent)
+  private
+    FServer:    TMXHTMLWriter60;
+    function    GetDefaultInterface: IMXWriter;
+    constructor Create(AServer: TMXHTMLWriter60);
+  protected
+    procedure Set_output(varDestination: OleVariant);
+    function Get_output: OleVariant;
+    procedure Set_encoding(const strEncoding: WideString);
+    function Get_encoding: WideString;
+    procedure Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+    function Get_byteOrderMark: WordBool;
+    procedure Set_indent(fIndentMode: WordBool);
+    function Get_indent: WordBool;
+    procedure Set_standalone(fValue: WordBool);
+    function Get_standalone: WordBool;
+    procedure Set_omitXMLDeclaration(fValue: WordBool);
+    function Get_omitXMLDeclaration: WordBool;
+    procedure Set_version(const strVersion: WideString);
+    function Get_version: WideString;
+    procedure Set_disableOutputEscaping(fValue: WordBool);
+    function Get_disableOutputEscaping: WordBool;
+  public
+    property DefaultInterface: IMXWriter read GetDefaultInterface;
+  published
+    property encoding: WideString read Get_encoding write Set_encoding;
+    property byteOrderMark: WordBool read Get_byteOrderMark write Set_byteOrderMark;
+    property indent: WordBool read Get_indent write Set_indent;
+    property standalone: WordBool read Get_standalone write Set_standalone;
+    property omitXMLDeclaration: WordBool read Get_omitXMLDeclaration write Set_omitXMLDeclaration;
+    property version: WideString read Get_version write Set_version;
+    property disableOutputEscaping: WordBool read Get_disableOutputEscaping write Set_disableOutputEscaping;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoSAXAttributes provides a Create and CreateRemote method to          
 // create instances of the default interface IMXAttributes exposed by              
-// the CoClass msSAXAttributes. The functions are intended to be used by             
+// the CoClass SAXAttributes. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsSAXAttributes = class
+  CoSAXAttributes = class
     class function Create: IMXAttributes;
     class function CreateRemote(const MachineName: string): IMXAttributes;
   end;
 
+
 // *********************************************************************//
-// The Class ComsSAXAttributes30 provides a Create and CreateRemote method to          
+// OLE Server Proxy class declaration
+// Server Object    : TSAXAttributes
+// Help String      : SAX Attributes (version independent) coclass
+// Default Interface: IMXAttributes
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXAttributesProperties= class;
+{$ENDIF}
+  TSAXAttributes = class(TOleServer)
+  private
+    FIntf:        IMXAttributes;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXAttributesProperties;
+    function      GetServerProperties: TSAXAttributesProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXAttributes;
+  protected
+    procedure InitServerData; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXAttributes);
+    procedure Disconnect; override;
+    procedure addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                           const strQName: WideString; const strType: WideString; 
+                           const strValue: WideString);
+    procedure addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+    procedure clear;
+    procedure removeAttribute(nIndex: SYSINT);
+    procedure setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                           const strLocalName: WideString; const strQName: WideString; 
+                           const strType: WideString; const strValue: WideString);
+    procedure setAttributes(varAtts: OleVariant);
+    procedure setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+    procedure setQName(nIndex: SYSINT; const strQName: WideString);
+    procedure setType(nIndex: SYSINT; const strType: WideString);
+    procedure setURI(nIndex: SYSINT; const strURI: WideString);
+    procedure setValue(nIndex: SYSINT; const strValue: WideString);
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXAttributesProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXAttributes
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXAttributesProperties = class(TPersistent)
+  private
+    FServer:    TSAXAttributes;
+    function    GetDefaultInterface: IMXAttributes;
+    constructor Create(AServer: TSAXAttributes);
+  protected
+  public
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoSAXAttributes30 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXAttributes exposed by              
-// the CoClass msSAXAttributes30. The functions are intended to be used by             
+// the CoClass SAXAttributes30. The functions are intended to be used by             
 // clients wishing to automate the CoClass objects exposed by the         
 // server of this typelibrary.                                            
 // *********************************************************************//
-  ComsSAXAttributes30 = class
+  CoSAXAttributes30 = class
     class function Create: IMXAttributes;
     class function CreateRemote(const MachineName: string): IMXAttributes;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TSAXAttributes30
+// Help String      : SAX Attributes 3.0 coclass
+// Default Interface: IMXAttributes
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXAttributes30Properties= class;
+{$ENDIF}
+  TSAXAttributes30 = class(TOleServer)
+  private
+    FIntf:        IMXAttributes;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXAttributes30Properties;
+    function      GetServerProperties: TSAXAttributes30Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXAttributes;
+  protected
+    procedure InitServerData; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXAttributes);
+    procedure Disconnect; override;
+    procedure addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                           const strQName: WideString; const strType: WideString; 
+                           const strValue: WideString);
+    procedure addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+    procedure clear;
+    procedure removeAttribute(nIndex: SYSINT);
+    procedure setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                           const strLocalName: WideString; const strQName: WideString; 
+                           const strType: WideString; const strValue: WideString);
+    procedure setAttributes(varAtts: OleVariant);
+    procedure setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+    procedure setQName(nIndex: SYSINT; const strQName: WideString);
+    procedure setType(nIndex: SYSINT; const strType: WideString);
+    procedure setURI(nIndex: SYSINT; const strURI: WideString);
+    procedure setValue(nIndex: SYSINT; const strValue: WideString);
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXAttributes30Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXAttributes30
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXAttributes30Properties = class(TPersistent)
+  private
+    FServer:    TSAXAttributes30;
+    function    GetDefaultInterface: IMXAttributes;
+    constructor Create(AServer: TSAXAttributes30);
+  protected
+  public
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoSAXAttributes40 provides a Create and CreateRemote method to          
@@ -4306,6 +8663,77 @@ type
     class function CreateRemote(const MachineName: string): IMXAttributes;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TSAXAttributes40
+// Help String      : SAX Attributes 4.0 coclass
+// Default Interface: IMXAttributes
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXAttributes40Properties= class;
+{$ENDIF}
+  TSAXAttributes40 = class(TOleServer)
+  private
+    FIntf:        IMXAttributes;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXAttributes40Properties;
+    function      GetServerProperties: TSAXAttributes40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXAttributes;
+  protected
+    procedure InitServerData; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXAttributes);
+    procedure Disconnect; override;
+    procedure addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                           const strQName: WideString; const strType: WideString; 
+                           const strValue: WideString);
+    procedure addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+    procedure clear;
+    procedure removeAttribute(nIndex: SYSINT);
+    procedure setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                           const strLocalName: WideString; const strQName: WideString; 
+                           const strType: WideString; const strValue: WideString);
+    procedure setAttributes(varAtts: OleVariant);
+    procedure setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+    procedure setQName(nIndex: SYSINT; const strQName: WideString);
+    procedure setType(nIndex: SYSINT; const strType: WideString);
+    procedure setURI(nIndex: SYSINT; const strURI: WideString);
+    procedure setValue(nIndex: SYSINT; const strValue: WideString);
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXAttributes40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXAttributes40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXAttributes40Properties = class(TPersistent)
+  private
+    FServer:    TSAXAttributes40;
+    function    GetDefaultInterface: IMXAttributes;
+    constructor Create(AServer: TSAXAttributes40);
+  protected
+  public
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoSAXAttributes60 provides a Create and CreateRemote method to          
 // create instances of the default interface IMXAttributes exposed by              
@@ -4317,6 +8745,77 @@ type
     class function Create: IMXAttributes;
     class function CreateRemote(const MachineName: string): IMXAttributes;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TSAXAttributes60
+// Help String      : SAX Attributes 6.0
+// Default Interface: IMXAttributes
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TSAXAttributes60Properties= class;
+{$ENDIF}
+  TSAXAttributes60 = class(TOleServer)
+  private
+    FIntf:        IMXAttributes;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TSAXAttributes60Properties;
+    function      GetServerProperties: TSAXAttributes60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IMXAttributes;
+  protected
+    procedure InitServerData; override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IMXAttributes);
+    procedure Disconnect; override;
+    procedure addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                           const strQName: WideString; const strType: WideString; 
+                           const strValue: WideString);
+    procedure addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+    procedure clear;
+    procedure removeAttribute(nIndex: SYSINT);
+    procedure setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                           const strLocalName: WideString; const strQName: WideString; 
+                           const strType: WideString; const strValue: WideString);
+    procedure setAttributes(varAtts: OleVariant);
+    procedure setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+    procedure setQName(nIndex: SYSINT; const strQName: WideString);
+    procedure setType(nIndex: SYSINT; const strType: WideString);
+    procedure setURI(nIndex: SYSINT; const strURI: WideString);
+    procedure setValue(nIndex: SYSINT; const strValue: WideString);
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TSAXAttributes60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TSAXAttributes60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TSAXAttributes60Properties = class(TPersistent)
+  private
+    FServer:    TSAXAttributes60;
+    function    GetDefaultInterface: IMXAttributes;
+    constructor Create(AServer: TSAXAttributes60);
+  protected
+  public
+    property DefaultInterface: IMXAttributes read GetDefaultInterface;
+  published
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoMXNamespaceManager provides a Create and CreateRemote method to          
@@ -4330,6 +8829,77 @@ type
     class function CreateRemote(const MachineName: string): IVBMXNamespaceManager;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXNamespaceManager
+// Help String      : MX Namespace Manager coclass
+// Default Interface: IVBMXNamespaceManager
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXNamespaceManagerProperties= class;
+{$ENDIF}
+  TMXNamespaceManager = class(TOleServer)
+  private
+    FIntf:        IVBMXNamespaceManager;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXNamespaceManagerProperties;
+    function      GetServerProperties: TMXNamespaceManagerProperties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBMXNamespaceManager;
+  protected
+    procedure InitServerData; override;
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBMXNamespaceManager);
+    procedure Disconnect; override;
+    procedure reset;
+    procedure pushContext;
+    procedure pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+    procedure popContext;
+    procedure declarePrefix(const prefix: WideString; const namespaceURI: WideString);
+    function getDeclaredPrefixes: IMXNamespacePrefixes;
+    function getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+    function getURI(const prefix: WideString): OleVariant;
+    function getURIFromNode(const strPrefix: WideString; const contextNode: IXMLDOMNode): OleVariant;
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXNamespaceManagerProperties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXNamespaceManager
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXNamespaceManagerProperties = class(TPersistent)
+  private
+    FServer:    TMXNamespaceManager;
+    function    GetDefaultInterface: IVBMXNamespaceManager;
+    constructor Create(AServer: TMXNamespaceManager);
+  protected
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+  published
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  end;
+{$ENDIF}
+
+
 // *********************************************************************//
 // The Class CoMXNamespaceManager40 provides a Create and CreateRemote method to          
 // create instances of the default interface IVBMXNamespaceManager exposed by              
@@ -4341,6 +8911,77 @@ type
     class function Create: IVBMXNamespaceManager;
     class function CreateRemote(const MachineName: string): IVBMXNamespaceManager;
   end;
+
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXNamespaceManager40
+// Help String      : MX Namespace Manager 4.0 coclass
+// Default Interface: IVBMXNamespaceManager
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXNamespaceManager40Properties= class;
+{$ENDIF}
+  TMXNamespaceManager40 = class(TOleServer)
+  private
+    FIntf:        IVBMXNamespaceManager;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXNamespaceManager40Properties;
+    function      GetServerProperties: TMXNamespaceManager40Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBMXNamespaceManager;
+  protected
+    procedure InitServerData; override;
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBMXNamespaceManager);
+    procedure Disconnect; override;
+    procedure reset;
+    procedure pushContext;
+    procedure pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+    procedure popContext;
+    procedure declarePrefix(const prefix: WideString; const namespaceURI: WideString);
+    function getDeclaredPrefixes: IMXNamespacePrefixes;
+    function getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+    function getURI(const prefix: WideString): OleVariant;
+    function getURIFromNode(const strPrefix: WideString; const contextNode: IXMLDOMNode): OleVariant;
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXNamespaceManager40Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXNamespaceManager40
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXNamespaceManager40Properties = class(TPersistent)
+  private
+    FServer:    TMXNamespaceManager40;
+    function    GetDefaultInterface: IVBMXNamespaceManager;
+    constructor Create(AServer: TMXNamespaceManager40);
+  protected
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+  published
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  end;
+{$ENDIF}
+
 
 // *********************************************************************//
 // The Class CoMXNamespaceManager60 provides a Create and CreateRemote method to          
@@ -4354,39 +8995,606 @@ type
     class function CreateRemote(const MachineName: string): IVBMXNamespaceManager;
   end;
 
+
+// *********************************************************************//
+// OLE Server Proxy class declaration
+// Server Object    : TMXNamespaceManager60
+// Help String      : MX Namespace Manager 6.0
+// Default Interface: IVBMXNamespaceManager
+// Def. Intf. DISP? : No
+// Event   Interface: 
+// TypeFlags        : (2) CanCreate
+// *********************************************************************//
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  TMXNamespaceManager60Properties= class;
+{$ENDIF}
+  TMXNamespaceManager60 = class(TOleServer)
+  private
+    FIntf:        IVBMXNamespaceManager;
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    FProps:       TMXNamespaceManager60Properties;
+    function      GetServerProperties: TMXNamespaceManager60Properties;
+{$ENDIF}
+    function      GetDefaultInterface: IVBMXNamespaceManager;
+  protected
+    procedure InitServerData; override;
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor  Destroy; override;
+    procedure Connect; override;
+    procedure ConnectTo(svrIntf: IVBMXNamespaceManager);
+    procedure Disconnect; override;
+    procedure reset;
+    procedure pushContext;
+    procedure pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+    procedure popContext;
+    procedure declarePrefix(const prefix: WideString; const namespaceURI: WideString);
+    function getDeclaredPrefixes: IMXNamespacePrefixes;
+    function getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+    function getURI(const prefix: WideString): OleVariant;
+    function getURIFromNode(const strPrefix: WideString; const contextNode: IXMLDOMNode): OleVariant;
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  published
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+    property Server: TMXNamespaceManager60Properties read GetServerProperties;
+{$ENDIF}
+  end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+// *********************************************************************//
+// OLE Server Properties Proxy Class
+// Server Object    : TMXNamespaceManager60
+// (This object is used by the IDE's Property Inspector to allow editing
+//  of the properties of this server)
+// *********************************************************************//
+ TMXNamespaceManager60Properties = class(TPersistent)
+  private
+    FServer:    TMXNamespaceManager60;
+    function    GetDefaultInterface: IVBMXNamespaceManager;
+    constructor Create(AServer: TMXNamespaceManager60);
+  protected
+    procedure Set_allowOverride(fOverride: WordBool);
+    function Get_allowOverride: WordBool;
+  public
+    property DefaultInterface: IVBMXNamespaceManager read GetDefaultInterface;
+  published
+    property allowOverride: WordBool read Get_allowOverride write Set_allowOverride;
+  end;
+{$ENDIF}
+
+
+// *********************************************************************//
+// The Class CoXMLDocument provides a Create and CreateRemote method to          
+// create instances of the default interface IXMLDocument2 exposed by              
+// the CoClass XMLDocument. The functions are intended to be used by             
+// clients wishing to automate the CoClass objects exposed by the         
+// server of this typelibrary.                                            
+// *********************************************************************//
+  CoXMLDocument = class
+    class function Create: IXMLDocument2;
+    class function CreateRemote(const MachineName: string): IXMLDocument2;
+  end;
+
+procedure Register;
+
+resourcestring
+  dtlServerPage = 'ActiveX';
+
+  dtlOcxPage = 'ActiveX';
+
 implementation
 
-uses System.Win.ComObj;
+uses ComObj;
 
-class function ComsDOMDocument.Create: IXMLDOMDocument2;
+class function CoDOMDocument.Create: IXMLDOMDocument2;
 begin
-  Result := CreateComObject(CLASS_msDOMDocument) as IXMLDOMDocument2;
+  Result := CreateComObject(CLASS_DOMDocument) as IXMLDOMDocument2;
 end;
 
-class function ComsDOMDocument.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+class function CoDOMDocument.CreateRemote(const MachineName: string): IXMLDOMDocument2;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDOMDocument) as IXMLDOMDocument2;
+  Result := CreateRemoteComObject(MachineName, CLASS_DOMDocument) as IXMLDOMDocument2;
 end;
 
-class function ComsDOMDocument26.Create: IXMLDOMDocument2;
+procedure TDOMDocument.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F6D90F11-9C73-11D3-B32E-00C04F990BB4}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msDOMDocument26) as IXMLDOMDocument2;
+  ServerData := @CServerData;
 end;
 
-class function ComsDOMDocument26.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+procedure TDOMDocument.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDOMDocument26) as IXMLDOMDocument2;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
 end;
 
-class function ComsDOMDocument30.Create: IXMLDOMDocument2;
+procedure TDOMDocument.ConnectTo(svrIntf: IXMLDOMDocument2);
 begin
-  Result := CreateComObject(CLASS_msDOMDocument30) as IXMLDOMDocument2;
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
 end;
 
-class function ComsDOMDocument30.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+procedure TDOMDocument.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDOMDocument30) as IXMLDOMDocument2;
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
 end;
+
+function TDOMDocument.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDOMDocument.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDOMDocumentProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDOMDocument.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDOMDocument.GetServerProperties: TDOMDocumentProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TDOMDocument.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TDOMDocument.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TDOMDocument.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TDOMDocument.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TDOMDocument.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDOMDocumentProperties.Create(AServer: TDOMDocument);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDOMDocumentProperties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDOMDocumentProperties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocumentProperties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocumentProperties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
+class function CoDOMDocument26.Create: IXMLDOMDocument2;
+begin
+  Result := CreateComObject(CLASS_DOMDocument26) as IXMLDOMDocument2;
+end;
+
+class function CoDOMDocument26.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_DOMDocument26) as IXMLDOMDocument2;
+end;
+
+procedure TDOMDocument26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F1B-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDOMDocument26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TDOMDocument26.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TDOMDocument26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TDOMDocument26.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDOMDocument26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDOMDocument26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDOMDocument26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDOMDocument26.GetServerProperties: TDOMDocument26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TDOMDocument26.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TDOMDocument26.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument26.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument26._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TDOMDocument26.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TDOMDocument26.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TDOMDocument26.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDOMDocument26Properties.Create(AServer: TDOMDocument26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDOMDocument26Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDOMDocument26Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument26Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument26Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
+class function CoDOMDocument30.Create: IXMLDOMDocument2;
+begin
+  Result := CreateComObject(CLASS_DOMDocument30) as IXMLDOMDocument2;
+end;
+
+class function CoDOMDocument30.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_DOMDocument30) as IXMLDOMDocument2;
+end;
+
+procedure TDOMDocument30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F32-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDOMDocument30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TDOMDocument30.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TDOMDocument30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TDOMDocument30.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDOMDocument30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDOMDocument30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDOMDocument30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDOMDocument30.GetServerProperties: TDOMDocument30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TDOMDocument30.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TDOMDocument30.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument30.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument30._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TDOMDocument30.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TDOMDocument30.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TDOMDocument30.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDOMDocument30Properties.Create(AServer: TDOMDocument30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDOMDocument30Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDOMDocument30Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument30Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument30Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
 
 class function CoDOMDocument40.Create: IXMLDOMDocument2;
 begin
@@ -4398,6 +9606,165 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_DOMDocument40) as IXMLDOMDocument2;
 end;
 
+procedure TDOMDocument40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C0-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDOMDocument40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TDOMDocument40.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TDOMDocument40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TDOMDocument40.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDOMDocument40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDOMDocument40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDOMDocument40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDOMDocument40.GetServerProperties: TDOMDocument40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TDOMDocument40.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TDOMDocument40.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument40.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument40._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TDOMDocument40.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TDOMDocument40.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TDOMDocument40.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDOMDocument40Properties.Create(AServer: TDOMDocument40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDOMDocument40Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDOMDocument40Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TDOMDocument40Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TDOMDocument40Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
 class function CoDOMDocument60.Create: IXMLDOMDocument3;
 begin
   Result := CreateComObject(CLASS_DOMDocument60) as IXMLDOMDocument3;
@@ -4408,35 +9775,618 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_DOMDocument60) as IXMLDOMDocument3;
 end;
 
-class function ComsFreeThreadedDOMDocument.Create: IXMLDOMDocument2;
+procedure TDOMDocument60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A05-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF96-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msFreeThreadedDOMDocument) as IXMLDOMDocument2;
+  ServerData := @CServerData;
 end;
 
-class function ComsFreeThreadedDOMDocument.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+procedure TDOMDocument60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msFreeThreadedDOMDocument) as IXMLDOMDocument2;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument3;
+  end;
 end;
 
-class function ComsFreeThreadedDOMDocument26.Create: IXMLDOMDocument2;
+procedure TDOMDocument60.ConnectTo(svrIntf: IXMLDOMDocument3);
 begin
-  Result := CreateComObject(CLASS_msFreeThreadedDOMDocument26) as IXMLDOMDocument2;
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
 end;
 
-class function ComsFreeThreadedDOMDocument26.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+procedure TDOMDocument60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msFreeThreadedDOMDocument26) as IXMLDOMDocument2;
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
 end;
 
-class function ComsFreeThreadedDOMDocument30.Create: IXMLDOMDocument2;
+function TDOMDocument60.GetDefaultInterface: IXMLDOMDocument3;
 begin
-  Result := CreateComObject(CLASS_msFreeThreadedDOMDocument30) as IXMLDOMDocument2;
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
 end;
 
-class function ComsFreeThreadedDOMDocument30.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+constructor TDOMDocument60.Create(AOwner: TComponent);
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msFreeThreadedDOMDocument30) as IXMLDOMDocument2;
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDOMDocument60Properties.Create(Self);
+{$ENDIF}
 end;
+
+destructor TDOMDocument60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDOMDocument60.GetServerProperties: TDOMDocument60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TDOMDocument60.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TDOMDocument60.validateNode(const node: IXMLDOMNode): IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validateNode(node);
+end;
+
+function TDOMDocument60.importNode(const node: IXMLDOMNode; deep: WordBool): IXMLDOMNode;
+begin
+  Result := DefaultInterface.importNode(node, deep);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDOMDocument60Properties.Create(AServer: TDOMDocument60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDOMDocument60Properties.GetDefaultInterface: IXMLDOMDocument3;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
+
+class function CoFreeThreadedDOMDocument.Create: IXMLDOMDocument2;
+begin
+  Result := CreateComObject(CLASS_FreeThreadedDOMDocument) as IXMLDOMDocument2;
+end;
+
+class function CoFreeThreadedDOMDocument.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_FreeThreadedDOMDocument) as IXMLDOMDocument2;
+end;
+
+procedure TFreeThreadedDOMDocument.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F6D90F12-9C73-11D3-B32E-00C04F990BB4}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TFreeThreadedDOMDocument.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TFreeThreadedDOMDocument.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TFreeThreadedDOMDocument.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TFreeThreadedDOMDocument.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TFreeThreadedDOMDocument.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TFreeThreadedDOMDocumentProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TFreeThreadedDOMDocument.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TFreeThreadedDOMDocument.GetServerProperties: TFreeThreadedDOMDocumentProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TFreeThreadedDOMDocument.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TFreeThreadedDOMDocument.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TFreeThreadedDOMDocument.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TFreeThreadedDOMDocument.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TFreeThreadedDOMDocument.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TFreeThreadedDOMDocumentProperties.Create(AServer: TFreeThreadedDOMDocument);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TFreeThreadedDOMDocumentProperties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TFreeThreadedDOMDocumentProperties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocumentProperties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocumentProperties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
+class function CoFreeThreadedDOMDocument26.Create: IXMLDOMDocument2;
+begin
+  Result := CreateComObject(CLASS_FreeThreadedDOMDocument26) as IXMLDOMDocument2;
+end;
+
+class function CoFreeThreadedDOMDocument26.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_FreeThreadedDOMDocument26) as IXMLDOMDocument2;
+end;
+
+procedure TFreeThreadedDOMDocument26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F1C-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TFreeThreadedDOMDocument26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TFreeThreadedDOMDocument26.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TFreeThreadedDOMDocument26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TFreeThreadedDOMDocument26.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TFreeThreadedDOMDocument26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TFreeThreadedDOMDocument26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TFreeThreadedDOMDocument26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TFreeThreadedDOMDocument26.GetServerProperties: TFreeThreadedDOMDocument26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TFreeThreadedDOMDocument26.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TFreeThreadedDOMDocument26.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument26.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument26._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TFreeThreadedDOMDocument26.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TFreeThreadedDOMDocument26.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TFreeThreadedDOMDocument26.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TFreeThreadedDOMDocument26Properties.Create(AServer: TFreeThreadedDOMDocument26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TFreeThreadedDOMDocument26Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TFreeThreadedDOMDocument26Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument26Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument26Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
+class function CoFreeThreadedDOMDocument30.Create: IXMLDOMDocument2;
+begin
+  Result := CreateComObject(CLASS_FreeThreadedDOMDocument30) as IXMLDOMDocument2;
+end;
+
+class function CoFreeThreadedDOMDocument30.CreateRemote(const MachineName: string): IXMLDOMDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_FreeThreadedDOMDocument30) as IXMLDOMDocument2;
+end;
+
+procedure TFreeThreadedDOMDocument30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F33-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TFreeThreadedDOMDocument30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TFreeThreadedDOMDocument30.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TFreeThreadedDOMDocument30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TFreeThreadedDOMDocument30.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TFreeThreadedDOMDocument30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TFreeThreadedDOMDocument30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TFreeThreadedDOMDocument30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TFreeThreadedDOMDocument30.GetServerProperties: TFreeThreadedDOMDocument30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TFreeThreadedDOMDocument30.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TFreeThreadedDOMDocument30.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument30.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument30._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TFreeThreadedDOMDocument30.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TFreeThreadedDOMDocument30.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TFreeThreadedDOMDocument30.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TFreeThreadedDOMDocument30Properties.Create(AServer: TFreeThreadedDOMDocument30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TFreeThreadedDOMDocument30Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TFreeThreadedDOMDocument30Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument30Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument30Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
 
 class function CoFreeThreadedDOMDocument40.Create: IXMLDOMDocument2;
 begin
@@ -4448,6 +10398,165 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_FreeThreadedDOMDocument40) as IXMLDOMDocument2;
 end;
 
+procedure TFreeThreadedDOMDocument40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C1-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF95-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TFreeThreadedDOMDocument40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument2;
+  end;
+end;
+
+procedure TFreeThreadedDOMDocument40.ConnectTo(svrIntf: IXMLDOMDocument2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
+end;
+
+procedure TFreeThreadedDOMDocument40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
+end;
+
+function TFreeThreadedDOMDocument40.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TFreeThreadedDOMDocument40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TFreeThreadedDOMDocument40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TFreeThreadedDOMDocument40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TFreeThreadedDOMDocument40.GetServerProperties: TFreeThreadedDOMDocument40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TFreeThreadedDOMDocument40.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TFreeThreadedDOMDocument40.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument40.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument40._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+function TFreeThreadedDOMDocument40.validate: IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validate;
+end;
+
+procedure TFreeThreadedDOMDocument40.setProperty(const name: WideString; value: OleVariant);
+begin
+  DefaultInterface.setProperty(name, value);
+end;
+
+function TFreeThreadedDOMDocument40.getProperty(const name: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(name);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TFreeThreadedDOMDocument40Properties.Create(AServer: TFreeThreadedDOMDocument40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TFreeThreadedDOMDocument40Properties.GetDefaultInterface: IXMLDOMDocument2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TFreeThreadedDOMDocument40Properties.Get_namespaces: IXMLDOMSchemaCollection;
+begin
+    Result := DefaultInterface.namespaces;
+end;
+
+function TFreeThreadedDOMDocument40Properties.Get_schemas: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.schemas;
+end;
+
+procedure TFreeThreadedDOMDocument40Properties._Set_schemas(otherCollection: OleVariant);
+  { Warning: The property schemas has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.schemas := otherCollection;
+end;
+
+{$ENDIF}
+
 class function CoFreeThreadedDOMDocument60.Create: IXMLDOMDocument3;
 begin
   Result := CreateComObject(CLASS_FreeThreadedDOMDocument60) as IXMLDOMDocument3;
@@ -4458,35 +10567,507 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_FreeThreadedDOMDocument60) as IXMLDOMDocument3;
 end;
 
-class function ComsXMLSchemaCache.Create: IXMLDOMSchemaCollection;
+procedure TFreeThreadedDOMDocument60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A06-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF96-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '{3EFAA427-272F-11D2-836F-0000F87A7782}';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msXMLSchemaCache) as IXMLDOMSchemaCollection;
+  ServerData := @CServerData;
 end;
 
-class function ComsXMLSchemaCache.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+procedure TFreeThreadedDOMDocument60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLSchemaCache) as IXMLDOMSchemaCollection;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    ConnectEvents(punk);
+    Fintf:= punk as IXMLDOMDocument3;
+  end;
 end;
 
-class function ComsXMLSchemaCache26.Create: IXMLDOMSchemaCollection;
+procedure TFreeThreadedDOMDocument60.ConnectTo(svrIntf: IXMLDOMDocument3);
 begin
-  Result := CreateComObject(CLASS_msXMLSchemaCache26) as IXMLDOMSchemaCollection;
+  Disconnect;
+  FIntf := svrIntf;
+  ConnectEvents(FIntf);
 end;
 
-class function ComsXMLSchemaCache26.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+procedure TFreeThreadedDOMDocument60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLSchemaCache26) as IXMLDOMSchemaCollection;
+  if Fintf <> nil then
+  begin
+    DisconnectEvents(FIntf);
+    FIntf := nil;
+  end;
 end;
 
-class function ComsXMLSchemaCache30.Create: IXMLDOMSchemaCollection;
+function TFreeThreadedDOMDocument60.GetDefaultInterface: IXMLDOMDocument3;
 begin
-  Result := CreateComObject(CLASS_msXMLSchemaCache30) as IXMLDOMSchemaCollection;
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
 end;
 
-class function ComsXMLSchemaCache30.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+constructor TFreeThreadedDOMDocument60.Create(AOwner: TComponent);
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLSchemaCache30) as IXMLDOMSchemaCollection;
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TFreeThreadedDOMDocument60Properties.Create(Self);
+{$ENDIF}
 end;
+
+destructor TFreeThreadedDOMDocument60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TFreeThreadedDOMDocument60.GetServerProperties: TFreeThreadedDOMDocument60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TFreeThreadedDOMDocument60.InvokeEvent(DispID: TDispID; var Params: TVariantArray);
+begin
+  case DispID of
+    -1: Exit;  // DISPID_UNKNOWN
+    198: if Assigned(FOnondataavailable) then
+         FOnondataavailable(Self);
+    -609: if Assigned(FOnonreadystatechange) then
+         FOnonreadystatechange(Self);
+  end; {case DispID}
+end;
+
+function TFreeThreadedDOMDocument60.validateNode(const node: IXMLDOMNode): IXMLDOMParseError;
+begin
+  Result := DefaultInterface.validateNode(node);
+end;
+
+function TFreeThreadedDOMDocument60.importNode(const node: IXMLDOMNode; deep: WordBool): IXMLDOMNode;
+begin
+  Result := DefaultInterface.importNode(node, deep);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TFreeThreadedDOMDocument60Properties.Create(AServer: TFreeThreadedDOMDocument60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TFreeThreadedDOMDocument60Properties.GetDefaultInterface: IXMLDOMDocument3;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
+
+class function CoXMLSchemaCache.Create: IXMLDOMSchemaCollection;
+begin
+  Result := CreateComObject(CLASS_XMLSchemaCache) as IXMLDOMSchemaCollection;
+end;
+
+class function CoXMLSchemaCache.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLSchemaCache) as IXMLDOMSchemaCollection;
+end;
+
+procedure TXMLSchemaCache.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{373984C9-B845-449B-91E7-45AC83036ADE}';
+    IntfIID:   '{373984C8-B845-449B-91E7-45AC83036ADE}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLSchemaCache.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLDOMSchemaCollection;
+  end;
+end;
+
+procedure TXMLSchemaCache.ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLSchemaCache.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLSchemaCache.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLSchemaCache.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLSchemaCacheProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLSchemaCache.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLSchemaCache.GetServerProperties: TXMLSchemaCacheProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLSchemaCache.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCache.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+procedure TXMLSchemaCache.add(const namespaceURI: WideString; var_: OleVariant);
+begin
+  DefaultInterface.add(namespaceURI, var_);
+end;
+
+function TXMLSchemaCache.get(const namespaceURI: WideString): IXMLDOMNode;
+begin
+  Result := DefaultInterface.get(namespaceURI);
+end;
+
+procedure TXMLSchemaCache.remove(const namespaceURI: WideString);
+begin
+  DefaultInterface.remove(namespaceURI);
+end;
+
+procedure TXMLSchemaCache.addCollection(const otherCollection: IXMLDOMSchemaCollection);
+begin
+  DefaultInterface.addCollection(otherCollection);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLSchemaCacheProperties.Create(AServer: TXMLSchemaCache);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLSchemaCacheProperties.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLSchemaCacheProperties.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCacheProperties.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+{$ENDIF}
+
+class function CoXMLSchemaCache26.Create: IXMLDOMSchemaCollection;
+begin
+  Result := CreateComObject(CLASS_XMLSchemaCache26) as IXMLDOMSchemaCollection;
+end;
+
+class function CoXMLSchemaCache26.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLSchemaCache26) as IXMLDOMSchemaCollection;
+end;
+
+procedure TXMLSchemaCache26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F1D-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{373984C8-B845-449B-91E7-45AC83036ADE}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLSchemaCache26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLDOMSchemaCollection;
+  end;
+end;
+
+procedure TXMLSchemaCache26.ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLSchemaCache26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLSchemaCache26.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLSchemaCache26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLSchemaCache26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLSchemaCache26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLSchemaCache26.GetServerProperties: TXMLSchemaCache26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLSchemaCache26.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCache26.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+procedure TXMLSchemaCache26.add(const namespaceURI: WideString; var_: OleVariant);
+begin
+  DefaultInterface.add(namespaceURI, var_);
+end;
+
+function TXMLSchemaCache26.get(const namespaceURI: WideString): IXMLDOMNode;
+begin
+  Result := DefaultInterface.get(namespaceURI);
+end;
+
+procedure TXMLSchemaCache26.remove(const namespaceURI: WideString);
+begin
+  DefaultInterface.remove(namespaceURI);
+end;
+
+procedure TXMLSchemaCache26.addCollection(const otherCollection: IXMLDOMSchemaCollection);
+begin
+  DefaultInterface.addCollection(otherCollection);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLSchemaCache26Properties.Create(AServer: TXMLSchemaCache26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLSchemaCache26Properties.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLSchemaCache26Properties.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCache26Properties.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+{$ENDIF}
+
+class function CoXMLSchemaCache30.Create: IXMLDOMSchemaCollection;
+begin
+  Result := CreateComObject(CLASS_XMLSchemaCache30) as IXMLDOMSchemaCollection;
+end;
+
+class function CoXMLSchemaCache30.CreateRemote(const MachineName: string): IXMLDOMSchemaCollection;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLSchemaCache30) as IXMLDOMSchemaCollection;
+end;
+
+procedure TXMLSchemaCache30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F34-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{373984C8-B845-449B-91E7-45AC83036ADE}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLSchemaCache30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLDOMSchemaCollection;
+  end;
+end;
+
+procedure TXMLSchemaCache30.ConnectTo(svrIntf: IXMLDOMSchemaCollection);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLSchemaCache30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLSchemaCache30.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLSchemaCache30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLSchemaCache30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLSchemaCache30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLSchemaCache30.GetServerProperties: TXMLSchemaCache30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLSchemaCache30.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCache30.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+procedure TXMLSchemaCache30.add(const namespaceURI: WideString; var_: OleVariant);
+begin
+  DefaultInterface.add(namespaceURI, var_);
+end;
+
+function TXMLSchemaCache30.get(const namespaceURI: WideString): IXMLDOMNode;
+begin
+  Result := DefaultInterface.get(namespaceURI);
+end;
+
+procedure TXMLSchemaCache30.remove(const namespaceURI: WideString);
+begin
+  DefaultInterface.remove(namespaceURI);
+end;
+
+procedure TXMLSchemaCache30.addCollection(const otherCollection: IXMLDOMSchemaCollection);
+begin
+  DefaultInterface.addCollection(otherCollection);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLSchemaCache30Properties.Create(AServer: TXMLSchemaCache30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLSchemaCache30Properties.GetDefaultInterface: IXMLDOMSchemaCollection;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLSchemaCache30Properties.Get_length: Integer;
+begin
+    Result := DefaultInterface.length;
+end;
+
+function TXMLSchemaCache30Properties.Get_namespaceURI(index: Integer): WideString;
+begin
+    Result := DefaultInterface.namespaceURI[index];
+end;
+
+{$ENDIF}
 
 class function CoXMLSchemaCache40.Create: IXMLDOMSchemaCollection2;
 begin
@@ -4498,6 +11079,123 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XMLSchemaCache40) as IXMLDOMSchemaCollection2;
 end;
 
+procedure TXMLSchemaCache40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C2-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{50EA08B0-DD1B-4664-9A50-C2F40F4BD79A}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLSchemaCache40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLDOMSchemaCollection2;
+  end;
+end;
+
+procedure TXMLSchemaCache40.ConnectTo(svrIntf: IXMLDOMSchemaCollection2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLSchemaCache40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLSchemaCache40.GetDefaultInterface: IXMLDOMSchemaCollection2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLSchemaCache40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLSchemaCache40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLSchemaCache40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLSchemaCache40.GetServerProperties: TXMLSchemaCache40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXMLSchemaCache40.Set_validateOnLoad(validateOnLoad: WordBool);
+begin
+  DefaultInterface.Set_validateOnLoad(validateOnLoad);
+end;
+
+function TXMLSchemaCache40.Get_validateOnLoad: WordBool;
+begin
+    Result := DefaultInterface.validateOnLoad;
+end;
+
+procedure TXMLSchemaCache40.validate;
+begin
+  DefaultInterface.validate;
+end;
+
+function TXMLSchemaCache40.getSchema(const namespaceURI: WideString): ISchema;
+begin
+  Result := DefaultInterface.getSchema(namespaceURI);
+end;
+
+function TXMLSchemaCache40.getDeclaration(const node: IXMLDOMNode): ISchemaItem;
+begin
+  Result := DefaultInterface.getDeclaration(node);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLSchemaCache40Properties.Create(AServer: TXMLSchemaCache40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLSchemaCache40Properties.GetDefaultInterface: IXMLDOMSchemaCollection2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXMLSchemaCache40Properties.Set_validateOnLoad(validateOnLoad: WordBool);
+begin
+  DefaultInterface.Set_validateOnLoad(validateOnLoad);
+end;
+
+function TXMLSchemaCache40Properties.Get_validateOnLoad: WordBool;
+begin
+    Result := DefaultInterface.validateOnLoad;
+end;
+
+{$ENDIF}
+
 class function CoXMLSchemaCache60.Create: IXMLDOMSchemaCollection2;
 begin
   Result := CreateComObject(CLASS_XMLSchemaCache60) as IXMLDOMSchemaCollection2;
@@ -4508,35 +11206,509 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XMLSchemaCache60) as IXMLDOMSchemaCollection2;
 end;
 
-class function ComsXSLTemplate.Create: IXSLTemplate;
+procedure TXMLSchemaCache60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A07-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{50EA08B0-DD1B-4664-9A50-C2F40F4BD79A}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msXSLTemplate) as IXSLTemplate;
+  ServerData := @CServerData;
 end;
 
-class function ComsXSLTemplate.CreateRemote(const MachineName: string): IXSLTemplate;
+procedure TXMLSchemaCache60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXSLTemplate) as IXSLTemplate;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLDOMSchemaCollection2;
+  end;
 end;
 
-class function ComsXSLTemplate26.Create: IXSLTemplate;
+procedure TXMLSchemaCache60.ConnectTo(svrIntf: IXMLDOMSchemaCollection2);
 begin
-  Result := CreateComObject(CLASS_msXSLTemplate26) as IXSLTemplate;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsXSLTemplate26.CreateRemote(const MachineName: string): IXSLTemplate;
+procedure TXMLSchemaCache60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXSLTemplate26) as IXSLTemplate;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
 
-class function ComsXSLTemplate30.Create: IXSLTemplate;
+function TXMLSchemaCache60.GetDefaultInterface: IXMLDOMSchemaCollection2;
 begin
-  Result := CreateComObject(CLASS_msXSLTemplate30) as IXSLTemplate;
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
 end;
 
-class function ComsXSLTemplate30.CreateRemote(const MachineName: string): IXSLTemplate;
+constructor TXMLSchemaCache60.Create(AOwner: TComponent);
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXSLTemplate30) as IXSLTemplate;
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLSchemaCache60Properties.Create(Self);
+{$ENDIF}
 end;
+
+destructor TXMLSchemaCache60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLSchemaCache60.GetServerProperties: TXMLSchemaCache60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXMLSchemaCache60.Set_validateOnLoad(validateOnLoad: WordBool);
+begin
+  DefaultInterface.Set_validateOnLoad(validateOnLoad);
+end;
+
+function TXMLSchemaCache60.Get_validateOnLoad: WordBool;
+begin
+    Result := DefaultInterface.validateOnLoad;
+end;
+
+procedure TXMLSchemaCache60.validate;
+begin
+  DefaultInterface.validate;
+end;
+
+function TXMLSchemaCache60.getSchema(const namespaceURI: WideString): ISchema;
+begin
+  Result := DefaultInterface.getSchema(namespaceURI);
+end;
+
+function TXMLSchemaCache60.getDeclaration(const node: IXMLDOMNode): ISchemaItem;
+begin
+  Result := DefaultInterface.getDeclaration(node);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLSchemaCache60Properties.Create(AServer: TXMLSchemaCache60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLSchemaCache60Properties.GetDefaultInterface: IXMLDOMSchemaCollection2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXMLSchemaCache60Properties.Set_validateOnLoad(validateOnLoad: WordBool);
+begin
+  DefaultInterface.Set_validateOnLoad(validateOnLoad);
+end;
+
+function TXMLSchemaCache60Properties.Get_validateOnLoad: WordBool;
+begin
+    Result := DefaultInterface.validateOnLoad;
+end;
+
+{$ENDIF}
+
+class function CoXSLTemplate.Create: IXSLTemplate;
+begin
+  Result := CreateComObject(CLASS_XSLTemplate) as IXSLTemplate;
+end;
+
+class function CoXSLTemplate.CreateRemote(const MachineName: string): IXSLTemplate;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XSLTemplate) as IXSLTemplate;
+end;
+
+procedure TXSLTemplate.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{2933BF94-7B36-11D2-B20E-00C04F983E60}';
+    IntfIID:   '{2933BF93-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXSLTemplate.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXSLTemplate;
+  end;
+end;
+
+procedure TXSLTemplate.ConnectTo(svrIntf: IXSLTemplate);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXSLTemplate.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXSLTemplate.GetDefaultInterface: IXSLTemplate;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXSLTemplate.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXSLTemplateProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXSLTemplate.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXSLTemplate.GetServerProperties: TXSLTemplateProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXSLTemplate._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+function TXSLTemplate.createProcessor: IXSLProcessor;
+begin
+  Result := DefaultInterface.createProcessor;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXSLTemplateProperties.Create(AServer: TXSLTemplate);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXSLTemplateProperties.GetDefaultInterface: IXSLTemplate;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXSLTemplateProperties._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplateProperties.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+{$ENDIF}
+
+class function CoXSLTemplate26.Create: IXSLTemplate;
+begin
+  Result := CreateComObject(CLASS_XSLTemplate26) as IXSLTemplate;
+end;
+
+class function CoXSLTemplate26.CreateRemote(const MachineName: string): IXSLTemplate;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XSLTemplate26) as IXSLTemplate;
+end;
+
+procedure TXSLTemplate26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F21-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF93-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXSLTemplate26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXSLTemplate;
+  end;
+end;
+
+procedure TXSLTemplate26.ConnectTo(svrIntf: IXSLTemplate);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXSLTemplate26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXSLTemplate26.GetDefaultInterface: IXSLTemplate;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXSLTemplate26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXSLTemplate26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXSLTemplate26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXSLTemplate26.GetServerProperties: TXSLTemplate26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXSLTemplate26._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate26.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+function TXSLTemplate26.createProcessor: IXSLProcessor;
+begin
+  Result := DefaultInterface.createProcessor;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXSLTemplate26Properties.Create(AServer: TXSLTemplate26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXSLTemplate26Properties.GetDefaultInterface: IXSLTemplate;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXSLTemplate26Properties._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate26Properties.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+{$ENDIF}
+
+class function CoXSLTemplate30.Create: IXSLTemplate;
+begin
+  Result := CreateComObject(CLASS_XSLTemplate30) as IXSLTemplate;
+end;
+
+class function CoXSLTemplate30.CreateRemote(const MachineName: string): IXSLTemplate;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XSLTemplate30) as IXSLTemplate;
+end;
+
+procedure TXSLTemplate30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F36-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{2933BF93-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXSLTemplate30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXSLTemplate;
+  end;
+end;
+
+procedure TXSLTemplate30.ConnectTo(svrIntf: IXSLTemplate);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXSLTemplate30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXSLTemplate30.GetDefaultInterface: IXSLTemplate;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXSLTemplate30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXSLTemplate30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXSLTemplate30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXSLTemplate30.GetServerProperties: TXSLTemplate30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXSLTemplate30._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate30.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+function TXSLTemplate30.createProcessor: IXSLProcessor;
+begin
+  Result := DefaultInterface.createProcessor;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXSLTemplate30Properties.Create(AServer: TXSLTemplate30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXSLTemplate30Properties.GetDefaultInterface: IXSLTemplate;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXSLTemplate30Properties._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate30Properties.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+{$ENDIF}
 
 class function CoXSLTemplate40.Create: IXSLTemplate;
 begin
@@ -4548,6 +11720,125 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XSLTemplate40) as IXSLTemplate;
 end;
 
+procedure TXSLTemplate40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C3-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF93-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXSLTemplate40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXSLTemplate;
+  end;
+end;
+
+procedure TXSLTemplate40.ConnectTo(svrIntf: IXSLTemplate);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXSLTemplate40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXSLTemplate40.GetDefaultInterface: IXSLTemplate;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXSLTemplate40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXSLTemplate40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXSLTemplate40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXSLTemplate40.GetServerProperties: TXSLTemplate40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXSLTemplate40._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate40.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+function TXSLTemplate40.createProcessor: IXSLProcessor;
+begin
+  Result := DefaultInterface.createProcessor;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXSLTemplate40Properties.Create(AServer: TXSLTemplate40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXSLTemplate40Properties.GetDefaultInterface: IXSLTemplate;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXSLTemplate40Properties._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate40Properties.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+{$ENDIF}
+
 class function CoXSLTemplate60.Create: IXSLTemplate;
 begin
   Result := CreateComObject(CLASS_XSLTemplate60) as IXSLTemplate;
@@ -4558,35 +11849,550 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XSLTemplate60) as IXSLTemplate;
 end;
 
-class function ComsDSOControl.Create: IDSOControl;
+procedure TXSLTemplate60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A08-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2933BF93-7B36-11D2-B20E-00C04F983E60}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msDSOControl) as IDSOControl;
+  ServerData := @CServerData;
 end;
 
-class function ComsDSOControl.CreateRemote(const MachineName: string): IDSOControl;
+procedure TXSLTemplate60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDSOControl) as IDSOControl;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXSLTemplate;
+  end;
 end;
 
-class function ComsDSOControl26.Create: IDSOControl;
+procedure TXSLTemplate60.ConnectTo(svrIntf: IXSLTemplate);
 begin
-  Result := CreateComObject(CLASS_msDSOControl26) as IDSOControl;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsDSOControl26.CreateRemote(const MachineName: string): IDSOControl;
+procedure TXSLTemplate60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDSOControl26) as IDSOControl;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
 
-class function ComsDSOControl30.Create: IDSOControl;
+function TXSLTemplate60.GetDefaultInterface: IXSLTemplate;
 begin
-  Result := CreateComObject(CLASS_msDSOControl30) as IDSOControl;
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
 end;
 
-class function ComsDSOControl30.CreateRemote(const MachineName: string): IDSOControl;
+constructor TXSLTemplate60.Create(AOwner: TComponent);
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msDSOControl30) as IDSOControl;
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXSLTemplate60Properties.Create(Self);
+{$ENDIF}
 end;
+
+destructor TXSLTemplate60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXSLTemplate60.GetServerProperties: TXSLTemplate60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TXSLTemplate60._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate60.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+function TXSLTemplate60.createProcessor: IXSLProcessor;
+begin
+  Result := DefaultInterface.createProcessor;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXSLTemplate60Properties.Create(AServer: TXSLTemplate60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXSLTemplate60Properties.GetDefaultInterface: IXSLTemplate;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TXSLTemplate60Properties._Set_stylesheet(const stylesheet: IXMLDOMNode);
+  { Warning: The property stylesheet has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.stylesheet := stylesheet;
+end;
+
+function TXSLTemplate60Properties.Get_stylesheet: IXMLDOMNode;
+begin
+    Result := DefaultInterface.stylesheet;
+end;
+
+{$ENDIF}
+
+class function CoDSOControl.Create: IDSOControl;
+begin
+  Result := CreateComObject(CLASS_DSOControl) as IDSOControl;
+end;
+
+class function CoDSOControl.CreateRemote(const MachineName: string): IDSOControl;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_DSOControl) as IDSOControl;
+end;
+
+procedure TDSOControl.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F6D90F14-9C73-11D3-B32E-00C04F990BB4}';
+    IntfIID:   '{310AFA62-0575-11D2-9CA9-0060B0EC3D39}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDSOControl.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IDSOControl;
+  end;
+end;
+
+procedure TDSOControl.ConnectTo(svrIntf: IDSOControl);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TDSOControl.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TDSOControl.GetDefaultInterface: IDSOControl;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDSOControl.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDSOControlProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDSOControl.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDSOControl.GetServerProperties: TDSOControlProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TDSOControl.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDSOControlProperties.Create(AServer: TDSOControl);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDSOControlProperties.GetDefaultInterface: IDSOControl;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDSOControlProperties.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControlProperties.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControlProperties.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControlProperties.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControlProperties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$ENDIF}
+
+class function CoDSOControl26.Create: IDSOControl;
+begin
+  Result := CreateComObject(CLASS_DSOControl26) as IDSOControl;
+end;
+
+class function CoDSOControl26.CreateRemote(const MachineName: string): IDSOControl;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_DSOControl26) as IDSOControl;
+end;
+
+procedure TDSOControl26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F1F-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{310AFA62-0575-11D2-9CA9-0060B0EC3D39}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDSOControl26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IDSOControl;
+  end;
+end;
+
+procedure TDSOControl26.ConnectTo(svrIntf: IDSOControl);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TDSOControl26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TDSOControl26.GetDefaultInterface: IDSOControl;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDSOControl26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDSOControl26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDSOControl26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDSOControl26.GetServerProperties: TDSOControl26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TDSOControl26.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl26.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl26.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl26.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl26.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDSOControl26Properties.Create(AServer: TDSOControl26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDSOControl26Properties.GetDefaultInterface: IDSOControl;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDSOControl26Properties.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl26Properties.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl26Properties.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl26Properties.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl26Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$ENDIF}
+
+class function CoDSOControl30.Create: IDSOControl;
+begin
+  Result := CreateComObject(CLASS_DSOControl30) as IDSOControl;
+end;
+
+class function CoDSOControl30.CreateRemote(const MachineName: string): IDSOControl;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_DSOControl30) as IDSOControl;
+end;
+
+procedure TDSOControl30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F39-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{310AFA62-0575-11D2-9CA9-0060B0EC3D39}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TDSOControl30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IDSOControl;
+  end;
+end;
+
+procedure TDSOControl30.ConnectTo(svrIntf: IDSOControl);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TDSOControl30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TDSOControl30.GetDefaultInterface: IDSOControl;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TDSOControl30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDSOControl30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TDSOControl30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDSOControl30.GetServerProperties: TDSOControl30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TDSOControl30.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl30.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl30.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl30.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl30.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDSOControl30Properties.Create(AServer: TDSOControl30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDSOControl30Properties.GetDefaultInterface: IDSOControl;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDSOControl30Properties.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl30Properties.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl30Properties.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl30Properties.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl30Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$ENDIF}
 
 class function CoDSOControl40.Create: IDSOControl;
 begin
@@ -4598,35 +12404,884 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_DSOControl40) as IDSOControl;
 end;
 
-class function ComsXMLHTTP.Create: IXMLHTTPRequest;
+procedure TDSOControl40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C4-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{310AFA62-0575-11D2-9CA9-0060B0EC3D39}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msXMLHTTP) as IXMLHTTPRequest;
+  ServerData := @CServerData;
 end;
 
-class function ComsXMLHTTP.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+procedure TDSOControl40.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLHTTP) as IXMLHTTPRequest;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IDSOControl;
+  end;
 end;
 
-class function ComsXMLHTTP26.Create: IXMLHTTPRequest;
+procedure TDSOControl40.ConnectTo(svrIntf: IDSOControl);
 begin
-  Result := CreateComObject(CLASS_msXMLHTTP26) as IXMLHTTPRequest;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsXMLHTTP26.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+procedure TDSOControl40.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLHTTP26) as IXMLHTTPRequest;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
 
-class function ComsXMLHTTP30.Create: IXMLHTTPRequest;
+function TDSOControl40.GetDefaultInterface: IDSOControl;
 begin
-  Result := CreateComObject(CLASS_msXMLHTTP30) as IXMLHTTPRequest;
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
 end;
 
-class function ComsXMLHTTP30.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+constructor TDSOControl40.Create(AOwner: TComponent);
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msXMLHTTP30) as IXMLHTTPRequest;
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TDSOControl40Properties.Create(Self);
+{$ENDIF}
 end;
+
+destructor TDSOControl40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TDSOControl40.GetServerProperties: TDSOControl40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TDSOControl40.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl40.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl40.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl40.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl40.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TDSOControl40Properties.Create(AServer: TDSOControl40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TDSOControl40Properties.GetDefaultInterface: IDSOControl;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TDSOControl40Properties.Get_XMLDocument: IXMLDOMDocument;
+begin
+    Result := DefaultInterface.XMLDocument;
+end;
+
+procedure TDSOControl40Properties.Set_XMLDocument(const ppDoc: IXMLDOMDocument);
+begin
+  DefaultInterface.Set_XMLDocument(ppDoc);
+end;
+
+function TDSOControl40Properties.Get_JavaDSOCompatible: Integer;
+begin
+    Result := DefaultInterface.JavaDSOCompatible;
+end;
+
+procedure TDSOControl40Properties.Set_JavaDSOCompatible(fJavaDSOCompatible: Integer);
+begin
+  DefaultInterface.Set_JavaDSOCompatible(fJavaDSOCompatible);
+end;
+
+function TDSOControl40Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+{$ENDIF}
+
+class function CoXMLHTTP.Create: IXMLHTTPRequest;
+begin
+  Result := CreateComObject(CLASS_XMLHTTP) as IXMLHTTPRequest;
+end;
+
+class function CoXMLHTTP.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLHTTP) as IXMLHTTPRequest;
+end;
+
+procedure TXMLHTTP.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F6D90F16-9C73-11D3-B32E-00C04F990BB4}';
+    IntfIID:   '{ED8C108D-4349-11D2-91A4-00C04F7969E8}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLHTTP.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLHTTPRequest;
+  end;
+end;
+
+procedure TXMLHTTP.ConnectTo(svrIntf: IXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLHTTP.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLHTTP.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLHTTP.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLHTTPProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLHTTP.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLHTTP.GetServerProperties: TXMLHTTPProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLHTTP.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                        varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                        varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                        varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TXMLHTTP.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TXMLHTTP.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TXMLHTTP.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TXMLHTTP.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TXMLHTTP.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TXMLHTTP.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLHTTPProperties.Create(AServer: TXMLHTTP);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLHTTPProperties.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLHTTPProperties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTPProperties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTPProperties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTPProperties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTPProperties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTPProperties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTPProperties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTPProperties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
+class function CoXMLHTTP26.Create: IXMLHTTPRequest;
+begin
+  Result := CreateComObject(CLASS_XMLHTTP26) as IXMLHTTPRequest;
+end;
+
+class function CoXMLHTTP26.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLHTTP26) as IXMLHTTPRequest;
+end;
+
+procedure TXMLHTTP26.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F1E-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{ED8C108D-4349-11D2-91A4-00C04F7969E8}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLHTTP26.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLHTTPRequest;
+  end;
+end;
+
+procedure TXMLHTTP26.ConnectTo(svrIntf: IXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLHTTP26.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLHTTP26.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLHTTP26.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLHTTP26Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLHTTP26.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLHTTP26.GetServerProperties: TXMLHTTP26Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLHTTP26.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP26.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP26.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP26.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP26.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP26.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP26.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP26.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TXMLHTTP26.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP26.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP26.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TXMLHTTP26.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TXMLHTTP26.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TXMLHTTP26.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TXMLHTTP26.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TXMLHTTP26.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TXMLHTTP26.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TXMLHTTP26.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLHTTP26Properties.Create(AServer: TXMLHTTP26);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLHTTP26Properties.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLHTTP26Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP26Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP26Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP26Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP26Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP26Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP26Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP26Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
+class function CoXMLHTTP30.Create: IXMLHTTPRequest;
+begin
+  Result := CreateComObject(CLASS_XMLHTTP30) as IXMLHTTPRequest;
+end;
+
+class function CoXMLHTTP30.CreateRemote(const MachineName: string): IXMLHTTPRequest;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLHTTP30) as IXMLHTTPRequest;
+end;
+
+procedure TXMLHTTP30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{F5078F35-C551-11D3-89B9-0000F81FE221}';
+    IntfIID:   '{ED8C108D-4349-11D2-91A4-00C04F7969E8}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLHTTP30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLHTTPRequest;
+  end;
+end;
+
+procedure TXMLHTTP30.ConnectTo(svrIntf: IXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLHTTP30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLHTTP30.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLHTTP30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLHTTP30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLHTTP30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLHTTP30.GetServerProperties: TXMLHTTP30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLHTTP30.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP30.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP30.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP30.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP30.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP30.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP30.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP30.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TXMLHTTP30.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TXMLHTTP30.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TXMLHTTP30.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TXMLHTTP30.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TXMLHTTP30.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TXMLHTTP30.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLHTTP30Properties.Create(AServer: TXMLHTTP30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLHTTP30Properties.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLHTTP30Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP30Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP30Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP30Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP30Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP30Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP30Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP30Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
 
 class function CoXMLHTTP40.Create: IXMLHTTPRequest;
 begin
@@ -4638,6 +13293,245 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XMLHTTP40) as IXMLHTTPRequest;
 end;
 
+procedure TXMLHTTP40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C5-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{ED8C108D-4349-11D2-91A4-00C04F7969E8}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TXMLHTTP40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLHTTPRequest;
+  end;
+end;
+
+procedure TXMLHTTP40.ConnectTo(svrIntf: IXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TXMLHTTP40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TXMLHTTP40.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLHTTP40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLHTTP40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLHTTP40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLHTTP40.GetServerProperties: TXMLHTTP40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLHTTP40.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP40.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP40.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP40.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP40.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP40.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP40.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP40.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TXMLHTTP40.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TXMLHTTP40.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TXMLHTTP40.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TXMLHTTP40.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TXMLHTTP40.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TXMLHTTP40.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLHTTP40Properties.Create(AServer: TXMLHTTP40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLHTTP40Properties.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLHTTP40Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP40Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP40Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP40Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP40Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP40Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP40Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP40Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
 class function CoXMLHTTP60.Create: IXMLHTTPRequest;
 begin
   Result := CreateComObject(CLASS_XMLHTTP60) as IXMLHTTPRequest;
@@ -4648,25 +13542,801 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_XMLHTTP60) as IXMLHTTPRequest;
 end;
 
-class function ComsServerXMLHTTP.Create: IServerXMLHTTPRequest;
+procedure TXMLHTTP60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A0A-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{ED8C108D-4349-11D2-91A4-00C04F7969E8}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msServerXMLHTTP) as IServerXMLHTTPRequest;
+  ServerData := @CServerData;
 end;
 
-class function ComsServerXMLHTTP.CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
+procedure TXMLHTTP60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msServerXMLHTTP) as IServerXMLHTTPRequest;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IXMLHTTPRequest;
+  end;
 end;
 
-class function ComsServerXMLHTTP30.Create: IServerXMLHTTPRequest;
+procedure TXMLHTTP60.ConnectTo(svrIntf: IXMLHTTPRequest);
 begin
-  Result := CreateComObject(CLASS_msServerXMLHTTP30) as IServerXMLHTTPRequest;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsServerXMLHTTP30.CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
+procedure TXMLHTTP60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msServerXMLHTTP30) as IServerXMLHTTPRequest;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
+
+function TXMLHTTP60.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TXMLHTTP60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TXMLHTTP60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TXMLHTTP60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TXMLHTTP60.GetServerProperties: TXMLHTTP60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TXMLHTTP60.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP60.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP60.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP60.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP60.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP60.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP60.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP60.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                          varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TXMLHTTP60.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TXMLHTTP60.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TXMLHTTP60.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TXMLHTTP60.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TXMLHTTP60.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TXMLHTTP60.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TXMLHTTP60Properties.Create(AServer: TXMLHTTP60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TXMLHTTP60Properties.GetDefaultInterface: IXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TXMLHTTP60Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TXMLHTTP60Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TXMLHTTP60Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TXMLHTTP60Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TXMLHTTP60Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TXMLHTTP60Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TXMLHTTP60Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TXMLHTTP60Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
+class function CoServerXMLHTTP.Create: IServerXMLHTTPRequest;
+begin
+  Result := CreateComObject(CLASS_ServerXMLHTTP) as IServerXMLHTTPRequest;
+end;
+
+class function CoServerXMLHTTP.CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_ServerXMLHTTP) as IServerXMLHTTPRequest;
+end;
+
+procedure TServerXMLHTTP.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{AFBA6B42-5692-48EA-8141-DC517DCF0EF1}';
+    IntfIID:   '{2E9196BF-13BA-4DD4-91CA-6C571F281495}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TServerXMLHTTP.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IServerXMLHTTPRequest;
+  end;
+end;
+
+procedure TServerXMLHTTP.ConnectTo(svrIntf: IServerXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TServerXMLHTTP.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TServerXMLHTTP.GetDefaultInterface: IServerXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TServerXMLHTTP.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TServerXMLHTTPProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TServerXMLHTTP.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TServerXMLHTTP.GetServerProperties: TServerXMLHTTPProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TServerXMLHTTP.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TServerXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                              varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                              varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TServerXMLHTTP.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                              varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TServerXMLHTTP.setRequestHeader(const bstrHeader: WideString; const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TServerXMLHTTP.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TServerXMLHTTP.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TServerXMLHTTP.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TServerXMLHTTP.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TServerXMLHTTP.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+procedure TServerXMLHTTP.setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; 
+                                     sendTimeout: Integer; receiveTimeout: Integer);
+begin
+  DefaultInterface.setTimeouts(resolveTimeout, connectTimeout, sendTimeout, receiveTimeout);
+end;
+
+function TServerXMLHTTP.waitForResponse: WordBool;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  Result := DefaultInterface.waitForResponse(EmptyParam);
+end;
+
+function TServerXMLHTTP.waitForResponse(timeoutInSeconds: OleVariant): WordBool;
+begin
+  Result := DefaultInterface.waitForResponse(timeoutInSeconds);
+end;
+
+function TServerXMLHTTP.getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+begin
+  Result := DefaultInterface.getOption(option);
+end;
+
+procedure TServerXMLHTTP.setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+begin
+  DefaultInterface.setOption(option, value);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TServerXMLHTTPProperties.Create(AServer: TServerXMLHTTP);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TServerXMLHTTPProperties.GetDefaultInterface: IServerXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TServerXMLHTTPProperties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTPProperties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTPProperties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTPProperties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTPProperties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTPProperties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTPProperties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTPProperties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
+class function CoServerXMLHTTP30.Create: IServerXMLHTTPRequest;
+begin
+  Result := CreateComObject(CLASS_ServerXMLHTTP30) as IServerXMLHTTPRequest;
+end;
+
+class function CoServerXMLHTTP30.CreateRemote(const MachineName: string): IServerXMLHTTPRequest;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_ServerXMLHTTP30) as IServerXMLHTTPRequest;
+end;
+
+procedure TServerXMLHTTP30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{AFB40FFD-B609-40A3-9828-F88BBE11E4E3}';
+    IntfIID:   '{2E9196BF-13BA-4DD4-91CA-6C571F281495}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TServerXMLHTTP30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IServerXMLHTTPRequest;
+  end;
+end;
+
+procedure TServerXMLHTTP30.ConnectTo(svrIntf: IServerXMLHTTPRequest);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TServerXMLHTTP30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TServerXMLHTTP30.GetDefaultInterface: IServerXMLHTTPRequest;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TServerXMLHTTP30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TServerXMLHTTP30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TServerXMLHTTP30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TServerXMLHTTP30.GetServerProperties: TServerXMLHTTP30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TServerXMLHTTP30.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP30.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP30.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP30.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP30.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP30.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP30.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP30.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TServerXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TServerXMLHTTP30.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TServerXMLHTTP30.setRequestHeader(const bstrHeader: WideString; 
+                                            const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TServerXMLHTTP30.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TServerXMLHTTP30.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TServerXMLHTTP30.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TServerXMLHTTP30.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TServerXMLHTTP30.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+procedure TServerXMLHTTP30.setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; 
+                                       sendTimeout: Integer; receiveTimeout: Integer);
+begin
+  DefaultInterface.setTimeouts(resolveTimeout, connectTimeout, sendTimeout, receiveTimeout);
+end;
+
+function TServerXMLHTTP30.waitForResponse: WordBool;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  Result := DefaultInterface.waitForResponse(EmptyParam);
+end;
+
+function TServerXMLHTTP30.waitForResponse(timeoutInSeconds: OleVariant): WordBool;
+begin
+  Result := DefaultInterface.waitForResponse(timeoutInSeconds);
+end;
+
+function TServerXMLHTTP30.getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+begin
+  Result := DefaultInterface.getOption(option);
+end;
+
+procedure TServerXMLHTTP30.setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+begin
+  DefaultInterface.setOption(option, value);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TServerXMLHTTP30Properties.Create(AServer: TServerXMLHTTP30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TServerXMLHTTP30Properties.GetDefaultInterface: IServerXMLHTTPRequest;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TServerXMLHTTP30Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP30Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP30Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP30Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP30Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP30Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP30Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP30Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
 
 class function CoServerXMLHTTP40.Create: IServerXMLHTTPRequest2;
 begin
@@ -4678,6 +14348,303 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_ServerXMLHTTP40) as IServerXMLHTTPRequest2;
 end;
 
+procedure TServerXMLHTTP40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C6-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2E01311B-C322-4B0A-BD77-B90CFDC8DCE7}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TServerXMLHTTP40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IServerXMLHTTPRequest2;
+  end;
+end;
+
+procedure TServerXMLHTTP40.ConnectTo(svrIntf: IServerXMLHTTPRequest2);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TServerXMLHTTP40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TServerXMLHTTP40.GetDefaultInterface: IServerXMLHTTPRequest2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TServerXMLHTTP40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TServerXMLHTTP40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TServerXMLHTTP40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TServerXMLHTTP40.GetServerProperties: TServerXMLHTTP40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TServerXMLHTTP40.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP40.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP40.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP40.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP40.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP40.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP40.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP40.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TServerXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TServerXMLHTTP40.setRequestHeader(const bstrHeader: WideString; 
+                                            const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TServerXMLHTTP40.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TServerXMLHTTP40.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TServerXMLHTTP40.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TServerXMLHTTP40.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+procedure TServerXMLHTTP40.setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; 
+                                       sendTimeout: Integer; receiveTimeout: Integer);
+begin
+  DefaultInterface.setTimeouts(resolveTimeout, connectTimeout, sendTimeout, receiveTimeout);
+end;
+
+function TServerXMLHTTP40.waitForResponse: WordBool;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  Result := DefaultInterface.waitForResponse(EmptyParam);
+end;
+
+function TServerXMLHTTP40.waitForResponse(timeoutInSeconds: OleVariant): WordBool;
+begin
+  Result := DefaultInterface.waitForResponse(timeoutInSeconds);
+end;
+
+function TServerXMLHTTP40.getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+begin
+  Result := DefaultInterface.getOption(option);
+end;
+
+procedure TServerXMLHTTP40.setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+begin
+  DefaultInterface.setOption(option, value);
+end;
+
+procedure TServerXMLHTTP40.setProxy(proxySetting: SXH_PROXY_SETTING);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.setProxy(proxySetting, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.setProxy(proxySetting, varProxyServer, EmptyParam);
+end;
+
+procedure TServerXMLHTTP40.setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant; 
+                                    varBypassList: OleVariant);
+begin
+  DefaultInterface.setProxy(proxySetting, varProxyServer, varBypassList);
+end;
+
+procedure TServerXMLHTTP40.setProxyCredentials(const bstrUserName: WideString; 
+                                               const bstrPassword: WideString);
+begin
+  DefaultInterface.setProxyCredentials(bstrUserName, bstrPassword);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TServerXMLHTTP40Properties.Create(AServer: TServerXMLHTTP40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TServerXMLHTTP40Properties.GetDefaultInterface: IServerXMLHTTPRequest2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TServerXMLHTTP40Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP40Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP40Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP40Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP40Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP40Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP40Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP40Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
 class function CoServerXMLHTTP60.Create: IServerXMLHTTPRequest2;
 begin
   Result := CreateComObject(CLASS_ServerXMLHTTP60) as IServerXMLHTTPRequest2;
@@ -4688,25 +14655,946 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_ServerXMLHTTP60) as IServerXMLHTTPRequest2;
 end;
 
-class function ComsSAXXMLReader.Create: IVBSAXXMLReader;
+procedure TServerXMLHTTP60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A0B-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{2E01311B-C322-4B0A-BD77-B90CFDC8DCE7}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msSAXXMLReader) as IVBSAXXMLReader;
+  ServerData := @CServerData;
 end;
 
-class function ComsSAXXMLReader.CreateRemote(const MachineName: string): IVBSAXXMLReader;
+procedure TServerXMLHTTP60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msSAXXMLReader) as IVBSAXXMLReader;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IServerXMLHTTPRequest2;
+  end;
 end;
 
-class function ComsSAXXMLReader30.Create: IVBSAXXMLReader;
+procedure TServerXMLHTTP60.ConnectTo(svrIntf: IServerXMLHTTPRequest2);
 begin
-  Result := CreateComObject(CLASS_msSAXXMLReader30) as IVBSAXXMLReader;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsSAXXMLReader30.CreateRemote(const MachineName: string): IVBSAXXMLReader;
+procedure TServerXMLHTTP60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msSAXXMLReader30) as IVBSAXXMLReader;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
+
+function TServerXMLHTTP60.GetDefaultInterface: IServerXMLHTTPRequest2;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TServerXMLHTTP60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TServerXMLHTTP60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TServerXMLHTTP60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TServerXMLHTTP60.GetServerProperties: TServerXMLHTTP60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TServerXMLHTTP60.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP60.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP60.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP60.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP60.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP60.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP60.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP60.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+procedure TServerXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, EmptyParam, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.open(const bstrMethod: WideString; const bstrUrl: WideString; 
+                                varAsync: OleVariant; bstrUser: OleVariant; bstrPassword: OleVariant);
+begin
+  DefaultInterface.open(bstrMethod, bstrUrl, varAsync, bstrUser, bstrPassword);
+end;
+
+procedure TServerXMLHTTP60.setRequestHeader(const bstrHeader: WideString; 
+                                            const bstrValue: WideString);
+begin
+  DefaultInterface.setRequestHeader(bstrHeader, bstrValue);
+end;
+
+function TServerXMLHTTP60.getResponseHeader(const bstrHeader: WideString): WideString;
+begin
+  Result := DefaultInterface.getResponseHeader(bstrHeader);
+end;
+
+function TServerXMLHTTP60.getAllResponseHeaders: WideString;
+begin
+  Result := DefaultInterface.getAllResponseHeaders;
+end;
+
+procedure TServerXMLHTTP60.send;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.send(EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.send(varBody: OleVariant);
+begin
+  DefaultInterface.send(varBody);
+end;
+
+procedure TServerXMLHTTP60.abort;
+begin
+  DefaultInterface.abort;
+end;
+
+procedure TServerXMLHTTP60.setTimeouts(resolveTimeout: Integer; connectTimeout: Integer; 
+                                       sendTimeout: Integer; receiveTimeout: Integer);
+begin
+  DefaultInterface.setTimeouts(resolveTimeout, connectTimeout, sendTimeout, receiveTimeout);
+end;
+
+function TServerXMLHTTP60.waitForResponse: WordBool;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  Result := DefaultInterface.waitForResponse(EmptyParam);
+end;
+
+function TServerXMLHTTP60.waitForResponse(timeoutInSeconds: OleVariant): WordBool;
+begin
+  Result := DefaultInterface.waitForResponse(timeoutInSeconds);
+end;
+
+function TServerXMLHTTP60.getOption(option: SERVERXMLHTTP_OPTION): OleVariant;
+begin
+  Result := DefaultInterface.getOption(option);
+end;
+
+procedure TServerXMLHTTP60.setOption(option: SERVERXMLHTTP_OPTION; value: OleVariant);
+begin
+  DefaultInterface.setOption(option, value);
+end;
+
+procedure TServerXMLHTTP60.setProxy(proxySetting: SXH_PROXY_SETTING);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.setProxy(proxySetting, EmptyParam, EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant);
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.setProxy(proxySetting, varProxyServer, EmptyParam);
+end;
+
+procedure TServerXMLHTTP60.setProxy(proxySetting: SXH_PROXY_SETTING; varProxyServer: OleVariant; 
+                                    varBypassList: OleVariant);
+begin
+  DefaultInterface.setProxy(proxySetting, varProxyServer, varBypassList);
+end;
+
+procedure TServerXMLHTTP60.setProxyCredentials(const bstrUserName: WideString; 
+                                               const bstrPassword: WideString);
+begin
+  DefaultInterface.setProxyCredentials(bstrUserName, bstrPassword);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TServerXMLHTTP60Properties.Create(AServer: TServerXMLHTTP60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TServerXMLHTTP60Properties.GetDefaultInterface: IServerXMLHTTPRequest2;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TServerXMLHTTP60Properties.Get_status: Integer;
+begin
+    Result := DefaultInterface.status;
+end;
+
+function TServerXMLHTTP60Properties.Get_statusText: WideString;
+begin
+    Result := DefaultInterface.statusText;
+end;
+
+function TServerXMLHTTP60Properties.Get_responseXML: IDispatch;
+begin
+    Result := DefaultInterface.responseXML;
+end;
+
+function TServerXMLHTTP60Properties.Get_responseText: WideString;
+begin
+    Result := DefaultInterface.responseText;
+end;
+
+function TServerXMLHTTP60Properties.Get_responseBody: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseBody;
+end;
+
+function TServerXMLHTTP60Properties.Get_responseStream: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.responseStream;
+end;
+
+function TServerXMLHTTP60Properties.Get_readyState: Integer;
+begin
+    Result := DefaultInterface.readyState;
+end;
+
+procedure TServerXMLHTTP60Properties.Set_onreadystatechange(const Param1: IDispatch);
+begin
+  DefaultInterface.Set_onreadystatechange(Param1);
+end;
+
+{$ENDIF}
+
+class function CoSAXXMLReader.Create: IVBSAXXMLReader;
+begin
+  Result := CreateComObject(CLASS_SAXXMLReader) as IVBSAXXMLReader;
+end;
+
+class function CoSAXXMLReader.CreateRemote(const MachineName: string): IVBSAXXMLReader;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_SAXXMLReader) as IVBSAXXMLReader;
+end;
+
+procedure TSAXXMLReader.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{079AA557-4A18-424A-8EEE-E39F0A8D41B9}';
+    IntfIID:   '{8C033CAA-6CD6-4F73-B728-4531AF74945F}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXXMLReader.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBSAXXMLReader;
+  end;
+end;
+
+procedure TSAXXMLReader.ConnectTo(svrIntf: IVBSAXXMLReader);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXXMLReader.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXXMLReader.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXXMLReader.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXXMLReaderProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXXMLReader.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXXMLReader.GetServerProperties: TSAXXMLReaderProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TSAXXMLReader.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+function TSAXXMLReader.getFeature(const strName: WideString): WordBool;
+begin
+  Result := DefaultInterface.getFeature(strName);
+end;
+
+procedure TSAXXMLReader.putFeature(const strName: WideString; fValue: WordBool);
+begin
+  DefaultInterface.putFeature(strName, fValue);
+end;
+
+function TSAXXMLReader.getProperty(const strName: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(strName);
+end;
+
+procedure TSAXXMLReader.putProperty(const strName: WideString; varValue: OleVariant);
+begin
+  DefaultInterface.putProperty(strName, varValue);
+end;
+
+procedure TSAXXMLReader.parse;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.parse(EmptyParam);
+end;
+
+procedure TSAXXMLReader.parse(varInput: OleVariant);
+begin
+  DefaultInterface.parse(varInput);
+end;
+
+procedure TSAXXMLReader.parseURL(const strURL: WideString);
+begin
+  DefaultInterface.parseURL(strURL);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXXMLReaderProperties.Create(AServer: TSAXXMLReader);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXXMLReaderProperties.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TSAXXMLReaderProperties.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReaderProperties._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReaderProperties.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReaderProperties._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReaderProperties.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReaderProperties._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReaderProperties.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReaderProperties._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReaderProperties.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReaderProperties.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReaderProperties.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReaderProperties.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+{$ENDIF}
+
+class function CoSAXXMLReader30.Create: IVBSAXXMLReader;
+begin
+  Result := CreateComObject(CLASS_SAXXMLReader30) as IVBSAXXMLReader;
+end;
+
+class function CoSAXXMLReader30.CreateRemote(const MachineName: string): IVBSAXXMLReader;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_SAXXMLReader30) as IVBSAXXMLReader;
+end;
+
+procedure TSAXXMLReader30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{3124C396-FB13-4836-A6AD-1317F1713688}';
+    IntfIID:   '{8C033CAA-6CD6-4F73-B728-4531AF74945F}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXXMLReader30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBSAXXMLReader;
+  end;
+end;
+
+procedure TSAXXMLReader30.ConnectTo(svrIntf: IVBSAXXMLReader);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXXMLReader30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXXMLReader30.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXXMLReader30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXXMLReader30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXXMLReader30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXXMLReader30.GetServerProperties: TSAXXMLReader30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TSAXXMLReader30.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader30._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader30.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader30._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader30.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader30._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader30.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader30._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader30.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader30.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader30.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader30.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+function TSAXXMLReader30.getFeature(const strName: WideString): WordBool;
+begin
+  Result := DefaultInterface.getFeature(strName);
+end;
+
+procedure TSAXXMLReader30.putFeature(const strName: WideString; fValue: WordBool);
+begin
+  DefaultInterface.putFeature(strName, fValue);
+end;
+
+function TSAXXMLReader30.getProperty(const strName: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(strName);
+end;
+
+procedure TSAXXMLReader30.putProperty(const strName: WideString; varValue: OleVariant);
+begin
+  DefaultInterface.putProperty(strName, varValue);
+end;
+
+procedure TSAXXMLReader30.parse;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.parse(EmptyParam);
+end;
+
+procedure TSAXXMLReader30.parse(varInput: OleVariant);
+begin
+  DefaultInterface.parse(varInput);
+end;
+
+procedure TSAXXMLReader30.parseURL(const strURL: WideString);
+begin
+  DefaultInterface.parseURL(strURL);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXXMLReader30Properties.Create(AServer: TSAXXMLReader30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXXMLReader30Properties.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TSAXXMLReader30Properties.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader30Properties._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader30Properties.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader30Properties._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader30Properties.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader30Properties._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader30Properties.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader30Properties._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader30Properties.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader30Properties.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader30Properties.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader30Properties.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+{$ENDIF}
 
 class function CoSAXXMLReader40.Create: IVBSAXXMLReader;
 begin
@@ -4718,6 +15606,318 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_SAXXMLReader40) as IVBSAXXMLReader;
 end;
 
+procedure TSAXXMLReader40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{7C6E29BC-8B8B-4C3D-859E-AF6CD158BE0F}';
+    IntfIID:   '{8C033CAA-6CD6-4F73-B728-4531AF74945F}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXXMLReader40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBSAXXMLReader;
+  end;
+end;
+
+procedure TSAXXMLReader40.ConnectTo(svrIntf: IVBSAXXMLReader);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXXMLReader40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXXMLReader40.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXXMLReader40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXXMLReader40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXXMLReader40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXXMLReader40.GetServerProperties: TSAXXMLReader40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TSAXXMLReader40.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader40._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader40.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader40._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader40.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader40._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader40.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader40._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader40.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader40.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader40.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader40.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+function TSAXXMLReader40.getFeature(const strName: WideString): WordBool;
+begin
+  Result := DefaultInterface.getFeature(strName);
+end;
+
+procedure TSAXXMLReader40.putFeature(const strName: WideString; fValue: WordBool);
+begin
+  DefaultInterface.putFeature(strName, fValue);
+end;
+
+function TSAXXMLReader40.getProperty(const strName: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(strName);
+end;
+
+procedure TSAXXMLReader40.putProperty(const strName: WideString; varValue: OleVariant);
+begin
+  DefaultInterface.putProperty(strName, varValue);
+end;
+
+procedure TSAXXMLReader40.parse;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.parse(EmptyParam);
+end;
+
+procedure TSAXXMLReader40.parse(varInput: OleVariant);
+begin
+  DefaultInterface.parse(varInput);
+end;
+
+procedure TSAXXMLReader40.parseURL(const strURL: WideString);
+begin
+  DefaultInterface.parseURL(strURL);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXXMLReader40Properties.Create(AServer: TSAXXMLReader40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXXMLReader40Properties.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TSAXXMLReader40Properties.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader40Properties._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader40Properties.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader40Properties._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader40Properties.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader40Properties._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader40Properties.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader40Properties._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader40Properties.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader40Properties.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader40Properties.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader40Properties.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+{$ENDIF}
+
 class function CoSAXXMLReader60.Create: IVBSAXXMLReader;
 begin
   Result := CreateComObject(CLASS_SAXXMLReader60) as IVBSAXXMLReader;
@@ -4728,25 +15928,891 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_SAXXMLReader60) as IVBSAXXMLReader;
 end;
 
-class function ComsMXXMLWriter.Create: IMXWriter;
+procedure TSAXXMLReader60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A0C-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{8C033CAA-6CD6-4F73-B728-4531AF74945F}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msMXXMLWriter) as IMXWriter;
+  ServerData := @CServerData;
 end;
 
-class function ComsMXXMLWriter.CreateRemote(const MachineName: string): IMXWriter;
+procedure TSAXXMLReader60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msMXXMLWriter) as IMXWriter;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBSAXXMLReader;
+  end;
 end;
 
-class function ComsMXXMLWriter30.Create: IMXWriter;
+procedure TSAXXMLReader60.ConnectTo(svrIntf: IVBSAXXMLReader);
 begin
-  Result := CreateComObject(CLASS_msMXXMLWriter30) as IMXWriter;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsMXXMLWriter30.CreateRemote(const MachineName: string): IMXWriter;
+procedure TSAXXMLReader60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msMXXMLWriter30) as IMXWriter;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
+
+function TSAXXMLReader60.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXXMLReader60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXXMLReader60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXXMLReader60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXXMLReader60.GetServerProperties: TSAXXMLReader60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+function TSAXXMLReader60.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader60._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader60.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader60._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader60.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader60._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader60.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader60._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader60.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader60.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader60.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader60.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+function TSAXXMLReader60.getFeature(const strName: WideString): WordBool;
+begin
+  Result := DefaultInterface.getFeature(strName);
+end;
+
+procedure TSAXXMLReader60.putFeature(const strName: WideString; fValue: WordBool);
+begin
+  DefaultInterface.putFeature(strName, fValue);
+end;
+
+function TSAXXMLReader60.getProperty(const strName: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getProperty(strName);
+end;
+
+procedure TSAXXMLReader60.putProperty(const strName: WideString; varValue: OleVariant);
+begin
+  DefaultInterface.putProperty(strName, varValue);
+end;
+
+procedure TSAXXMLReader60.parse;
+var
+  MissedParam: OleVariant;
+begin
+  MissedParam := EmptyParam;
+  DefaultInterface.parse(EmptyParam);
+end;
+
+procedure TSAXXMLReader60.parse(varInput: OleVariant);
+begin
+  DefaultInterface.parse(varInput);
+end;
+
+procedure TSAXXMLReader60.parseURL(const strURL: WideString);
+begin
+  DefaultInterface.parseURL(strURL);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXXMLReader60Properties.Create(AServer: TSAXXMLReader60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXXMLReader60Properties.GetDefaultInterface: IVBSAXXMLReader;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+function TSAXXMLReader60Properties.Get_entityResolver: IVBSAXEntityResolver;
+begin
+    Result := DefaultInterface.entityResolver;
+end;
+
+procedure TSAXXMLReader60Properties._Set_entityResolver(const oResolver: IVBSAXEntityResolver);
+  { Warning: The property entityResolver has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.entityResolver := oResolver;
+end;
+
+function TSAXXMLReader60Properties.Get_contentHandler: IVBSAXContentHandler;
+begin
+    Result := DefaultInterface.contentHandler;
+end;
+
+procedure TSAXXMLReader60Properties._Set_contentHandler(const oHandler: IVBSAXContentHandler);
+  { Warning: The property contentHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.contentHandler := oHandler;
+end;
+
+function TSAXXMLReader60Properties.Get_dtdHandler: IVBSAXDTDHandler;
+begin
+    Result := DefaultInterface.dtdHandler;
+end;
+
+procedure TSAXXMLReader60Properties._Set_dtdHandler(const oHandler: IVBSAXDTDHandler);
+  { Warning: The property dtdHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.dtdHandler := oHandler;
+end;
+
+function TSAXXMLReader60Properties.Get_errorHandler: IVBSAXErrorHandler;
+begin
+    Result := DefaultInterface.errorHandler;
+end;
+
+procedure TSAXXMLReader60Properties._Set_errorHandler(const oHandler: IVBSAXErrorHandler);
+  { Warning: The property errorHandler has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.errorHandler := oHandler;
+end;
+
+function TSAXXMLReader60Properties.Get_baseURL: WideString;
+begin
+    Result := DefaultInterface.baseURL;
+end;
+
+procedure TSAXXMLReader60Properties.Set_baseURL(const strBaseURL: WideString);
+  { Warning: The property baseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.baseURL := strBaseURL;
+end;
+
+function TSAXXMLReader60Properties.Get_secureBaseURL: WideString;
+begin
+    Result := DefaultInterface.secureBaseURL;
+end;
+
+procedure TSAXXMLReader60Properties.Set_secureBaseURL(const strSecureBaseURL: WideString);
+  { Warning: The property secureBaseURL has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.secureBaseURL := strSecureBaseURL;
+end;
+
+{$ENDIF}
+
+class function CoMXXMLWriter.Create: IMXWriter;
+begin
+  Result := CreateComObject(CLASS_MXXMLWriter) as IMXWriter;
+end;
+
+class function CoMXXMLWriter.CreateRemote(const MachineName: string): IMXWriter;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_MXXMLWriter) as IMXWriter;
+end;
+
+procedure TMXXMLWriter.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{FC220AD8-A72A-4EE8-926E-0B7AD152A020}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXXMLWriter.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXXMLWriter.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXXMLWriter.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXXMLWriter.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXXMLWriter.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXXMLWriterProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXXMLWriter.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXXMLWriter.GetServerProperties: TMXXMLWriterProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXXMLWriter.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXXMLWriter.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXXMLWriterProperties.Create(AServer: TMXXMLWriter);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXXMLWriterProperties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXXMLWriterProperties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriterProperties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriterProperties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriterProperties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriterProperties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriterProperties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriterProperties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriterProperties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriterProperties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriterProperties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriterProperties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriterProperties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriterProperties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriterProperties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriterProperties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriterProperties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
+
+class function CoMXXMLWriter30.Create: IMXWriter;
+begin
+  Result := CreateComObject(CLASS_MXXMLWriter30) as IMXWriter;
+end;
+
+class function CoMXXMLWriter30.CreateRemote(const MachineName: string): IMXWriter;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_MXXMLWriter30) as IMXWriter;
+end;
+
+procedure TMXXMLWriter30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{3D813DFE-6C91-4A4E-8F41-04346A841D9C}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXXMLWriter30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXXMLWriter30.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXXMLWriter30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXXMLWriter30.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXXMLWriter30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXXMLWriter30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXXMLWriter30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXXMLWriter30.GetServerProperties: TMXXMLWriter30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXXMLWriter30.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter30.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter30.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter30.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter30.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter30.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter30.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter30.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter30.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter30.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter30.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter30.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter30.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter30.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter30.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter30.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXXMLWriter30.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXXMLWriter30Properties.Create(AServer: TMXXMLWriter30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXXMLWriter30Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXXMLWriter30Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter30Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter30Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter30Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter30Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter30Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter30Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter30Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter30Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter30Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter30Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter30Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter30Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter30Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter30Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter30Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
 
 class function CoMXXMLWriter40.Create: IMXWriter;
 begin
@@ -4758,6 +16824,283 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXXMLWriter40) as IMXWriter;
 end;
 
+procedure TMXXMLWriter40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C8-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXXMLWriter40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXXMLWriter40.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXXMLWriter40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXXMLWriter40.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXXMLWriter40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXXMLWriter40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXXMLWriter40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXXMLWriter40.GetServerProperties: TMXXMLWriter40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXXMLWriter40.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter40.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter40.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter40.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter40.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter40.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter40.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter40.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter40.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter40.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter40.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter40.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter40.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter40.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter40.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter40.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXXMLWriter40.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXXMLWriter40Properties.Create(AServer: TMXXMLWriter40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXXMLWriter40Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXXMLWriter40Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter40Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter40Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter40Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter40Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter40Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter40Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter40Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter40Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter40Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter40Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter40Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter40Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter40Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter40Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter40Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
+
 class function CoMXXMLWriter60.Create: IMXWriter;
 begin
   Result := CreateComObject(CLASS_MXXMLWriter60) as IMXWriter;
@@ -4767,6 +17110,283 @@ class function CoMXXMLWriter60.CreateRemote(const MachineName: string): IMXWrite
 begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXXMLWriter60) as IMXWriter;
 end;
+
+procedure TMXXMLWriter60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A0F-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXXMLWriter60.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXXMLWriter60.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXXMLWriter60.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXXMLWriter60.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXXMLWriter60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXXMLWriter60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXXMLWriter60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXXMLWriter60.GetServerProperties: TMXXMLWriter60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXXMLWriter60.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter60.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter60.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter60.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter60.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter60.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter60.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter60.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter60.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter60.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter60.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter60.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter60.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter60.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter60.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter60.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXXMLWriter60.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXXMLWriter60Properties.Create(AServer: TMXXMLWriter60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXXMLWriter60Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXXMLWriter60Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXXMLWriter60Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXXMLWriter60Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXXMLWriter60Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXXMLWriter60Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXXMLWriter60Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXXMLWriter60Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXXMLWriter60Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXXMLWriter60Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXXMLWriter60Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXXMLWriter60Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXXMLWriter60Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXXMLWriter60Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXXMLWriter60Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXXMLWriter60Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXXMLWriter60Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
 
 class function CoMXHTMLWriter.Create: IMXWriter;
 begin
@@ -4778,6 +17398,283 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXHTMLWriter) as IMXWriter;
 end;
 
+procedure TMXHTMLWriter.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{A4C23EC3-6B70-4466-9127-550077239978}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXHTMLWriter.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXHTMLWriter.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXHTMLWriter.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXHTMLWriter.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXHTMLWriter.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXHTMLWriterProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXHTMLWriter.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXHTMLWriter.GetServerProperties: TMXHTMLWriterProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXHTMLWriter.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXHTMLWriter.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXHTMLWriterProperties.Create(AServer: TMXHTMLWriter);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXHTMLWriterProperties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXHTMLWriterProperties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriterProperties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriterProperties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriterProperties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriterProperties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriterProperties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriterProperties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriterProperties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriterProperties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriterProperties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriterProperties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriterProperties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriterProperties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriterProperties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriterProperties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriterProperties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
+
 class function CoMXHTMLWriter30.Create: IMXWriter;
 begin
   Result := CreateComObject(CLASS_MXHTMLWriter30) as IMXWriter;
@@ -4787,6 +17684,283 @@ class function CoMXHTMLWriter30.CreateRemote(const MachineName: string): IMXWrit
 begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXHTMLWriter30) as IMXWriter;
 end;
+
+procedure TMXHTMLWriter30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{853D1540-C1A7-4AA9-A226-4D3BD301146D}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXHTMLWriter30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXHTMLWriter30.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXHTMLWriter30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXHTMLWriter30.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXHTMLWriter30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXHTMLWriter30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXHTMLWriter30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXHTMLWriter30.GetServerProperties: TMXHTMLWriter30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXHTMLWriter30.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter30.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter30.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter30.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter30.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter30.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter30.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter30.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter30.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter30.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter30.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter30.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter30.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter30.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter30.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter30.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXHTMLWriter30.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXHTMLWriter30Properties.Create(AServer: TMXHTMLWriter30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXHTMLWriter30Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter30Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter30Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter30Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter30Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter30Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter30Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter30Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter30Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter30Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
 
 class function CoMXHTMLWriter40.Create: IMXWriter;
 begin
@@ -4798,6 +17972,283 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXHTMLWriter40) as IMXWriter;
 end;
 
+procedure TMXHTMLWriter40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969C9-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXHTMLWriter40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
+end;
+
+procedure TMXHTMLWriter40.ConnectTo(svrIntf: IMXWriter);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXHTMLWriter40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXHTMLWriter40.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXHTMLWriter40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXHTMLWriter40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXHTMLWriter40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXHTMLWriter40.GetServerProperties: TMXHTMLWriter40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXHTMLWriter40.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter40.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter40.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter40.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter40.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter40.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter40.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter40.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter40.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter40.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter40.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter40.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter40.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter40.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter40.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter40.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXHTMLWriter40.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXHTMLWriter40Properties.Create(AServer: TMXHTMLWriter40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXHTMLWriter40Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter40Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter40Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter40Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter40Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter40Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter40Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter40Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter40Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter40Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
+
 class function CoMXHTMLWriter60.Create: IMXWriter;
 begin
   Result := CreateComObject(CLASS_MXHTMLWriter60) as IMXWriter;
@@ -4808,25 +18259,584 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXHTMLWriter60) as IMXWriter;
 end;
 
-class function ComsSAXAttributes.Create: IMXAttributes;
+procedure TMXHTMLWriter60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A10-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{4D7FF4BA-1565-4EA8-94E1-6E724A46F98D}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
 begin
-  Result := CreateComObject(CLASS_msSAXAttributes) as IMXAttributes;
+  ServerData := @CServerData;
 end;
 
-class function ComsSAXAttributes.CreateRemote(const MachineName: string): IMXAttributes;
+procedure TMXHTMLWriter60.Connect;
+var
+  punk: IUnknown;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msSAXAttributes) as IMXAttributes;
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXWriter;
+  end;
 end;
 
-class function ComsSAXAttributes30.Create: IMXAttributes;
+procedure TMXHTMLWriter60.ConnectTo(svrIntf: IMXWriter);
 begin
-  Result := CreateComObject(CLASS_msSAXAttributes30) as IMXAttributes;
+  Disconnect;
+  FIntf := svrIntf;
 end;
 
-class function ComsSAXAttributes30.CreateRemote(const MachineName: string): IMXAttributes;
+procedure TMXHTMLWriter60.DisConnect;
 begin
-  Result := CreateRemoteComObject(MachineName, CLASS_msSAXAttributes30) as IMXAttributes;
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
 end;
+
+function TMXHTMLWriter60.GetDefaultInterface: IMXWriter;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXHTMLWriter60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXHTMLWriter60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXHTMLWriter60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXHTMLWriter60.GetServerProperties: TMXHTMLWriter60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXHTMLWriter60.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter60.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter60.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter60.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter60.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter60.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter60.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter60.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter60.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter60.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter60.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter60.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter60.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter60.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter60.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter60.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+procedure TMXHTMLWriter60.flush;
+begin
+  DefaultInterface.flush;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXHTMLWriter60Properties.Create(AServer: TMXHTMLWriter60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXHTMLWriter60Properties.GetDefaultInterface: IMXWriter;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_output(varDestination: OleVariant);
+begin
+  DefaultInterface.Set_output(varDestination);
+end;
+
+function TMXHTMLWriter60Properties.Get_output: OleVariant;
+var
+  InterfaceVariant : OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  Result := InterfaceVariant.output;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_encoding(const strEncoding: WideString);
+  { Warning: The property encoding has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.encoding := strEncoding;
+end;
+
+function TMXHTMLWriter60Properties.Get_encoding: WideString;
+begin
+    Result := DefaultInterface.encoding;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_byteOrderMark(fWriteByteOrderMark: WordBool);
+begin
+  DefaultInterface.Set_byteOrderMark(fWriteByteOrderMark);
+end;
+
+function TMXHTMLWriter60Properties.Get_byteOrderMark: WordBool;
+begin
+    Result := DefaultInterface.byteOrderMark;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_indent(fIndentMode: WordBool);
+begin
+  DefaultInterface.Set_indent(fIndentMode);
+end;
+
+function TMXHTMLWriter60Properties.Get_indent: WordBool;
+begin
+    Result := DefaultInterface.indent;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_standalone(fValue: WordBool);
+begin
+  DefaultInterface.Set_standalone(fValue);
+end;
+
+function TMXHTMLWriter60Properties.Get_standalone: WordBool;
+begin
+    Result := DefaultInterface.standalone;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_omitXMLDeclaration(fValue: WordBool);
+begin
+  DefaultInterface.Set_omitXMLDeclaration(fValue);
+end;
+
+function TMXHTMLWriter60Properties.Get_omitXMLDeclaration: WordBool;
+begin
+    Result := DefaultInterface.omitXMLDeclaration;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_version(const strVersion: WideString);
+  { Warning: The property version has a setter and a getter whose
+    types do not match. Delphi was unable to generate a property of
+    this sort and so is using a Variant as a passthrough. }
+var
+  InterfaceVariant: OleVariant;
+begin
+  InterfaceVariant := DefaultInterface;
+  InterfaceVariant.version := strVersion;
+end;
+
+function TMXHTMLWriter60Properties.Get_version: WideString;
+begin
+    Result := DefaultInterface.version;
+end;
+
+procedure TMXHTMLWriter60Properties.Set_disableOutputEscaping(fValue: WordBool);
+begin
+  DefaultInterface.Set_disableOutputEscaping(fValue);
+end;
+
+function TMXHTMLWriter60Properties.Get_disableOutputEscaping: WordBool;
+begin
+    Result := DefaultInterface.disableOutputEscaping;
+end;
+
+{$ENDIF}
+
+class function CoSAXAttributes.Create: IMXAttributes;
+begin
+  Result := CreateComObject(CLASS_SAXAttributes) as IMXAttributes;
+end;
+
+class function CoSAXAttributes.CreateRemote(const MachineName: string): IMXAttributes;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_SAXAttributes) as IMXAttributes;
+end;
+
+procedure TSAXAttributes.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{4DD441AD-526D-4A77-9F1B-9841ED802FB0}';
+    IntfIID:   '{F10D27CC-3EC0-415C-8ED8-77AB1C5E7262}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXAttributes.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXAttributes;
+  end;
+end;
+
+procedure TSAXAttributes.ConnectTo(svrIntf: IMXAttributes);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXAttributes.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXAttributes.GetDefaultInterface: IMXAttributes;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXAttributes.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXAttributesProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXAttributes.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXAttributes.GetServerProperties: TSAXAttributesProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TSAXAttributes.addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                                      const strQName: WideString; const strType: WideString; 
+                                      const strValue: WideString);
+begin
+  DefaultInterface.addAttribute(strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes.addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+begin
+  DefaultInterface.addAttributeFromIndex(varAtts, nIndex);
+end;
+
+procedure TSAXAttributes.clear;
+begin
+  DefaultInterface.clear;
+end;
+
+procedure TSAXAttributes.removeAttribute(nIndex: SYSINT);
+begin
+  DefaultInterface.removeAttribute(nIndex);
+end;
+
+procedure TSAXAttributes.setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                                      const strLocalName: WideString; const strQName: WideString; 
+                                      const strType: WideString; const strValue: WideString);
+begin
+  DefaultInterface.setAttribute(nIndex, strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes.setAttributes(varAtts: OleVariant);
+begin
+  DefaultInterface.setAttributes(varAtts);
+end;
+
+procedure TSAXAttributes.setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+begin
+  DefaultInterface.setLocalName(nIndex, strLocalName);
+end;
+
+procedure TSAXAttributes.setQName(nIndex: SYSINT; const strQName: WideString);
+begin
+  DefaultInterface.setQName(nIndex, strQName);
+end;
+
+procedure TSAXAttributes.setType(nIndex: SYSINT; const strType: WideString);
+begin
+  DefaultInterface.setType(nIndex, strType);
+end;
+
+procedure TSAXAttributes.setURI(nIndex: SYSINT; const strURI: WideString);
+begin
+  DefaultInterface.setURI(nIndex, strURI);
+end;
+
+procedure TSAXAttributes.setValue(nIndex: SYSINT; const strValue: WideString);
+begin
+  DefaultInterface.setValue(nIndex, strValue);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXAttributesProperties.Create(AServer: TSAXAttributes);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXAttributesProperties.GetDefaultInterface: IMXAttributes;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
+
+class function CoSAXAttributes30.Create: IMXAttributes;
+begin
+  Result := CreateComObject(CLASS_SAXAttributes30) as IMXAttributes;
+end;
+
+class function CoSAXAttributes30.CreateRemote(const MachineName: string): IMXAttributes;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_SAXAttributes30) as IMXAttributes;
+end;
+
+procedure TSAXAttributes30.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{3E784A01-F3AE-4DC0-9354-9526B9370EBA}';
+    IntfIID:   '{F10D27CC-3EC0-415C-8ED8-77AB1C5E7262}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXAttributes30.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXAttributes;
+  end;
+end;
+
+procedure TSAXAttributes30.ConnectTo(svrIntf: IMXAttributes);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXAttributes30.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXAttributes30.GetDefaultInterface: IMXAttributes;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXAttributes30.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXAttributes30Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXAttributes30.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXAttributes30.GetServerProperties: TSAXAttributes30Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TSAXAttributes30.addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                                        const strQName: WideString; const strType: WideString; 
+                                        const strValue: WideString);
+begin
+  DefaultInterface.addAttribute(strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes30.addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+begin
+  DefaultInterface.addAttributeFromIndex(varAtts, nIndex);
+end;
+
+procedure TSAXAttributes30.clear;
+begin
+  DefaultInterface.clear;
+end;
+
+procedure TSAXAttributes30.removeAttribute(nIndex: SYSINT);
+begin
+  DefaultInterface.removeAttribute(nIndex);
+end;
+
+procedure TSAXAttributes30.setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                                        const strLocalName: WideString; const strQName: WideString; 
+                                        const strType: WideString; const strValue: WideString);
+begin
+  DefaultInterface.setAttribute(nIndex, strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes30.setAttributes(varAtts: OleVariant);
+begin
+  DefaultInterface.setAttributes(varAtts);
+end;
+
+procedure TSAXAttributes30.setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+begin
+  DefaultInterface.setLocalName(nIndex, strLocalName);
+end;
+
+procedure TSAXAttributes30.setQName(nIndex: SYSINT; const strQName: WideString);
+begin
+  DefaultInterface.setQName(nIndex, strQName);
+end;
+
+procedure TSAXAttributes30.setType(nIndex: SYSINT; const strType: WideString);
+begin
+  DefaultInterface.setType(nIndex, strType);
+end;
+
+procedure TSAXAttributes30.setURI(nIndex: SYSINT; const strURI: WideString);
+begin
+  DefaultInterface.setURI(nIndex, strURI);
+end;
+
+procedure TSAXAttributes30.setValue(nIndex: SYSINT; const strValue: WideString);
+begin
+  DefaultInterface.setValue(nIndex, strValue);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXAttributes30Properties.Create(AServer: TSAXAttributes30);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXAttributes30Properties.GetDefaultInterface: IMXAttributes;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
 
 class function CoSAXAttributes40.Create: IMXAttributes;
 begin
@@ -4838,6 +18848,147 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_SAXAttributes40) as IMXAttributes;
 end;
 
+procedure TSAXAttributes40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969CA-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{F10D27CC-3EC0-415C-8ED8-77AB1C5E7262}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXAttributes40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXAttributes;
+  end;
+end;
+
+procedure TSAXAttributes40.ConnectTo(svrIntf: IMXAttributes);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXAttributes40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXAttributes40.GetDefaultInterface: IMXAttributes;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXAttributes40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXAttributes40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXAttributes40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXAttributes40.GetServerProperties: TSAXAttributes40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TSAXAttributes40.addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                                        const strQName: WideString; const strType: WideString; 
+                                        const strValue: WideString);
+begin
+  DefaultInterface.addAttribute(strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes40.addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+begin
+  DefaultInterface.addAttributeFromIndex(varAtts, nIndex);
+end;
+
+procedure TSAXAttributes40.clear;
+begin
+  DefaultInterface.clear;
+end;
+
+procedure TSAXAttributes40.removeAttribute(nIndex: SYSINT);
+begin
+  DefaultInterface.removeAttribute(nIndex);
+end;
+
+procedure TSAXAttributes40.setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                                        const strLocalName: WideString; const strQName: WideString; 
+                                        const strType: WideString; const strValue: WideString);
+begin
+  DefaultInterface.setAttribute(nIndex, strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes40.setAttributes(varAtts: OleVariant);
+begin
+  DefaultInterface.setAttributes(varAtts);
+end;
+
+procedure TSAXAttributes40.setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+begin
+  DefaultInterface.setLocalName(nIndex, strLocalName);
+end;
+
+procedure TSAXAttributes40.setQName(nIndex: SYSINT; const strQName: WideString);
+begin
+  DefaultInterface.setQName(nIndex, strQName);
+end;
+
+procedure TSAXAttributes40.setType(nIndex: SYSINT; const strType: WideString);
+begin
+  DefaultInterface.setType(nIndex, strType);
+end;
+
+procedure TSAXAttributes40.setURI(nIndex: SYSINT; const strURI: WideString);
+begin
+  DefaultInterface.setURI(nIndex, strURI);
+end;
+
+procedure TSAXAttributes40.setValue(nIndex: SYSINT; const strValue: WideString);
+begin
+  DefaultInterface.setValue(nIndex, strValue);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXAttributes40Properties.Create(AServer: TSAXAttributes40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXAttributes40Properties.GetDefaultInterface: IMXAttributes;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
+
 class function CoSAXAttributes60.Create: IMXAttributes;
 begin
   Result := CreateComObject(CLASS_SAXAttributes60) as IMXAttributes;
@@ -4847,6 +18998,147 @@ class function CoSAXAttributes60.CreateRemote(const MachineName: string): IMXAtt
 begin
   Result := CreateRemoteComObject(MachineName, CLASS_SAXAttributes60) as IMXAttributes;
 end;
+
+procedure TSAXAttributes60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A0E-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{F10D27CC-3EC0-415C-8ED8-77AB1C5E7262}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TSAXAttributes60.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IMXAttributes;
+  end;
+end;
+
+procedure TSAXAttributes60.ConnectTo(svrIntf: IMXAttributes);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TSAXAttributes60.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TSAXAttributes60.GetDefaultInterface: IMXAttributes;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TSAXAttributes60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TSAXAttributes60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TSAXAttributes60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TSAXAttributes60.GetServerProperties: TSAXAttributes60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TSAXAttributes60.addAttribute(const strURI: WideString; const strLocalName: WideString; 
+                                        const strQName: WideString; const strType: WideString; 
+                                        const strValue: WideString);
+begin
+  DefaultInterface.addAttribute(strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes60.addAttributeFromIndex(varAtts: OleVariant; nIndex: SYSINT);
+begin
+  DefaultInterface.addAttributeFromIndex(varAtts, nIndex);
+end;
+
+procedure TSAXAttributes60.clear;
+begin
+  DefaultInterface.clear;
+end;
+
+procedure TSAXAttributes60.removeAttribute(nIndex: SYSINT);
+begin
+  DefaultInterface.removeAttribute(nIndex);
+end;
+
+procedure TSAXAttributes60.setAttribute(nIndex: SYSINT; const strURI: WideString; 
+                                        const strLocalName: WideString; const strQName: WideString; 
+                                        const strType: WideString; const strValue: WideString);
+begin
+  DefaultInterface.setAttribute(nIndex, strURI, strLocalName, strQName, strType, strValue);
+end;
+
+procedure TSAXAttributes60.setAttributes(varAtts: OleVariant);
+begin
+  DefaultInterface.setAttributes(varAtts);
+end;
+
+procedure TSAXAttributes60.setLocalName(nIndex: SYSINT; const strLocalName: WideString);
+begin
+  DefaultInterface.setLocalName(nIndex, strLocalName);
+end;
+
+procedure TSAXAttributes60.setQName(nIndex: SYSINT; const strQName: WideString);
+begin
+  DefaultInterface.setQName(nIndex, strQName);
+end;
+
+procedure TSAXAttributes60.setType(nIndex: SYSINT; const strType: WideString);
+begin
+  DefaultInterface.setType(nIndex, strType);
+end;
+
+procedure TSAXAttributes60.setURI(nIndex: SYSINT; const strURI: WideString);
+begin
+  DefaultInterface.setURI(nIndex, strURI);
+end;
+
+procedure TSAXAttributes60.setValue(nIndex: SYSINT; const strValue: WideString);
+begin
+  DefaultInterface.setValue(nIndex, strValue);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TSAXAttributes60Properties.Create(AServer: TSAXAttributes60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TSAXAttributes60Properties.GetDefaultInterface: IMXAttributes;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+{$ENDIF}
 
 class function CoMXNamespaceManager.Create: IVBMXNamespaceManager;
 begin
@@ -4858,6 +19150,154 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXNamespaceManager) as IVBMXNamespaceManager;
 end;
 
+procedure TMXNamespaceManager.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969D5-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{C90352F5-643C-4FBC-BB23-E996EB2D51FD}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXNamespaceManager.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBMXNamespaceManager;
+  end;
+end;
+
+procedure TMXNamespaceManager.ConnectTo(svrIntf: IVBMXNamespaceManager);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXNamespaceManager.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXNamespaceManager.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXNamespaceManager.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXNamespaceManagerProperties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXNamespaceManager.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXNamespaceManager.GetServerProperties: TMXNamespaceManagerProperties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXNamespaceManager.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManager.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+procedure TMXNamespaceManager.reset;
+begin
+  DefaultInterface.reset;
+end;
+
+procedure TMXNamespaceManager.pushContext;
+begin
+  DefaultInterface.pushContext;
+end;
+
+procedure TMXNamespaceManager.pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+begin
+  DefaultInterface.pushNodeContext(contextNode, fDeep);
+end;
+
+procedure TMXNamespaceManager.popContext;
+begin
+  DefaultInterface.popContext;
+end;
+
+procedure TMXNamespaceManager.declarePrefix(const prefix: WideString; const namespaceURI: WideString);
+begin
+  DefaultInterface.declarePrefix(prefix, namespaceURI);
+end;
+
+function TMXNamespaceManager.getDeclaredPrefixes: IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getDeclaredPrefixes;
+end;
+
+function TMXNamespaceManager.getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getPrefixes(namespaceURI);
+end;
+
+function TMXNamespaceManager.getURI(const prefix: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getURI(prefix);
+end;
+
+function TMXNamespaceManager.getURIFromNode(const strPrefix: WideString; 
+                                            const contextNode: IXMLDOMNode): OleVariant;
+begin
+  Result := DefaultInterface.getURIFromNode(strPrefix, contextNode);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXNamespaceManagerProperties.Create(AServer: TMXNamespaceManager);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXNamespaceManagerProperties.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXNamespaceManagerProperties.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManagerProperties.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+{$ENDIF}
+
 class function CoMXNamespaceManager40.Create: IVBMXNamespaceManager;
 begin
   Result := CreateComObject(CLASS_MXNamespaceManager40) as IVBMXNamespaceManager;
@@ -4868,6 +19308,155 @@ begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXNamespaceManager40) as IVBMXNamespaceManager;
 end;
 
+procedure TMXNamespaceManager40.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D969D6-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{C90352F5-643C-4FBC-BB23-E996EB2D51FD}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXNamespaceManager40.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBMXNamespaceManager;
+  end;
+end;
+
+procedure TMXNamespaceManager40.ConnectTo(svrIntf: IVBMXNamespaceManager);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXNamespaceManager40.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXNamespaceManager40.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXNamespaceManager40.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXNamespaceManager40Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXNamespaceManager40.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXNamespaceManager40.GetServerProperties: TMXNamespaceManager40Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXNamespaceManager40.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManager40.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+procedure TMXNamespaceManager40.reset;
+begin
+  DefaultInterface.reset;
+end;
+
+procedure TMXNamespaceManager40.pushContext;
+begin
+  DefaultInterface.pushContext;
+end;
+
+procedure TMXNamespaceManager40.pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+begin
+  DefaultInterface.pushNodeContext(contextNode, fDeep);
+end;
+
+procedure TMXNamespaceManager40.popContext;
+begin
+  DefaultInterface.popContext;
+end;
+
+procedure TMXNamespaceManager40.declarePrefix(const prefix: WideString; 
+                                              const namespaceURI: WideString);
+begin
+  DefaultInterface.declarePrefix(prefix, namespaceURI);
+end;
+
+function TMXNamespaceManager40.getDeclaredPrefixes: IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getDeclaredPrefixes;
+end;
+
+function TMXNamespaceManager40.getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getPrefixes(namespaceURI);
+end;
+
+function TMXNamespaceManager40.getURI(const prefix: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getURI(prefix);
+end;
+
+function TMXNamespaceManager40.getURIFromNode(const strPrefix: WideString; 
+                                              const contextNode: IXMLDOMNode): OleVariant;
+begin
+  Result := DefaultInterface.getURIFromNode(strPrefix, contextNode);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXNamespaceManager40Properties.Create(AServer: TMXNamespaceManager40);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXNamespaceManager40Properties.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXNamespaceManager40Properties.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManager40Properties.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+{$ENDIF}
+
 class function CoMXNamespaceManager60.Create: IVBMXNamespaceManager;
 begin
   Result := CreateComObject(CLASS_MXNamespaceManager60) as IVBMXNamespaceManager;
@@ -4876,6 +19465,180 @@ end;
 class function CoMXNamespaceManager60.CreateRemote(const MachineName: string): IVBMXNamespaceManager;
 begin
   Result := CreateRemoteComObject(MachineName, CLASS_MXNamespaceManager60) as IVBMXNamespaceManager;
+end;
+
+procedure TMXNamespaceManager60.InitServerData;
+const
+  CServerData: TServerData = (
+    ClassID:   '{88D96A11-F192-11D4-A65F-0040963251E5}';
+    IntfIID:   '{C90352F5-643C-4FBC-BB23-E996EB2D51FD}';
+    EventIID:  '';
+    LicenseKey: nil;
+    Version: 500);
+begin
+  ServerData := @CServerData;
+end;
+
+procedure TMXNamespaceManager60.Connect;
+var
+  punk: IUnknown;
+begin
+  if FIntf = nil then
+  begin
+    punk := GetServer;
+    Fintf:= punk as IVBMXNamespaceManager;
+  end;
+end;
+
+procedure TMXNamespaceManager60.ConnectTo(svrIntf: IVBMXNamespaceManager);
+begin
+  Disconnect;
+  FIntf := svrIntf;
+end;
+
+procedure TMXNamespaceManager60.DisConnect;
+begin
+  if Fintf <> nil then
+  begin
+    FIntf := nil;
+  end;
+end;
+
+function TMXNamespaceManager60.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  if FIntf = nil then
+    Connect;
+  Assert(FIntf <> nil, 'DefaultInterface is NULL. Component is not connected to Server. You must call ''Connect'' or ''ConnectTo'' before this operation');
+  Result := FIntf;
+end;
+
+constructor TMXNamespaceManager60.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps := TMXNamespaceManager60Properties.Create(Self);
+{$ENDIF}
+end;
+
+destructor TMXNamespaceManager60.Destroy;
+begin
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+  FProps.Free;
+{$ENDIF}
+  inherited Destroy;
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+function TMXNamespaceManager60.GetServerProperties: TMXNamespaceManager60Properties;
+begin
+  Result := FProps;
+end;
+{$ENDIF}
+
+procedure TMXNamespaceManager60.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManager60.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+procedure TMXNamespaceManager60.reset;
+begin
+  DefaultInterface.reset;
+end;
+
+procedure TMXNamespaceManager60.pushContext;
+begin
+  DefaultInterface.pushContext;
+end;
+
+procedure TMXNamespaceManager60.pushNodeContext(const contextNode: IXMLDOMNode; fDeep: WordBool);
+begin
+  DefaultInterface.pushNodeContext(contextNode, fDeep);
+end;
+
+procedure TMXNamespaceManager60.popContext;
+begin
+  DefaultInterface.popContext;
+end;
+
+procedure TMXNamespaceManager60.declarePrefix(const prefix: WideString; 
+                                              const namespaceURI: WideString);
+begin
+  DefaultInterface.declarePrefix(prefix, namespaceURI);
+end;
+
+function TMXNamespaceManager60.getDeclaredPrefixes: IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getDeclaredPrefixes;
+end;
+
+function TMXNamespaceManager60.getPrefixes(const namespaceURI: WideString): IMXNamespacePrefixes;
+begin
+  Result := DefaultInterface.getPrefixes(namespaceURI);
+end;
+
+function TMXNamespaceManager60.getURI(const prefix: WideString): OleVariant;
+begin
+  Result := DefaultInterface.getURI(prefix);
+end;
+
+function TMXNamespaceManager60.getURIFromNode(const strPrefix: WideString; 
+                                              const contextNode: IXMLDOMNode): OleVariant;
+begin
+  Result := DefaultInterface.getURIFromNode(strPrefix, contextNode);
+end;
+
+{$IFDEF LIVE_SERVER_AT_DESIGN_TIME}
+constructor TMXNamespaceManager60Properties.Create(AServer: TMXNamespaceManager60);
+begin
+  inherited Create;
+  FServer := AServer;
+end;
+
+function TMXNamespaceManager60Properties.GetDefaultInterface: IVBMXNamespaceManager;
+begin
+  Result := FServer.DefaultInterface;
+end;
+
+procedure TMXNamespaceManager60Properties.Set_allowOverride(fOverride: WordBool);
+begin
+  DefaultInterface.Set_allowOverride(fOverride);
+end;
+
+function TMXNamespaceManager60Properties.Get_allowOverride: WordBool;
+begin
+    Result := DefaultInterface.allowOverride;
+end;
+
+{$ENDIF}
+
+class function CoXMLDocument.Create: IXMLDocument2;
+begin
+  Result := CreateComObject(CLASS_XMLDocument) as IXMLDocument2;
+end;
+
+class function CoXMLDocument.CreateRemote(const MachineName: string): IXMLDocument2;
+begin
+  Result := CreateRemoteComObject(MachineName, CLASS_XMLDocument) as IXMLDocument2;
+end;
+
+procedure Register;
+begin
+  RegisterComponents(dtlServerPage, [TDOMDocument, TDOMDocument26, TDOMDocument30, TDOMDocument40, 
+    TDOMDocument60, TFreeThreadedDOMDocument, TFreeThreadedDOMDocument26, TFreeThreadedDOMDocument30, TFreeThreadedDOMDocument40, 
+    TFreeThreadedDOMDocument60, TXMLSchemaCache, TXMLSchemaCache26, TXMLSchemaCache30, TXMLSchemaCache40, 
+    TXMLSchemaCache60, TXSLTemplate, TXSLTemplate26, TXSLTemplate30, TXSLTemplate40, 
+    TXSLTemplate60, TDSOControl, TDSOControl26, TDSOControl30, TDSOControl40, 
+    TXMLHTTP, TXMLHTTP26, TXMLHTTP30, TXMLHTTP40, TXMLHTTP60, 
+    TServerXMLHTTP, TServerXMLHTTP30, TServerXMLHTTP40, TServerXMLHTTP60, TSAXXMLReader, 
+    TSAXXMLReader30, TSAXXMLReader40, TSAXXMLReader60, TMXXMLWriter, TMXXMLWriter30, 
+    TMXXMLWriter40, TMXXMLWriter60, TMXHTMLWriter, TMXHTMLWriter30, TMXHTMLWriter40, 
+    TMXHTMLWriter60, TSAXAttributes, TSAXAttributes30, TSAXAttributes40, TSAXAttributes60, 
+    TMXNamespaceManager, TMXNamespaceManager40, TMXNamespaceManager60]);
 end;
 
 end.

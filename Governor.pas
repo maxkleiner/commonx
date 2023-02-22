@@ -32,7 +32,7 @@ type
 
 
 var
-  G_Governor: TGovernor;
+  G_Governor: TGovernor = nil;
 
 implementation
 

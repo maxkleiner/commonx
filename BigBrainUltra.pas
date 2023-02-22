@@ -1,4 +1,7 @@
 unit BigBrainUltra;
+{$IFNDEF BB2013}
+{$DEFINE BB2020}
+{$ENDIF}
 {$MESSAGE '*********************************************************************'}
 {$MESSAGE 'BigBrain-------------------------------------------------------------'}
 {$MESSAGE '*********************************************************************'}
@@ -80,7 +83,7 @@ due to the termination of this agreement beyond the initial license fee.
 
 *)
 {$IFDEF DO_MEM_CHART}
-{$DEFINE BBDEBUG}
+      {$DEFINE BBDEBUG}
 {$ENDIF}
 {$Q-}//no overflow checking
 {$R-}//no range checking
@@ -108,13 +111,13 @@ due to the termination of this agreement beyond the initial license fee.
 //Defines beginining with "$DEFINE" are enabled... "xDEFINE" means disabled
 {x$DEFINE STATS}
 {x$DEFINE ATOMICLOCKS}
-{$DEFINE TRY_BEFORE_BUY}
+{x$DEFINE TRY_BEFORE_BUY}
 {$IFDEF TRY_BEFORE_BUY}{$MESSAGE 'DEFINED: TRY_BEFORE_BUY'}{$ENDIF}
 
 {$DEFINE USE_MULTIPLE_THREAD_BLOCK_HOLD_TIMES}
 {$IFDEF USE_MULTIPLE_THREAD_BLOCK_HOLD_TIMES}{$MESSAGE 'DEFINED: USE_MULTIPLE_THREAD_BLOCK_HOLD_TIMES'}{$ENDIF}
 
-{$DEFINE COUNT_HEAP_OPERATIONS}
+{8$DEFINE COUNT_HEAP_OPERATIONS}
 {$IFDEF COUNT_HEAP_OPERATIONS}{$MESSAGE 'DEFINED: COUNT_HEAP_OPERATIONS'}{$ENDIF}
 
 {$DEFINE HOLD_MEMORY}
@@ -132,10 +135,10 @@ due to the termination of this agreement beyond the initial license fee.
 {x$DEFINE ALIGN_MEMORY} //!EXPERIMENTAL/alternate method of aligning memory- DO NOT USE
 {$IFDEF ALIGN_MEMORY}{$MESSAGE warn 'EXPERIMENTAL: ALIGN_MEMORY'}{$ENDIF}
 
-{x$DEFINE INFLATE_to_24}
+{$DEFINE INFLATE_to_24}
 {$IFDEF INFLATE_to_24}{$MESSAGE 'DEFINED: INFLATE_to_24'}{$ENDIF}
 
-{$DEFINE INFLATE_to_32} //recommended- header will be on 16-byte boundry as well as memory block returned
+{x$DEFINE INFLATE_to_32} //recommended- header will be on 16-byte boundry as well as memory block returned
 {$IFDEF INFLATE_to_32}{$MESSAGE 'DEFINED: INFLATE_to_32'}{$ENDIF}
 
 
@@ -162,14 +165,20 @@ due to the termination of this agreement beyond the initial license fee.
 {$DEFINE PACK_HEADERS}
 {$IFDEF PACK_HEADERS}{$MESSAGE 'DEFINED: PACK_HEADERS'}{$ENDIF}
 
-{$DEFINE WINDOWS2000_COMPATIBLE}
+{x$DEFINE WINDOWS2000_COMPATIBLE}
 {$IFDEF WINDOWS2000_COMPATIBLE}{$MESSAGE 'DEFINED: WINDOWS2000_COMPATIBLE'}{$ENDIF}
                         //if you require windows 2000(SP3 and earlier)/NT compatability enable this
                         //--note using this option nulls the effect of
                         //  low-frag and high performance heaps, but BigBrain
                         //  does quite well without these features.
 
-{$DEFINE FREEMAN}       //It is recommended that you always use
+{$DEFINE FREEMAN}       //Recommended
+
+{x$DEFINE LIMIT_MANS}   //EXPERIMENTAL, non functional
+                        //NOT compatiple with FREEMAN, allows thread managers to be
+                        //borrowed in high-thread-count situration
+                        //It is recommended that you always use
+
 {$DEFINE USEDEADLIST}   //the FREEMAN and USEDEADLIST directives together.
                         //Both of these directives allow Big Brain to
                         //delete unused block managers from unused terminated
@@ -263,7 +272,7 @@ due to the termination of this agreement beyond the initial license fee.
                         // as an underlying layer, which is useful.
 {$IFDEF LITEMODE}{$MESSAGE 'DEFINED: LITEMODE'}{$ENDIF}
 
-{$DEFINE USELITEASOS}   // WARNING* Requires Windows 2000 SP4 or later!
+{x$DEFINE USELITEASOS}   // WARNING* Requires Windows 2000 SP4 or later!
                         // Uses the above mentioned "Lite mode" to supply
                         // new blocks of memory.  This layer sits BELOW the bulk
                         // of the Big Brain functionality.  And replaces operations
@@ -279,12 +288,12 @@ due to the termination of this agreement beyond the initial license fee.
 
 
 
-{$DEFINE LOOK_ASIDE}    // [on] Faster than LOW_FRAG (LOW_FRAG must be disabled
+{x$DEFINE LOOK_ASIDE}    // [on] Faster than LOW_FRAG (LOW_FRAG must be disabled
                         // when this is enabled).  But doesn't provide
                         // extra support for reducing memory fragmentation.
 {$IFDEF LOOK_ASIDE}{$MESSAGE 'DEFINED: LOOK_ASIDE'}{$ENDIF}
 
-{xDEFINE LOW_FRAG}      // [on] Uses slightly slower OS Heaps that can reduce
+{$DEFINE LOW_FRAG}      // [on] Uses slightly slower OS Heaps that can reduce
                         // fragmentation.  You MUST disable LOOK_ASIDE
                         // when enabling this
 {$IFDEF LOW_FRAG}{$MESSAGE 'DEFINED: LOW_FRAG'}{$ENDIF}
@@ -315,9 +324,10 @@ due to the termination of this agreement beyond the initial license fee.
 {$IFDEF EXTRA_ERR_CHECKING}{$MESSAGE 'DEFINED: EXTRA_ERR_CHECKING'}{$ENDIF}
 
 {x$DEFINE USE_SPINLOCK}
+{$DEFINE ASM}
 {$IFDEF USE_SPINLOCK}
 {$DEFINE SpinLock}
-{$DEFINE ASM}
+
 {$IFDEF SpinLock}{$MESSAGE 'DEFINED: SpinLock'}{$ENDIF}
 
 {x$DEFINE DynamicSleep}
@@ -335,24 +345,41 @@ interface
 
 {$DEFINE DISABLE_MASTER_KEYWORDS}
 {$UNDEF DISABLE_INTERFACE}
+{$IFDEF BB2020}
+  {$I 'BigBrainUltra2020.pas'}
+{$ELSE}
   {$I 'BigBrainUltra2013.pas'}
+{$ENDIF}
 {$DEFINE DISABLE_INTERFACE}
 
 
 implementation
 
 {$UNDEF DISABLE_IMPLEMENTATION}
+{$IFDEF BB2020}
+  {$I 'BigBrainUltra2020.pas'}
+{$ELSE}
   {$I 'BigBrainUltra2013.pas'}
+{$ENDIF}
 {$DEFINE DISABLE_IMPLEMENTATION}
 
 initialization
 {$UNDEF DISABLE_INITIALIZATION}
+{$IFDEF BB2020}
+  {$I 'BigBrainUltra2020.pas'}
+{$ELSE}
   {$I 'BigBrainUltra2013.pas'}
+{$ENDIF}
 {$DEFINE DISABLE_INITIALIZATION}
 
 finalization
 {$UNDEF DISABLE_FINALIZATION}
+{$IFDEF BB2020}
+  {$I 'BigBrainUltra2020.pas'}
+{$ELSE}
   {$I 'BigBrainUltra2013.pas'}
+{$ENDIF}
+
 {$DEFINE DISABLE_FINALIZATION}
 
 

@@ -1,6 +1,14 @@
 unit systemx;
 {$I DelphiDefs.inc}
+{$IFDEF MACOS}
+{$DEFINE MACOSX}
+{$ENDIF}
+{$IFDEF MACOSX}
+  //remove me if you ever actually compile on OSX .. wierd defines for ios
+{$ENDIF}
+
 interface
+
 {$IFNDEF WINDOWS}
   {$DEFINE USE_SYNCOBJS}
 {$ENDIF}
@@ -12,17 +20,19 @@ interface
 {x$DEFINE ALWAYS_SINGLE_BYTE_MASK_MOVE}
 {$DEFINE MACEXE}
 uses
-  typex, numbers,
+  typex, numbers, dateutils,
 {$IFDEF IOS}
   Macapi.CoreFoundation, Macapi.CoreServices, macapi.mach,
   iosapi.foundation,
 {$ENDIF}
 {$IFDEF MSWINDOWS}
   windows,
-  USock,
+  USock, winapi.userenv,
 {$ELSE}
-{$IFDEF MACOSX}
-  MacApi.foundation,
+{$IFDEF MACOS}
+{$IFNDEF IOS}
+    MacApi.foundation,
+{$ENDIF}
 {$IFDEF MacEXE}
   MacApiEx,
 {$ENDIF}
@@ -42,6 +52,9 @@ uses
   {$ENDIF}
   {$IFDEF USE_SYNCOMMONS}
   //SynCommons,
+  {$ENDIF}
+  {$IFDEF ANDROID}
+  Androidapi.Helpers,
   {$ENDIF}
   sysutils;
 
@@ -67,6 +80,12 @@ type
     ProcessorPackageCount : integer;
   end;
 
+  TChecksumResult = record
+    cs1: int64;
+    cs2: int64;
+    function ToSTring: string;
+  end;
+
 {$IFDEF USE_SYNCOBJS}
   TPlatformCriticalSection = TCriticalSection;
 {$ELSE}
@@ -82,6 +101,7 @@ type
     cs: TPlatformCriticalSection;
     lastlocker: THandle;
     throttle:nativeint;
+    name: string;
   end;
 
 
@@ -91,10 +111,10 @@ function AnsiByteArrayToString(a: TDynByteArray): string;
 function AnsiPointerToString(a: Pbyte): string;
 function GetWriteablePath: string;
 function FindDeployedFile(sName: string): string;
-
+function IsDebuggerAttached: boolean;
 function UpTime: TdateTime;
 procedure FreeListContents(list: TList);
-function GetCurrentThreadID: cardinal;
+function GetCurrentThreadID: nativeuint;
 function DLLName: string;
 function DLLPath: string;
 function PackagePath: string;
@@ -118,6 +138,9 @@ function GetTempPath: string;
 function GetDownloadsFolder: string;
 function GEtPDFPath: string;
 function GetTempPathForThread: string;overload;
+function GetUniqueTempBase: string;
+function GetUniqueTempPath: string;
+
 function GetComputerName: string;
 function Get7BitEncodedBufferLength(i8BitLength: nativeint): nativeint;
 function Get7BitEncodedBuffer8bitLength(i7BitLength: nativeint): nativeint;
@@ -126,6 +149,9 @@ procedure Convert7BitsTo8Bits(input: pbyte; output: pbyte; InputLength: nativein
 function Convert8BitsTo7Bits(input: PByte; inputSize: ni; output: PByte; outputSize: ni): boolean;
 procedure XOREncrypt(d: PByte; sz: ni; key: Pbyte; keysize: ni);
 procedure XORDecrypt(d: PByte; sz: ni; key: Pbyte; keysize: ni);
+function ByteReplace(a: Tarray<byte>; src, dest: byte): Tarray<byte>;
+function ByteRemove(a: Tarray<byte>; val: byte): Tarray<byte>;
+function GetHomeRoot: string;
 
 function GetLogicalDrives: DWORD; stdcall;
 function GetVolumeInformation(lpRootPathName: PChar;
@@ -156,10 +182,15 @@ function GetnumberofPhysicalProcessors: integer;
 function GetNumberOfLogicalProcessors: integer;
 function GetCPUCount: integer;
 function GetCPUThreadCount: integer;
-function GetEnabledCPUCount: int64;
+function GetEnabledCPUCount: nativeint;
 function CountSetBits(bitMask : int64) : ni;
 function waitForwritable(filename: string; timeout: integer = -1): boolean;
 function waitForReadable(filename: string; timeout: integer = -1): boolean;
+function FileGetDateAsGMT(Handle: THandle): TDateTime;
+function FileSetDateFromGMT(Handle: THandle; dt: TDateTime): Integer;
+function FileGetDateUTC(Handle: THandle): LongInt;
+
+function FileSetDateUTC(Handle: THandle; Age: Integer): Integer;
 
 function xGetProcessorCount: integer;deprecated;
 procedure CopyFile(sSource: string; sTarget: string; bFailIfExists: boolean = false);
@@ -175,7 +206,7 @@ function HighOrderBit(Value:integer):integer;overload;
 function HighOrderBit(const Value:int64):int64;overload;
 function HighOrderBit(const Value:TGiantInt):int64;overload;
 function NearPower2(value:int64): int64;
-function RAndomOrder(iItems: ni): TDynInt64Array;
+function RandomOrder(iItems: ni): TDynInt64Array;
 
 function IsDLL: boolean;
 
@@ -184,29 +215,32 @@ function HextoMemory(const s: string): TDynByteArray;
 function boolToInt(b: boolean): nativeint;
 function MemoryToHex(p: pointer; iSize: integer): string;
 function MemoryToHexAndASCII(p: pointer; iSize: integer): string;
-procedure FreeAndNil(var o: TObject);
+procedure FreeAndNilX(var o: TObject);
 function GetCheckSumForVariant(v: variant): integer;
 function GetCheckSumForString(s: string): cardinal;
 function MemoryDebugString(p: pointer; length: integer): string;
 function ExtractFileNamePart(sFile: string): string;
 procedure sysBeep(freq, dur: ni);
-procedure NotImplemented;
+procedure NotImplemented(sExtraMessage: string = '');
 
-procedure ics(var cs: TCLXCriticalSection);inline;
+procedure ics(var cs: TCLXCriticalSection; name: string = '');inline;
 procedure icssc(var cs: TCLXCriticalSection; spin: ni);inline;
 procedure dcs(var cs: TCLXCriticalSectioN);inline;
-procedure ecs(var cs: TCLXcriticalSection);
+procedure ecs(var cs: TCLXcriticalSection);inline;
 procedure lcs(var cs: TCLXcriticalSection);inline;
-function tecs(var cs: TCLXcriticalSection; iTimeout: integer=0): boolean;
+function tecs(var cs: TCLXcriticalSection; iTimeout: integer=0): boolean;inline;
 procedure ecs2(var cs1,cs2: TCLXCRiticalSection; retryInterval: ni);inline;
 procedure lcs2(var cs1,cs2: TCLXCRiticalSection);inline;
 function ResolveFileName(sFile: string): string;
 function RenameFile_Verify(source, dest: string; iRetryCount: nativeint = 1000): boolean;
+function UserAgentToPlatform(ua: string): string;
 
 function SecondsToTimeString(r:nativefloat): string;
 function StrtoDate_Better(s: string): TDateTime;
 function UTCToDateTime(d: TDateTime): TDateTime;
 function UTCStringToDateTime(d: string): TDateTime;
+function UnixStringToDateTime(d: string): TDateTime;
+
 function DatetoStr_Better(d: TDateTime): string;
 function DateTimeToUTC(d: TDateTime): TDateTime;
 function GetPaddedSize(iSize: nativeint; iPad: nativeint): nativeint;
@@ -225,6 +259,15 @@ function FileOpenX(const FileName: string; Mode: LongWord; Flags: cardinal): THa
 function strtoni(s: string): ni;inline;
 procedure CalculateChecksum(p: pbyte; l: ni; out iSum, iXor: int64);overload;
 procedure CalculateChecksum(p: pbyte; l: ni; out iSum: int64);overload;
+function CalculateChecksum2020(p: pbyte; l: ni): TChecksumResult;
+
+function GetCheckSumHashString(p: pbyte; l: ni): string;overload;
+function GetCheckSumHashString(s: string): string;overload;
+function MemoryIsNonZero(p: Pbyte; l: ni): boolean;
+function GetZeroMemory(sz: nativeint): pointer;
+procedure SyncAnon(proc: TProc);
+
+
 
 procedure pmm(d: pointer; s: pointer; sz: NativeUInt; src_bucket_start: pointer; src_bucket_sz: NativeUInt; dst_bucket_start: pointer; dst_bucket_sz: NativeUInt);
 function Isfile(sPathOrFileName: string): boolean;
@@ -289,6 +332,7 @@ var
 
   ios_lock: TCLXCriticalSection;
 {$ENDIF}
+  temp_lock: TCLXCriticalSection;
 
 var
   AppStartTime: TDateTime;
@@ -351,6 +395,7 @@ begin
         RelationNumaNode: Inc(result.NumaNodeCount);
         RelationProcessorCore:
           begin
+{$R-}
             logicals := CountSetBits(Buffer[i].ProcessorMask);
             if logicals > 0 then begin
               Inc(result.ProcessorCoreCount);
@@ -409,10 +454,35 @@ begin
   result := result and (int64(high_order_stuff) shl 32);
 {$ENDIF MSWINDOWS}
 {$IFDEF POSIX}
+  result := 0;
   notImplemented;
   //Result := lseek(Handle, Offset, Origin);
 {$ENDIF POSIX}
 end;
+
+
+function PackageName: string;
+{$IFDEF ANDROID}
+begin
+  Result := JStringToString(SharedActivityContext.getPackageName);
+end;
+{$ELSE}
+{$IFDEF MACOS}
+begin
+  Result := ParamStr(0);
+end;
+{$ELSE}
+{$IFDEF IOS}
+begin
+  Result := TNSString.Wrap(CFBundleGetValueForInfoDictionaryKey(CFBundleGetMainBundle, kCFBundleIdentifierKey)).UTF8String;
+end;
+{$ELSE}
+begin
+  result := dllname;
+end;
+{$ENDIF}
+{$ENDIF}
+{$ENDIF}
 
 
 function DLLName: string;
@@ -424,9 +494,19 @@ end;
 var
   FileName : array[0..MAX_PATH] of WideChar;
 begin
+{$IFDEF MSWINDOWS}
   FillChar(FileName, SizeOf(FileName), #0);
   GetModuleFileName(HInstance, FileName, SizeOf(FileName));
   Result:= FileName;
+{$ELSE}
+{$IFDEF LINUX}
+  result := 'linux_app';
+{$ELSE}
+  RESULT := packagename;
+{$ENDIF}
+
+{$ENDIF}
+
 end;
 {$ENDIF}
 
@@ -438,11 +518,12 @@ end;
 
 function PackagePath: string;
 begin
-{$IFDEF MACOSX}
+{$IFDEF MACOS}
   var l,r: string;
 
+  //todo 1: this is an awful hack
   if SplitString(dllpath, '.app', l,r,true) then begin
-    result := extractfilepath(l);
+    result := extractfilepath(l+'.app');
   end else begin
     result := r;
   end;
@@ -518,6 +599,32 @@ begin
   //SAME as encrypt
   XOREncrypt(d,sz, key, keysize);
 end;
+
+function ByteReplace(a: Tarray<byte>; src, dest: byte): Tarray<byte>;
+begin
+  result := a;
+  system.setlength(result, length(a));
+  for var t:= 0 to high(a) do begin
+    if a[t] = src then
+      result[t] := dest;
+  end;
+end;
+
+function ByteRemove(a: Tarray<byte>; val: byte): Tarray<byte>;
+begin
+  system.setlength(result, length(a));
+  var outidx := 0;
+  for var t:= 0 to high(a) do begin
+    if a[t] <> val then begin
+      result[outidx] := a[t];
+      inc(outidx);
+    end;
+  end;
+
+  system.setlength(result, outidx);
+
+end;
+
 
 procedure MoveMem32(const D,S: pointer; const Size: ni);
 //a: Jason Nelson
@@ -968,7 +1075,7 @@ end;
 
 
 
-function GetCurrentThreadID: cardinal;
+function GetCurrentThreadID: nativeuint;
 
 begin
 
@@ -1022,6 +1129,7 @@ function _ecs_(var sect: TCLXCriticalSection): Integer;
 begin
 
   {$IFDEF USE_SYNCOBJS}
+    result := 0;
     sect.cs.Enter;
   {$ELSE}
   {$IFDEF LINUX}
@@ -1046,6 +1154,7 @@ function LeaveCriticalSection(var sect: TCLXCriticalSection): Integer;
 begin
 
   {$IFDEF USE_SYNCOBJS}
+    result := 0;
     sect.cs.Leave;
   {$ELSE}
   {$IFDEF LINUX}
@@ -1091,6 +1200,7 @@ end;
 function DeleteCriticalSection(var sect: TCLXCriticalSection): Integer;
 begin
   {$IFDEF USE_SYNCOBJS}
+    result := 0;
     sect.cs.Free;
     sect.cs := nil;
   {$ELSE}
@@ -1164,6 +1274,7 @@ function FileGetAttr(sFileName: string): integer;
 begin
 
   {$IFDEF MACOS}
+  result := 0;
   {$ELSE}
   {$IFDEF LINUX}
 
@@ -1214,7 +1325,7 @@ end;
 
 
 
-{$IFDEF MACOSX}
+{$IFDEF MACDESKTOP}
 function GetMacName: string;
 var
   Pool: NSAutoreleasePool;
@@ -1242,11 +1353,11 @@ begin
   {$IFDEF IOS}
   result := 'ios.device';
   {$ENDIF}
-  {$IFDEF MACOSX}
+  {$IFDEF MACDESKTOP}
   result := GetMacName;
   {$ELSE}
   {$IFDEF LINUX}
-  result := 'linux.stub.computername';
+  result := LoadStringFromFile('/etc/hostname');
   {$ELSE}
   {$IFDEF ANDROID}
   result := 'android.stub.computername';
@@ -1344,11 +1455,21 @@ begin
 end;
 
 
+var temppathid: int64;
 
+function GetUniqueTempBase: string;
+begin
+  result := GetTempPath+extractfilenamepart(dllname)+'\unique\';
+end;
 
-
-
-
+function GetUniqueTempPath: string;
+begin
+  ecs(temp_lock);
+  var id := temppathid;
+  inc(temppathid);
+  lcs(temp_lock);
+  result := GetUniqueTempBase+inttohex(id,1)+'\';
+end;
 
 function GetTempPathForThread: string;overload;
 begin
@@ -1362,7 +1483,7 @@ end;
 
 function GEtPDFPath: string;
 begin
-  result := slash(TPath.GetDownloadsPath);
+  result := slash(TPath.GetCachePath);
 end;
 
 function GetTempPath: string;overload;
@@ -1385,10 +1506,31 @@ begin
 
 end;
 
+function GetHomeRoot: string;
+begin
+  result := GetHomePath;
+{$IFDEF MSWINDOWS}
+  var h := ParseStringH(result, '\');
+  for var t := h.o.count-1 downto 3 do
+    h.o.Delete(t);
+
+  result := UnParseString('\',h.o);
+  result := slash(result);
+{$ENDIF}
+end;
 
 function GetWriteablePath: string;
 begin
   result := TPath.GetHomePath + TPath.DirectorySeparatorChar + 'Documents'+ TPath.DirectorySeparatorChar;
+end;
+
+function IsDebuggerAttached: boolean;
+begin
+  {$IFDEF MSWINDOWS}
+    result := Winapi.Windows.IsDebuggerPresent;
+  {$ELSE}
+    result := false;
+  {$ENDIF}
 end;
 
 function FindDeployedFile(sName: string): string;
@@ -1586,7 +1728,7 @@ begin
   result := GetNumberOfLogicalProcessors;
 end;
 
-function GetEnabledCPUCount: int64;
+function GetEnabledCPUCount: nativeint;
 {$IFDEF MSWINDOWS}
 var
   procafmask, sysafmask: int64;
@@ -1596,6 +1738,8 @@ begin
   s := DWORD_PTR(@sysafmask);
   GetProcessAffinityMask( GetCurrentProcess, p,s);
   result := countsetbits(int64(p));
+  if result = 0 then
+    result := GetNumberOfLogicalProcessors;
 end;
 {$ELSE}
 begin
@@ -1719,6 +1863,56 @@ end;
 { TVolatileProgression }
 
 
+
+function FileGetDateUTC(Handle: THandle): LongInt;
+{$IFDEF MSWINDOWS}
+var
+  FileTime: TFileTime;
+begin
+  if GetFileTime(Handle, nil, nil, @FileTime)
+  and FileTimeToDosDateTime(FileTime, LongRec(Result).Hi,LongRec(Result).Lo)
+  then
+    Exit;
+  Result := -1;
+end;
+{$ELSE}
+begin
+  result := -1;
+end;
+{$ENDIF}
+
+
+
+function FileSetDateUTC(Handle: THandle; Age: Integer): Integer;
+{$IFDEF MSWINDOWS}
+var
+  FileTime: TFileTime;
+begin
+  Result := 0;
+  if DosDateTimeToFileTime(LongRec(Age).Hi, LongRec(Age).Lo, FileTime) then
+    if SetFileTime(Handle, nil, nil, @FileTime)
+      then Exit;
+
+  Result := GetLastError;
+end;
+{$ELSE}
+begin
+  result := -1;
+end;
+{$ENDIF}
+
+
+function FileGetDateAsGMT(Handle: THandle): TDateTime;
+begin
+    result := FileDateToDAteTime(FileGetDateUTC(handle));
+end;
+
+
+function FileSetDateFromGMT(Handle: THandle; dt: TDateTime): Integer;
+begin
+  var fd := DateTimeToFileDate(dt);
+  result := FileSetDateUTC(handle,fd);
+end;
 
 
 procedure BitSet(byt: pbyte; bit: nativeint; bState: boolean);
@@ -2046,7 +2240,7 @@ var
 begin
   result := '';
   for t := 0 to iSize-1 do begin
-    b := inttohex((pbyte(p))[t],2)+' ';
+      b := inttohex((pbyte(p))[t],2)+' ';
     result := result + b;
   end;
 
@@ -2064,7 +2258,7 @@ begin
     if (pbyte(p)[t]) > $20 then
       c := pansichar(p)[t];
 
-    b := inttohex((pbyte(p))[t],2)+'('+c+') ';
+    b := inttohex((pbyte(p))[t],2)+'('+string(c)+') ';
     result := result + b;
   end;
 
@@ -2076,6 +2270,7 @@ function GetCheckSumForString(s: string): cardinal;
 var
   t: integer;
 begin
+  raise ECritical.create('deprecated, use other functions');
   result := 0;
   for t:= 1 to length(s) do begin
     result := result + ord(s[t]);
@@ -2085,6 +2280,7 @@ function GetCheckSumForVariant(v: variant): integer;
 var
   vt: integer;
 begin
+  raise ECritical.create('deprecated, use other functions');
   result := 0;
   vt := VarType(v);
   case vt of
@@ -2139,15 +2335,16 @@ end;
 
 
 {-------------------------------------------------------------------------}
-procedure FreeAndNil(var o: TObject);
+procedure FreeAndNilX(var o: TObject);
 begin
   o.free;
   o := nil;
 end;
 
 
-procedure ics(var cs: TCLXCriticalSection);inline;
+procedure ics(var cs: TCLXCriticalSection; name: string = '');inline;
 begin
+  cs.name := name;
   cs.throttle := -1;
   _ics_(cs);
 end;
@@ -2166,8 +2363,8 @@ end;
 procedure ecs(var cs: TCLXcriticalSection);
 begin
 {$IFDEF DEBUG_BLOCKING}
-  if not tecs(cs, 1000) then begin
-    Debug.Log('blocked on thread '+inttostr(GetCurrentThreadID())+' by '+inttostr(cs.cs.owningthread),'error');
+  if not tecs(cs, 16000) then begin
+    Debug.Log('(ecs)'+cs.name+' blocked on thread '+inttostr(GetCurrentThreadID())+' by '+inttostr(cs.cs.owningthread),'error');
 {$ENDIF}
     if (cs.throttle > 0) and (cs.lastlocker = GetCurrentThreadID) then
       sleep(0);
@@ -2315,6 +2512,29 @@ begin
 
 end;
 
+function UnixStringToDateTime(d: string): TDateTime;
+var
+  sYear, sMonth, sDay, sHour, sMinute, sSecond,sMS: string;
+  sLeft, sRight: string;
+  //Monday, 2006-01-25 12:50:43
+begin
+  SplitString(d, '-', sYear, sRight);
+  SplitString(sRight, '-', sMonth, sRight);
+  SplitString(sRight, 'T', sDay, sRight);
+  SplitString(sRight, ':', sHour, sRight);
+  SplitString(sRight, ':', sMinute, sRight);
+  SplitString(sRight, '.', sSecond, sRight);
+  SplitString(sRight, 'Z', sMS, sRight);
+  result :=  EncodeDate(strtoint(sYear),strtoint(sMonth),strtoint(sDay))
+   +(strtoint(sHour)/(24))
+   +(strtoint(sMinute)/(24*60))
+   +(strtoint(sSecond)/(24*60*60))
+   +(strtofloat('0.'+sMS)/(60*60*24));
+
+
+end;
+
+
 
 function DatetoStr_Better(d: TDateTime): string;
 begin
@@ -2434,8 +2654,8 @@ begin
 {$IFDEF MSWINDOWS}
   result := 0;
   if SysUtils.GetDiskFreeSpaceEx(PChar(sPath), FreeAvailable, TotalSpace, nil) then begin
-//    Writeln(TotalSpace div (1024*1024*1024), 'GB total');
-//    Writeln(FreeAvailable div (1024*1024*1024), 'GB free');
+    debug.log(commaize(TotalSpace div (1024*1024*1024))+' GB total');
+    debug.log(commaize(FreeAvailable div (1024*1024*1024))+ ' GB free');
     result := freeavailable;
   end;
 {$ELSE}
@@ -2635,9 +2855,12 @@ end;
 
 procedure oinit;
 begin
+  debug.Log('systemx init!!!!');
+ guithreadid := GetCurrentThreadID;
 {$IFNDEF WINDOWS}
   ics(ios_lock);
 {$ENDIF}
+  ics(temp_lock);
 
 end;
 
@@ -2718,6 +2941,7 @@ begin
 {$IFNDEF WINDOWS}
   DeleteCriticalSection(ios_lock);
 {$ENDIF}
+  dcs(temp_lock);
 end;
 function Get7BitEncodedBufferLength(i8BitLength: nativeint): nativeint;
 var
@@ -2976,6 +3200,7 @@ begin
   end;
 end;
 
+
 procedure CalculateChecksum(p: pbyte; l: ni; out iSum, iXor: int64);
 var
   t: ni;
@@ -2999,6 +3224,42 @@ begin
 
     inc(p);
   end;
+end;
+
+
+function CalculateChecksum2020(p: pbyte; l: ni): TChecksumResult;
+var
+  t: ni;
+  a: int64;
+  b: byte;
+  iSum, iXor: int64;
+begin
+  iSum := 0;
+  iXor := 0;
+
+  for t:= 0 to l-1 do begin
+    //XOR part.  Trying to do both parts with a single memory fetch
+    if (l-t) >= 8 then begin
+      if t and $7 = 0 then begin
+
+        a := PInt64(p)^;
+        a := a * t;
+
+        iXor := iXor xor a;
+      end;
+    end else begin
+      b := p^;
+      a := b * t;
+      iXor := iXor xor a;
+    end;
+
+{$Q-}//overflow checking off
+    iSum := iSum + (p^) * t;
+    inc(p);
+  end;
+  result.cs1 := iSum;
+  result.cs2 := iXor;
+
 end;
 
 procedure sysBeep(freq, dur: ni);
@@ -3049,7 +3310,7 @@ begin
     exit(strtoint64(s));
 end;
 
-function RandomOrder(iItems: ni): TDynInt64Array;
+function RandomOrder(iItems: ni): typex.TDynInt64Array;
 var
   t: ni;
   a,b,c: int64;
@@ -3348,9 +3609,12 @@ begin
 
 end;
 
-procedure NotImplemented;
+procedure NotImplemented(sExtraMessage: string = '');
 begin
-  raise ECritical.create('not implemented');
+  if sExtraMessage <> '' then
+    raise ENotImplemented.create('not implemented:' +sExtraMessage)
+  else
+    raise ENotImplemented.create('not implemented')
 end;
 
 
@@ -3375,13 +3639,32 @@ begin
         Result := dt- ((TZI.Bias+ TZI.DaylightBias) / 60 / 24) ;
       end
   else
-    raise
-      Exception.Create('Error converting to UTC Time. Time zone could not be determined.');
+    exit(dt);{GMT}
+//    raise
+//      Exception.Create('Error converting to UTC Time. Time zone could not be determined.');
   end;
 end;
 {$ELSE}
 begin
-  NotImplemented;
+  result := TTimeZone.Local.ToLocalTime(dt);
+end;
+{$ENDIF}
+
+
+function IsDaylightSavings: boolean;
+{$IFDEF MSWINDOWS}
+var
+  TZI: TTimeZoneInformation;
+begin
+  case GetTimeZoneInformation(TZI) of
+    TIME_ZONE_ID_STANDARD: exit(false);
+  else
+    exit(true);
+  end;
+end;
+{$ELSE}
+begin
+  exit(false);
 end;
 {$ENDIF}
 
@@ -3390,23 +3673,38 @@ function LocalTimeToGMT(dt: TDateTime): TDateTime;
 var
   TZI: TTimeZoneInformation;
 begin
-  case GetTimeZoneInformation(TZI) of
-    TIME_ZONE_ID_STANDARD:
-      begin
-        Result := dt+ (TZI.Bias / 60 / 24);
-      end;
-    TIME_ZONE_ID_DAYLIGHT:
-      begin
-        Result := dt+ ((TZI.Bias+ TZI.DaylightBias) / 60 / 24) ;
-      end
-  else
-    raise
-      Exception.Create('Error converting to UTC Time. Time zone could not be determined.');
+  var tzres := 666;
+  try
+
+
+    tzres := GetTimeZoneInformation(TZI);
+    case tzres of
+//      TIME_ZONE_ID_UNKNOWN {used by GMT}:
+//        exit(dt);
+      TIME_ZONE_ID_STANDARD:
+        begin
+          Result := dt+ (TZI.Bias / 60 / 24);
+        end;
+      TIME_ZONE_ID_DAYLIGHT:
+        begin
+          Result := dt+ ((TZI.Bias+ TZI.DaylightBias) / 60 / 24) ;
+        end
+    else
+      exit(dt);{GMT}
+//      raise
+//        Exception.Create('Error converting to UTC Time. Time zone could not be determined... result='+inttostr(tzres));
+    end;
+  except
+    on E:Exception do begin
+      e.message := e.message + ' Error converting to UTC Time. Time zone could not be determined... result='+inttostr(tzres);
+      raise;
+    end;
+
   end;
 end;
 {$ELSE}
 begin
-  NotImplemented;
+  result := TTimeZone.Local.ToUniversalTime(dt);
 end;
 {$ENDIF}
 
@@ -3441,6 +3739,15 @@ begin
   result := stringreplace(result, '\','\\', [rfReplaceAll]);
   result := stringreplace(result, '''','\''', [rfReplaceAll]);
   result := stringreplace(result, '"','\"', [rfReplaceAll]);
+  s := result;
+  result := '';
+  for var t := low(s) to high(s) do begin
+    case ord(s[t]) of
+      0..$7f: result := result + s[t];
+    else
+      result := result +'\u{'+inttohex(ord(s[t]),4)+'}';
+    end;
+  end;
 end;
 
 
@@ -3574,9 +3881,94 @@ end;
 
 
 
+function GetCheckSumHashString(p: pbyte; l: ni): string;overload;
+var
+  cs: TCheckSumResult;
+begin
+  cs := CalculateChecksum2020(p, l);
+
+  result := cs.ToSTring;
+
+
+end;
+
+function GetCheckSumHashString(s: string): string;overload;
+begin
+  result := GEtChecksumHashString(@s[low(s)], length(s)*sizeof(char));
+
+
+end;
+
+function MemoryIsNonZero(p: Pbyte; l: ni): boolean;
+begin
+  for var t := 0 to l do begin
+    if p^ <> 0 then
+      exit(true);
+
+    inc(p);
+  end;
+
+  exit(false);
+end;
+
+function GetZeroMemory(sz: nativeint): pointer;
+begin
+  result := GetMemory(sz);
+  ZeroMemory(result, sz);
+end;
+
+procedure SyncAnon(proc: TProc);
+var
+  tp: TThreadProcedure;
+begin
+  if Int64(GetCurrentThreadID) <> Int64(guithreadid) then begin
+    tp := procedure begin
+      proc();
+    end;
+    system.classes.TThread.Synchronize(TThread.CurrentThread, tp)
+  end else
+    proc;
+end;
+
+
+
+{ TChecksumResult }
+
+function TChecksumResult.ToSTring: string;
+begin
+  result := inttohex(cs1,16)+inttohex(cs2,16);
+end;
+
+
+function UserAgentToPlatform(ua: string): string;
+begin
+  result := ua;
+  ua := lowercase(ua);
+  if zpos('xwindows', ua) >=0 then
+    result := 'Linux'
+  else if zpos('windows', ua) >=0 then
+    result := 'Windows'
+  else if zpos('macintosh', ua) >=0 then
+    result := 'Macintosh'
+  else if zpos('iphone', ua) >=0 then
+    result := 'iPhone'
+  else if zpos('ipad', ua) >=0 then
+    result := 'iPad'
+  else if zpos('android', ua) >=0 then
+    result := 'Android'
+  else if zpos('linux', ua) >=0 then
+    result := 'linux'
+  else if zpos('chromeos', ua) >=0 then
+    result := 'chromeos';
+end;
+
+
+
+
+
 initialization
 
- guithreadid := GetCurrentThreadID;
+  guithreadid := GetCurrentThreadID;
  init.RegisterProcs('systemx', oinit, ofinal);
   AppStartTime := now();
 
@@ -3587,3 +3979,4 @@ finalization
 
 
 end.
+

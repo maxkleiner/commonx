@@ -21,7 +21,7 @@ type
   end;
 
 var
-  dq: TDestructionQueue;
+  dq: TDestructionQueue = nil;
 
 implementation
 
@@ -45,11 +45,12 @@ end;
 
 procedure TDestructionQueue.Detach;
 begin
-  inherited;
+
   if FList.count> 0 then
     raise EDestructionQueueError.create('Cannot detach the destruction queue until its objects are destroyed.');
   FList.Free;
   FIncoming.free;
+  inherited;
 
 
 end;
@@ -76,10 +77,14 @@ begin
     end;
   end;
 
-  if o is TBetterObject then
-    TBetterObject(o).Detach;
+  if o <> nil then begin
+    Debug.log('DQ: Destroy '+o.classname);
+    if o is TBetterObject then
+      TBetterObject(o).Detach;
 
-  o.free;
+
+    o.free;
+  end;
 end;
 
 procedure TDestructionQueue.Init;
@@ -101,7 +106,7 @@ end;
 
 procedure ofinal;
 begin
-  dq.EndStart;
+  //dq.EndStart;
   dq.Stop;
   dq.SafeWaitFor;
   TPM.NoNeedthread(dq);
@@ -110,7 +115,7 @@ end;
 
 procedure oLATEfinal;
 begin
-  //dq.free;
+//  dq.free;
   dq := nil;
 end;
 
@@ -121,5 +126,8 @@ initialization
 
 
 end.
+
+
+
 
 

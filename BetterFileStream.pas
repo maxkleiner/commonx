@@ -28,10 +28,27 @@ type
 
   TFileStreamWithVirtualConstructors = class(TBetterFileStream)
   public
+    ModeAtOpen: cardinal;
     constructor Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal);override;
     constructor Create(const AFileName: string; Mode: Word; Rights:cardinal; Flags:cardinal);reintroduce;overload;
     constructor Create(const AFileName:  string; Mode: Word; Rights:cardinal);reintroduce;overload;
     constructor Create(const AFileName: string; Mode: Word);reintroduce;overload;
+
+  end;
+
+  TScalableFileStream = class(TFileStreamwithVirtualConstructors)
+  private
+    FStripeSize: int64;
+    FGroupOf: byte;
+    FGroupIndex: byte;
+    function GetGroupMask: int64;
+  public
+    procedure NotifySizeChangingExternally(const nuSize: int64);
+    procedure NotifySizeChangedExternally(const nuSize: int64);
+    property StripeSize: int64 read FStripeSize write FStripeSize;
+    property GroupIndex: byte read FGroupIndex write FGroupIndex;
+    property GroupOf: byte read FGroupOf write FGroupOf;
+    property GroupMask: int64 read GetGroupMask;
 
   end;
 
@@ -144,28 +161,50 @@ end;
 constructor TFileStreamWithVirtualConstructors.Create(const AFileName: string;
   Mode: Word; Rights: cardinal);
 begin
+  ModeatOpen := Mode;
   Create(afilename, mode, rights,0);
 end;
 
 constructor TFileStreamWithVirtualConstructors.Create(const AFileName: string;
   Mode: Word);
 begin
+  ModeatOpen := Mode;
   Create(afilename, cardinal(mode), cardinal(0),cardinal(0));
 end;
 
 constructor TFileStreamWithVirtualConstructors.Create(const AFileName: string;
   Mode: Word; Rights, Flags: cardinal);
 begin
+  ModeatOpen := Mode;
   Create(afilename, cardinal(mode), rights, flags);
 end;
 
 constructor TFileStreamWithVirtualConstructors.Create(const AFileName: string;
   Mode, Rights, Flags: cardinal);
 begin
+  ModeatOpen := Mode;
   inherited CReate(afilename, mode, rights, flags);
 end;
 
 
 
+
+{ TScalableFileStream }
+
+function TScalableFileStream.GetGroupMask: int64;
+begin
+  result := int64(FGroupOf)-1;
+
+end;
+
+procedure TScalableFileStream.NotifySizeChangedExternally(const nuSize: int64);
+begin
+  //
+end;
+
+procedure TScalableFileStream.NotifySizeChangingExternally(const nuSize: int64);
+begin
+  //
+end;
 
 end.

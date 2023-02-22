@@ -20,6 +20,7 @@ unit betterobject;
 {x$DEFINE CONTEXT_SWITCH}
 {x$DEFINE DEAD_LOCK_DEBUG}
 {x$DEFINE ALLOW_WATCHME}
+{$DEFINE MARK_OBJECTS_GOOD}
 
 //todo 1: I think if a RUDP connection fails, there's a chance that the connect packet will be double-freed
 
@@ -50,10 +51,23 @@ type
   ELockTimeout = class(Exception);
   TBetterObject = class;//forward
 
-  IHolder<T: class> = interface
+  ILinkable= interface
+    function GetNextLink: ILinkable;
+    function GetPrevLink: ILinkable;
+    procedure SetNextLink(h: ILinkable);
+    procedure SetPrevLink(h: ILinkable);
+    property Next: ILinkable read GetNextLink write SetNextLink;
+    property Prev: ILinkable read GetPrevLink write SetPrevLink;
+  end;
+
+  IHolder<T: class> = interface(ILinkable)
+    function GetIsDead: boolean;
     function Get__Holding: T;
     procedure Set__Holding(const Value: T);
     property o: T read Get__Holding write Set__Holding;
+    property IsDead: boolean read GetIsDead;
+    procedure DeadCheck;
+    function DefaultInterface: T;
 
   end;
 
@@ -66,7 +80,7 @@ type
 
 
   TBetterObject = class(TInterfacedObject)
-  private
+  protected
 {$IFDEF UNDEAD_PROTECTION}
     FDead: cardinal;
 {$ENDIF}
@@ -79,7 +93,9 @@ type
     FReturnTo: TGiver;
 {$ENDIF}
     procedure SetFreeWithReferences(const Value: boolean);
-    function GetIsDead: boolean;
+    function GetIsDead: boolean;inline;
+  private
+    function GetIsGood: boolean;inline;
   protected
 {$IFDEF NO_INTERLOCKED_INSTRUCTIONS}
 {$IFDEF NOARC}
@@ -125,6 +141,7 @@ type
     function ToHolder<T: class>(): IHolder<T>;
     procedure FreeByInterface;
     property IsDead: boolean read GetIsDead;
+    property IsGood: boolean read GetIsGood;
     function ShouldReturn: boolean;virtual;
     function ShouldGive: boolean;virtual;
 {$IFDEF GIVER_IN_TOBJECT}
@@ -135,7 +152,32 @@ type
   end;
 
 
-  TLightObject = TBetterObject;
+  TObjectWithContext = class(TBetterObject)
+  protected
+    FContext: string;
+    function Getcontext: string;virtual;
+    procedure Setcontext(Value: string);virtual;
+  public
+    property Context: string read GetContext write SetContext;
+  end;
+
+
+
+  TLightObject = class(TObject)
+  public
+    detached: boolean;
+    class function NewInstance: TObject; override;
+    constructor Create;reintroduce;virtual;
+    procedure Init;virtual;
+    procedure Detach;virtual;
+    Destructor Destroy;override;
+  end;
+
+  TLightBetterObject = class(TBetterObject)
+  public
+    class function NewInstance: TObject; override;
+
+  end;
 
 
   TBetterClass = class of TBetterObject;
@@ -146,13 +188,21 @@ type
   THolder<T: class> = class(TBetterObject, IHolder<T>)
   private
     FTakenFrom: TBetterObject;
+
+  protected
+    FNextHolder, FPrevHolder: ILinkable;
+    FO: T;
     function Get__Holding: T;
     procedure Set__Holding(const Value: T);
-  protected
     procedure Init;override;
+    function GetNextLink: ILinkable;
+    function GetPrevLink: ILinkable;
+    procedure SetNextLink(h: ILinkable);
+    procedure SetPrevLink(h: ILinkable);
+
   public
-    FO: T;
-    constructor create;override;
+    constructor create;overload;override;
+    constructor Create(objectToHold: T);reintroduce;overload;virtual;
     destructor Destroy;override;
 {$IFDEF DEBUG_HOLDER}
     function _AddRef: Integer; override;
@@ -160,6 +210,7 @@ type
 {$ENDIF}
     property o: T read Get__Holding write Set__Holding;
     property TakenFrom: TBetterObject read FTakenFrom write FTakenFrom;
+    function DefaultInterface: T;
   end;
 
 
@@ -191,7 +242,7 @@ type
 
   public
 {$IFDEF CONTEXT_SWITCH}
-    lastlocker: ni;
+    lastlocker: nativeuint;
     waiting_threads: integer;
 {$ENDIF}
     sect: TCLXCriticalSection;
@@ -221,6 +272,7 @@ type
 {$IFDEF GIVER_POOLS}
   TGiver = class(TSharedObject)
   private
+    FLimit: ni;
 
   protected
     FList: TStringlist;
@@ -230,7 +282,7 @@ type
   public
     procedure Return(obj: TObject; sContext: string = '');
     function GivenIsGivable(obj: Tobject): boolean;virtual;
-
+    property Limit: ni read FLimit write FLimit;
 
     constructor Create; override;
     destructor Destroy; override;
@@ -251,7 +303,7 @@ type
   TLockRecord = class
     //This class represents a LOCK managed by TLockQueuedObject.  It tracks the ThreadID, and a independent reference counts for Read and Write locks.
   private
-    FthreadID: cardinal;
+    FthreadID: nativeuint;
     FWriteReferences: integer;
     FReadReferences: integer;
     FReferenceCount: integer;
@@ -263,7 +315,7 @@ type
     procedure Release(iType: TLockRecordType);
     property References[iType: TLockRecordType]: integer read GetReferenceCount;
     //returns the number of references for a given lock type (ltRead/ltWrite).
-    property ThreadID: cardinal read FthreadID write FThreadID;
+    property ThreadID: nativeuint read FthreadID write FThreadID;
     //the ID of the thread used to make the lock.
   end;
 
@@ -347,6 +399,8 @@ type
     property DestroyWithReferences: boolean read GetDestroyWithReferences write SetDestroyWithReferences;
   end;
 
+  TNamedLocks = class;//forward
+
   TNamedLock = class (TSharedObject)
   private
     FName: string;
@@ -367,6 +421,13 @@ type
     function LockRefs: ni;
   end;
 
+  TNamedLockHandle = class(TBetterObject)
+  public
+    gotfrom: TNamedLocks;
+    name: string;
+    destructor Destroy;override;
+  end;
+
   TNamedLocks = class (TSharedObject)
   protected
     FLocks: TList<TNamedLock>;
@@ -381,7 +442,13 @@ type
     function FindLock(sName: string): TNamedLock;
     function GetLockDebug: string;
     procedure DebugLocks;
+    function GetH(sName: string): IHolder<TNamedLockHandle>;
+    function TryGetH(sName: string): IHolder<TNamedLockHandle>;
+
   end;
+
+  INamedLock = IHolder<TNamedLockHandle>;
+
 
   TNamedRWLocks = class (TSharedObject)
   protected
@@ -437,7 +504,8 @@ type
   end;
 
   IAutoScope = interface
-    procedure Track(o: TObject);
+    procedure Track(o: TObject);overload;
+    procedure Track(i: IUnknown);overload;
   end;
 
   TAutoScope = class(TSharedObject, IAutoScope)
@@ -446,50 +514,12 @@ type
     procedure DoDangerousDestruction; override;
   public
 
-    procedure Track(o: TObject);
+    procedure Track(o: TObject);overload;
+    procedure Track(i: IUnknown);overload;
     procedure DestroyObjectsInScope;
 
   end;
 
-  TFatMessage = class(TBetterObject)
-  public
-    //if you add new members also update Copy() constructor
-    //if you add new members also update Copy() constructor
-    messageClass: string;
-    params: TArray<String>;
-    //if you add new members also update Copy() constructor
-    //if you add new members also update Copy() constructor
-    handled: boolean;
-    function Copy: IHolder<TFatMessage>;
-  end;
-
-  TFatMessageQueue = class(TBetterObject)
-  private
-    sectSubQueues: TCLXCriticalSection;
-    sectIncoming: TCLXCriticalSection;
-    sectWorking: TCLXCriticalSection;
-    incoming: TArray<IHolder<TFatMessage>>;
-    working: TArray<IHolder<TFatMessage>>;
-    subqueues: TList<TFatMessageQueue>;
-    procedure AssimilateIncoming;
-    function GetNextMessage: IHolder<TFatMessage>;
-    procedure Posted;virtual;
-  public
-    handler: TFunc<IHolder<TFatMessage>, boolean>;
-    onposted: TProc;
-    procedure Post(m: IHolder<TFatMessage>);//process later
-    function Send(m: IHolder<TFatMessage>): boolean;//send through hierarchy... like a broadcast, but synchronous, stops when handled
-    procedure Broadcast(m: IHolder<TFatMessage>);//post copies into hierarchy
-    function ProcessNextMessage: boolean;
-    function NewSubQueue: TFatMessageQueue;
-    procedure DeleteSubQueue(fmq: TFatMessageQueue);
-    constructor Create; override;
-    procedure Detach; override;
-    function NewMessage: IHolder<TFatMessage>;
-    procedure QuickBroadcast(messageClass: string);overload;
-    procedure QuickBroadcast(messageClass: string; params: TArray<String>);overload;
-
-  end;
 
   TTestObject = class(TBetterObject)
   public
@@ -499,13 +529,8 @@ type
 
   end;
 
-  TMainMessageQueue = class(TFatMessageQueue);
-
-
-
 var
-  MMQ, MainMessageQueue: TMainMessageQueue;
-  gNamedLocks: TNamedLocks;
+  gNamedLocks: TNamedLocks = nil;
   nodebug: boolean;
 
 const
@@ -570,9 +595,12 @@ end;
 
 constructor TBetterObject.create;
 begin
+{$IFDEF MARK_OBJECTS_GOOD}
+  FDead := $ABBA;
+{$ENDIF}
 {$IFDEF NO_INTERLOCKED_INSTRUCTIONS}
 {$IFDEF NOARC}
-  ics(FRefSect);
+  ics(FRefSect, classname);
 {$ENDIF}
 {$ENDIF}
 {$IFDEF REGISTER_OBJECTS}
@@ -685,6 +713,15 @@ begin
   result := FDead = $DEAD;
 end;
 
+function TBetterObject.GetIsGood: boolean;
+begin
+{$IFDEF MARK_OBJECTS_GOOD}
+  result := FDead = $ABBA;
+{$ELSE}
+  result := not IsDead;
+{$ENDIF}
+end;
+
 function TBetterObject.GetObjectDebug: string;
 begin
   result := classname+'@'+inttostr(ni(pointer(self)));
@@ -787,10 +824,15 @@ begin
 {$IFNDEF NOARC}
   result := inherited _AddRef;
 {$ELSE}
+{$IFDEF NO_INTERLOCKED_INSTRUCTIONS}
   ecs(FRefSect);
   inc(FrefCount);
   Result := FRefCount;
   lcs(FRefSect);
+{$ELSE}
+  AtomicIncrement(FRefCount);
+  result := FRefCount;
+{$ENDIF}
 {$ENDIF}
 
 end;
@@ -800,9 +842,13 @@ begin
 {$IFNDEF NOARC}
   result := RefCount;
 {$ELSE}
+{$IFDEF NO_INTERLOCKED_INSTRUCTIONS}
   ecs(FRefSect);
   result := FRefCount;
   lcs(FRefSect);
+{$ELSE}
+  result := FRefCount;
+{$ENDIF}
 {$ENDIF}
 
 end;
@@ -812,6 +858,7 @@ begin
   if FDead = $DEAD then
     raise ECritical.create('trying to release a dead object');
 
+{$IFDEF NO_INTERLOCKED_INSTRUCTIONS}
 {$IFDEF NOARC}
   ecs(FRefSect);
 {$ENDIF}
@@ -822,7 +869,6 @@ begin
 {$ELSE}
   dec(FRefCount);
   Result := FRefCount;
-
   lcs(FRefSect);
 
   if (Result = FreeAtRef) or ((Result = 0) and FreeWithReferences) then begin
@@ -837,6 +883,11 @@ begin
 {$ENDIF}
   end;
 {$ENDIF}
+{$ELSE}
+  Deadcheck;
+  AtomicDecrement(FRefCount);
+  result := FRefCount;
+{$ENDIF}
 
 
 
@@ -844,8 +895,6 @@ end;
 
 procedure oinit;
 begin
-  MainMessageQueue := TMainMessageQueue.create;
-  MMQ := MainMessageQueue;
   gNamedLocks := TNamedLocks.create;
 
 //  raise ECritical.create('unimplemented');
@@ -854,11 +903,9 @@ end;
 
 procedure ofinal;
 begin
-  gNamedLocks.free;
+  if assigned(gNamedLocks) then
+    gNamedLocks.free;
   gNamedLocks := nil;
-  MainMessageQueue.free;
-  MainMessageQueue := nil;
-  MMQ := MainMessageQueue;
 //  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
@@ -876,6 +923,17 @@ begin
 {$ELSE}
   FreeWithReferences := true;
 {$ENDIF}
+end;
+
+constructor THolder<T>.create(objectToHold: T);
+begin
+  create;
+  o := objectToHold;
+end;
+
+function THolder<T>.DefaultInterface: T;
+begin
+  result := o;
 end;
 
 destructor THolder<T>.Destroy;
@@ -905,14 +963,37 @@ begin
   inherited;
 end;
 
+function THolder<T>.GetNextLink: ILinkable;
+begin
+  result := FNextHolder
+end;
+
+function THolder<T>.GetPrevLink: ILinkable;
+begin
+  result := FPrevHolder;
+
+end;
+
 function THolder<T>.Get__Holding: T;
 begin
   result := FO;
 end;
 
+
 procedure THolder<T>.Init;
 begin
   inherited;
+
+end;
+
+procedure THolder<T>.SetNextLink(h: ILinkable);
+begin
+  FNextHolder := h;
+end;
+
+procedure THolder<T>.SetPrevLink(h: ILinkable);
+begin
+  FPrevHolder := h;
 
 end;
 
@@ -937,6 +1018,7 @@ begin
 
 
 end;
+
 
 {$IFDEF DEBUG_HOLDER}
 function THolder<T>._AddRef: Integer;
@@ -970,14 +1052,16 @@ procedure Tgiver.Return(obj: TObject; sContext: string = '');
 var
   cantake: boolean;
 begin
-  Debug.Log('Take '+obj.classname);
+  if obj is TObjectWithContext then
+    sContext := TObjectWithContext(obj).Context;
+//  Debug.Log('Take '+obj.classname);
   Lock;
   try
-    cantake := true;
+    cantake := (limit = 0) or (Flist.Count < limit);
     BeforeReturn(obj, {out}cantake);
     if cantake then begin
       Flist.addObject(sContext, obj);
-      Debug.Log('there are now '+Flist.count.ToString+' '+obj.Classname+'(s) in '+classname);
+//      Debug.Log('there are now '+Flist.count.ToString+' '+obj.Classname+'(s) in '+classname);
       AfterReturn(obj);
     end else
       obj.free;
@@ -1207,7 +1291,7 @@ end;
 constructor TLockQueuedObject.Create;
 begin
   inherited;
-  ics(sect);
+  ics(sect, classname);
   FLockQueues := TList<TLockREcord>.create;
 
 end;
@@ -1282,7 +1366,7 @@ procedure TLockQueuedObject.QueueLock(iType: TLockRecordType);
 var
   t,u: integer;
   curLock, foundLock: TLockRecord;
-  iThreadID: cardinal;
+  iThreadID: nativeuint;
   bInserted: boolean;
 begin
   Lock;
@@ -1369,7 +1453,7 @@ procedure TLockQueuedObject.DoUnlock(iType: TLockRecordType);
 var
   t: integer;
   curLock, foundLock: TLockRecord;
-  iThreadID: cardinal;
+  iThreadID: nativeuint;
   bFree: boolean;
 begin
   bFree := false;
@@ -1635,6 +1719,16 @@ begin
 
 end;
 
+function TNamedLocks.GetH(sName: string): IHolder<TNamedLockHandle>;
+begin
+  self.GetLock(sName);
+  result := Tholder<TNamedLockHandle>.create;
+  result.o := TNamedLockHandle.create;
+  result.o.name := sName;
+  result.o.gotfrom := self;
+
+end;
+
 procedure TNamedLocks.GetLock(sName: string; bSpin: boolean = false);
 begin
   while not TryGetLock(sName, bSpin) do
@@ -1719,6 +1813,18 @@ begin
   finally
     unlock;
   end;
+end;
+
+function TNamedLocks.TryGetH(sName: string): IHolder<TNamedLockHandle>;
+begin
+
+  if not self.tryGetLock(sName) then
+    exit(nil);
+  result := Tholder<TNamedLockHandle>.create;
+  result.o := TNamedLockHandle.create;
+  result.o.name := sName;
+  result.o.gotfrom := self;
+
 end;
 
 function TNamedLocks.TryGetLock(sName: string; bSpin: boolean): boolean;
@@ -2065,7 +2171,7 @@ end;
 
 constructor TSharedObject.Create;
 begin
-  ics(sect);
+  ics(sect, classname);
   inherited Create;
   //Init;
 
@@ -2114,12 +2220,12 @@ begin
       result := FList.objects[i];
       FList.delete(i);
       if not TBetterobject(result).shouldGive then begin
-        Debug.Log('FREE from Pool (expired/should not give) '+result.classname);
+//        Debug.Log('FREE from Pool (expired/should not give) '+result.classname);
         result.Free;
         result := nil;
       end else begin
-        Debug.Log('Give from Pool '+result.classname);
-        Debug.Log('there are now '+Flist.count.ToString);
+//        Debug.Log('Give from Pool '+result.classname);
+//        Debug.Log('there are now '+Flist.count.ToString);
       end;
     until (result <> nil) or (Flist.count = 0);
 
@@ -2129,7 +2235,7 @@ begin
   end;
   if result = nil then begin
     result := T.create;
-    Debug.Log('NEW '+result.classname);
+//    Debug.Log('NEW '+result.classname);
     T(result).FReturnto:= self;
   end;
 
@@ -2162,7 +2268,9 @@ begin
   inherited;
   for var t:= high(tracking) downto 0 do begin
     try
+
       sFreeing := tracking[t].classname;
+      Debug.log('AutoScope is automatically freeing '+sFreeing);
       tracking[t].Free;
     except
       on E:Exception do begin
@@ -2179,213 +2287,17 @@ begin
   DestroyObjectsInScope;
 end;
 
+procedure TAutoScope.Track(i: IInterface);
+begin
+  // no nothing for interfaces
+end;
+
 procedure TAutoScope.Track(o: TObject);
 begin
   setlength(tracking, length(tracking)+1);
   tracking[high(tracking)] := o;
 end;
 
-{ TFatMessageQueue }
-
-procedure TFatMessageQueue.AssimilateIncoming;
-begin
-  ecs(sectWorking);
-  try
-    if tecs(sectIncoming) then
-    try
-      var base := length(working);
-      setlength(working, length(working)+length(incoming));
-      for var t := 0 to high(incoming) do begin
-        working[t+base] := incoming[t];
-      end;
-      setlength(incoming,0);
-    finally
-      lcs(sectIncoming);
-    end;
-  finally
-    lcs(sectWorking);
-  end;
-end;
-
-procedure TFatMessageQueue.Broadcast(m: IHolder<TFatMessage>);
-begin
-  ecs(sectSubQueues);
-  try
-    //recursively broadcast a copy to subqueues (ultimately posts)
-    for var t := 0 to subqueues.Count-1 do begin
-      subqueues[t].Broadcast(m.o.copy);
-    end;
-  finally
-    lcs(sectSubQueues);
-  end;
-
-
-  //post original (which might be a copy) to self
-  Post(m);
-
-end;
-
-constructor TFatMessageQueue.Create;
-begin
-  inherited;
-  ics(sectSubQueues);
-  ics(sectIncoming);
-  ics(sectWorking);
-  subqueues := TList<TFatMessageQueue>.create;
-
-end;
-
-procedure TFatMessageQueue.DeleteSubQueue(fmq: TFatMessageQueue);
-begin
-  ecs(sectSubQueues);
-  try
-    subqueues.remove(fmq);
-    fmq.free;
-    fmq := nil;
-  finally
-    lcs(sectSubQueues);
-  end;
-end;
-
-procedure TFatMessageQueue.Detach;
-begin
-  if detached then exit;
-
-  subqueues.free;
-  subqueues := nil;
-  dcs(sectSubQueues);
-  dcs(sectIncoming);
-  dcs(sectWorking);
-  inherited;
-
-end;
-
-function TFatMessageQueue.GetNextMessage: IHolder<TFatMessage>;
-begin
-  AssimilateIncoming;
-  result := nil;
-  ecs(sectWorking);
-  try
-    if length(working)  = 0 then
-      exit;
-
-    result := working[0];
-    for var t := 1 to high(working) do
-      working[t-1] := working[t];
-
-    setlength(working, length(working)-1);
-  finally
-    lcs(sectWorking);
-  end;
-end;
-
-function TFatMessageQueue.NewMessage: IHolder<TFatMessage>;
-begin
-  result := THolder<TFatMessage>.create;
-  result.o := TFatMessage.create;
-end;
-
-function TFatMessageQueue.NewSubQueue: TFatMessageQueue;
-begin
-  ecs(sectSubQueues);
-  try
-    result := TFatMessageQueue.create;
-    subqueues.add(result);
-  finally
-    lcs(sectSubQueues);
-  end;
-
-
-end;
-
-procedure TFatMessageQueue.Post(m: IHolder<TFatMessage>);
-begin
-  ecs(sectIncoming);
-  try
-
-  //queue must have an onposted handler in order to
-  //accept posted messages, this is to prevent memory leaks due to
-  //unprocessed message buildups
-  //onposted simply notifies something (via mechanism of your choice) when
-  //a message is available, the case of a queue for a form, it turns on a
-  //timer
-  //... could be a signal... etc...
-  //queues that do not have this handler can still process synchronous messages
-  //via send()
-  if assigned(onposted) then begin
-    setlength(incoming, length(incoming)+1);
-    incoming[high(incoming)] := m;
-    Posted;
-  end;
-  finally
-    lcs(sectIncoming);
-  end;
-
-end;
-
-procedure TFatMessageQueue.Posted;
-begin
-  if Assigned(onposted) then begin
-    onposted();
-  end;
-end;
-
-function TFatMessageQueue.ProcessNextMessage: boolean;
-begin
-  result := false;
-  var m := GetNextMessage;
-  if m = nil then
-    exit(false);//we didn't handle anything
-
-  Send(m);
-
-end;
-
-procedure TFatMessageQueue.QuickBroadcast(messageClass: string;
-  params: TArray<String>);
-begin
-  var m := MMQ.NewMessage;
-  m.o.messageClass := messageClass;
-  m.o.params := params;
-  mmq.Broadcast(m);
-
-end;
-
-procedure TFatMessageQueue.QuickBroadcast(messageClass: string);
-begin
-  var m := MMQ.NewMessage;
-  m.o.messageClass := messageClass;
-  mmq.Broadcast(m);
-
-
-
-end;
-
-function TFatMessageQueue.Send(m: IHolder<TFatMessage>): boolean;
-begin
-  result := false;
-  if assigned(handler) then begin
-    result := handler(m);
-  end;
-
-  if not result then begin
-    for var t := 0 to subqueues.count-1 do begin
-      result := subqueues[t].Send(m) or result;
-    end;
-  end;
-
-end;
-
-{ TFatMessage }
-
-function TFatMessage.Copy: IHolder<TFatMessage>;
-begin
-  result := THolder<TFatMessage>.create;
-  result.o := TfatMessage.create;
-  result.o.messageClass := self.messageClass;
-  result.o.params := self.params;
-
-end;
 
 { TTestObject }
 
@@ -2412,10 +2324,77 @@ begin
 
 end;
 
+{ TLightObject }
+
+
+{ TLightObject }
+
+constructor TLightObject.Create;
+begin
+  inherited;
+
+end;
+
+destructor TLightObject.Destroy;
+begin
+  if not detached then
+    detach;
+
+  inherited;
+end;
+
+procedure TLightObject.Detach;
+begin
+
+
+  detached := true;
+end;
+
+procedure TLightObject.Init;
+begin
+//
+end;
+
+class function TLightObject.NewInstance: TObject;
+begin
+  Result := TObject(GetMemory(InstanceSize));
+  TLightObject(result).Init;
+  TLightObject(result).Detached := false;
+end;
+
+{ TLightBetterObject }
+
+class function TLightBetterObject.NewInstance: TObject;
+begin
+  result := TObject(GetMemory(InstanceSize));
+  ZeroMemory(pointer(result), instancesize);
+end;
+
+{ TNamedLockHandle }
+
+destructor TNamedLockHandle.Destroy;
+begin
+  gotfrom.ReleaseLock(name);
+  inherited;
+end;
+
+{ TObjectWithContext }
+
+function TObjectWithContext.Getcontext: string;
+begin
+  result := FContext;
+end;
+
+procedure TObjectWithContext.Setcontext(Value: string);
+begin
+  FContext := value;
+end;
+
 initialization
 orderlyinit.init.RegisterProcs('betterobject', oinit, ofinal, 'betterobjectregistry');
 
 finalization
 
 end.
+
 

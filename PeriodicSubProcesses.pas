@@ -16,6 +16,8 @@ type
     HeartBeatFile: string;
     procedure DoExecute; override;
     procedure HeartBeatcheck; override;
+    procedure Detach; override;
+
 
 
   end;
@@ -28,6 +30,18 @@ implementation
 { TPeroidicSubProcess }
 
 
+
+procedure TPeroidicSubProcess.Detach;
+begin
+  inherited;
+  if cmd <> nil then begin
+    exe.KillTaskByID(Tcmd_RunExe(cmd).hProcessInfo.pi.dwProcessId);
+    sleep(8000);
+    exe.KillTaskByID(Tcmd_RunExe(cmd).hProcessInfo.pi.dwProcessId,true);
+  end;
+
+
+end;
 
 procedure TPeroidicSubProcess.DoExecute;
 begin

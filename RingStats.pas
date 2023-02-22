@@ -74,7 +74,7 @@ type
   end;
 
 var
-  rsmon: TRingStatMonitorThread;
+  rsmon: TRingStatMonitorThread = nil;
 
 
 implementation
@@ -339,6 +339,9 @@ end;
 
 procedure ofinal;
 begin
+  if NOT assigned(rsMon) then
+    EXIT;
+
   rsMon.WaitForFinish;
   Debug.Log(rsmon.nameex+' finished with signal state '+rsMon.getsignaldebug);
 
@@ -434,6 +437,7 @@ begin
 end;
 
 initialization
+Debug.Log('++ RingStats initialization');
 
 orderlyinit.init.RegisterProcs('RingStats', oinit, oPreFinal, ofinal, oLATEfinal,  'ManagedThread');
 

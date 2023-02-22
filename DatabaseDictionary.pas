@@ -323,9 +323,9 @@ function FieldTypeToString(ft: TFieldType): string;
 
 
 var
-  DMAN_Client: TDatabaseDictionaryManager;
-  DMAN_Coord: TDatabaseDictionaryManager;
-  DMAN_SE: TDatabaseDictionaryManager;
+  DMAN_Client: TDatabaseDictionaryManager = nil;
+  DMAN_Coord: TDatabaseDictionaryManager = nil;
+  DMAN_SE: TDatabaseDictionaryManager = nil;
 
 //todo: make multiple copies of dict to reduce risk of deadlock
 
@@ -2131,9 +2131,12 @@ DMAN_SE := TDatabaseDictionaryManager.create;
 //DMAN.Head.LoadHostsFromFile();
 
 finalization
-DMAN_Client.free;
-DMAN_Coord.free;
-DMAN_SE.free;
+  if assigned(DMAN_Client) then
+    DMAN_Client.free;
+  if assigned(DMAN_Coord) then
+    DMAN_Coord.free;
+  if assigned(DMAN_SE) then
+    DMAN_SE.free;
 
 
 

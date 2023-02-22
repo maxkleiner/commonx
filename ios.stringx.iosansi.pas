@@ -56,7 +56,10 @@ type
   ansistring = TIOSByteString;
   utf8string = TIOSByteString;
   widestring = string;
+  PAnsiChar = PByte;
 {$ENDIF}
+
+function StrPasEx(pc: PAnsiChar): string;
 
 function ordEx(ac: Tiosansichar): nativeint;overload;
 {$IFNDEF NEED_FAKE_ANSISTRING}
@@ -66,6 +69,23 @@ function ordEx(ac: ansichar): nativeint;overload;inline;
 implementation
 
 uses typex;
+
+
+function StrPasEx(pc: PAnsiChar): string;
+begin
+  {$IFDEF NEED_FAKE_ANSISTRING}
+  result := '';
+  while true do begin
+    var ordy := pc^;
+    if ordy = 0 then
+      exit;
+    result := result + chr(ordy);
+    inc(pc);
+  end;
+  {$ELSE}
+  result := string(StrPas(pc));
+  {$ENDIF}
+end;
 
 function ordEx(ac: Tiosansichar): nativeint;
 begin

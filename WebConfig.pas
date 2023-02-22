@@ -855,6 +855,8 @@ procedure oinit;
 begin
   WebServerConfig := nil;
   //  WebServerConfig := TWebConfig.create('\SOFTWARE\Digital Tundra\');
+  if fileexists(changefileext(dllname,'.ini')) then
+    WebServerconfig := Twebconfig.create(changefileext(dllname,'.ini'));
 
 end;
 
@@ -871,7 +873,7 @@ begin
 end;
 
 initialization
-  init.RegisterProcs('WebConfig', oinit, ofinal);
+  init.RegisterProcs('WebConfig', oinit, ofinal,'MothershipWebServer');
 
 //-----------------------------------------------------------------------------
 finalization

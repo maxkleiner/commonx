@@ -7,10 +7,10 @@ interface
 {$DEFINE SAVE_MEMORY}
 
 uses
-  consolelock, helpers_stream, debug, system.ioutils, numbers, systemx, typex, packet, sysutils, SqlExpr, DB, StorageEngineTypes, variants, Databasedictionary, dir, dirfile, classes, zip, rdtp_file, betterobject;
+  packetabstract,consolelock, helpers_stream, debug, system.ioutils, numbers, systemx, typex, packet, sysutils, SqlExpr, DB, StorageEngineTypes, variants, Databasedictionary, dir, dirfile, classes, zip, rdtp_file, betterobject;
 
 type
-  TStringArray = array of ansistring;
+  TStringArray = array of string;
   bool = boolean;
 
   TRemoteData = record
@@ -26,94 +26,93 @@ type
 
   end;
 
-procedure GetTRemoteDataFromPacket(packet: TRDTPPacket; out res: TRemoteData);
-procedure WriteTRemoteDataToPacket(packet: TRDTPPacket; cs: TRemoteData);
+procedure GetTRemoteDataFromPacket(packet: TRDTPPacketAbstract; out res: TRemoteData);
+procedure WriteTRemoteDataToPacket(packet: TRDTPPacketAbstract; cs: TRemoteData);
 
 
-procedure GetTAdvancedFileChecksumFromPacket(packet: TRDTPPacket; out res: TAdvancedFileCheckSum);
-procedure WriteTAdvancedFileChecksumToPacket(packet: TRDTPPacket; cs: TAdvancedFileCheckSum);
+procedure GetTAdvancedFileChecksumFromPacket(packet: TRDTPPacketAbstract; out res: TAdvancedFileCheckSum);
+procedure WriteTAdvancedFileChecksumToPacket(packet: TRDTPPacketAbstract; cs: TAdvancedFileCheckSum);
 
-procedure GetIntegerFromPacket(packet: TRDTPPacket; out res: integer);
-procedure GetInt64FromPacket(packet: TRDTPPacket; out res: int64);
-procedure GetBooleanFromPacket(packet: TRDTPPacket; out res: boolean);
-procedure GetStringFromPacket(packet: TRDTPPacket; out res: ansistring);overload;
-procedure GetStringFromPacket(packet: TRDTPPacket; out res: string);overload;
-procedure GetTStringArrayFromPacket(packet: TRDTPPacket; out res: TStringArray);
-procedure GetBoolFromPacket(packet: TRDTPPacket; out res: boolean);
+procedure GetIntegerFromPacket(packet: TRDTPPacketAbstract; out res: integer);
+procedure GetInt64FromPacket(packet: TRDTPPacketAbstract; out res: int64);
+procedure GetBooleanFromPacket(packet: TRDTPPacketAbstract; out res: boolean);
+procedure GetStringFromPacket(packet: TRDTPPacketAbstract; out res: string);overload;
+procedure GetTStringArrayFromPacket(packet: TRDTPPacketAbstract; out res: TStringArray);
+procedure GetBoolFromPacket(packet: TRDTPPacketAbstract; out res: boolean);
 
-procedure GetRealFromPacket(packet: TRDTPPacket; out res: real);
-procedure WriteRealToPacket(packet: TRDTPPacket; r: real);
-procedure GetNativeFloatFromPacket(packet: TRDTPPacket; out res: NativeFloat);
-procedure WriteNativeFloatToPacket(packet: TRDTPPacket; r: NativeFloat);
+procedure GetRealFromPacket(packet: TRDTPPacketAbstract; out res: real);
+procedure WriteRealToPacket(packet: TRDTPPacketAbstract; r: real);
+procedure GetNativeFloatFromPacket(packet: TRDTPPacketAbstract; out res: NativeFloat);
+procedure WriteNativeFloatToPacket(packet: TRDTPPacketAbstract; r: NativeFloat);
 
-procedure WriteDoubleToPacket(packet: TRDTPPacket; f: double);
-procedure GetDoubleFromPacket(packet: TRDTPPacket; out res: double);
+procedure WriteDoubleToPacket(packet: TRDTPPacketAbstract; f: double);
+procedure GetDoubleFromPacket(packet: TRDTPPacketAbstract; out res: double);
 
-procedure WriteSingleToPacket(packet: TRDTPPacket; f: single);
-procedure GetSingleFromPacket(packet: TRDTPPacket; out res: single);
+procedure WriteSingleToPacket(packet: TRDTPPacketAbstract; f: single);
+procedure GetSingleFromPacket(packet: TRDTPPacketAbstract; out res: single);
 
-procedure WriteBoolToPacket(packet: TRDTPPacket;  b: boolean);
-procedure WriteBooleanToPacket(packet: TRDTPPacket;  b: boolean);
-procedure WriteIntegerToPacket(packet: TRDTPPacket;  i: integer);
-procedure WriteInt64ToPacket(packet: TRDTPPacket;  i: int64);
-procedure WriteStringToPacket(packet: TRDTPPacket;  s: string);
-procedure WriteTStringArrayToPacket(packet: TRDTPPacket; var ary: TStringArray);
+procedure WriteBoolToPacket(packet: TRDTPPacketAbstract;  b: boolean);
+procedure WriteBooleanToPacket(packet: TRDTPPacketAbstract;  b: boolean);
+procedure WriteIntegerToPacket(packet: TRDTPPacketAbstract;  i: integer);
+procedure WriteInt64ToPacket(packet: TRDTPPacketAbstract;  i: int64);
+procedure WriteStringToPacket(packet: TRDTPPacketAbstract;  s: string);
+procedure WriteTStringArrayToPacket(packet: TRDTPPacketAbstract; var ary: TStringArray);
 
-procedure GetTFileInformationFromPacket(packet: TRDTPPacket; out inf: TFileInformation);
-procedure WriteTFileInformationToPacket(packet: TRDTPPacket; inf: TFileInformation);
-procedure GetTDirectoryFromPacket(packet: TRDTPPacket; out d: TDirectory);
-procedure WriteTDirectoryToPacket(packet: TRDTPPacket; d: TDirectory);
+procedure GetTFileInformationFromPacket(packet: TRDTPPacketAbstract; out inf: TFileInformation);
+procedure WriteTFileInformationToPacket(packet: TRDTPPacketAbstract; inf: TFileInformation);
+procedure GetTDirectoryFromPacket(packet: TRDTPPacketAbstract; out d: TDirectory);
+procedure WriteTDirectoryToPacket(packet: TRDTPPacketAbstract; d: TDirectory);
 
-procedure GetTCustomSQLDataSetFromPAcket(packet: TRDTPPacket; out ds: TCustomSQLDAtaSet);
-procedure WriteTCustomSQLDataSetToPacket(packet: TRDTPPacket; ds: TCustomSQLDataSet);
+procedure GetTCustomSQLDataSetFromPAcket(packet: TRDTPPacketAbstract; out ds: TCustomSQLDAtaSet);
+procedure WriteTCustomSQLDataSetToPacket(packet: TRDTPPacketAbstract; ds: TCustomSQLDataSet);
 
-procedure GetTSERowSetFromPAcket(packet: TRDTPPacket; out ds: TSERowSet);
-procedure WriteTSERowSetToPacket(packet: TRDTPPacket; ds: TSERowSet);
+procedure GetTSERowSetFromPAcket(packet: TRDTPPacketAbstract; out ds: TSERowSet);
+procedure WriteTSERowSetToPacket(packet: TRDTPPacketAbstract; ds: TSERowSet);
 
-procedure GetTSERowSetArrayFromPAcket(packet: TRDTPPacket; out ds: TSERowSetArray);
-procedure WriteTSERowSetArrayToPacket(packet: TRDTPPacket; ds: TSERowSetArray);
+procedure GetTSERowSetArrayFromPAcket(packet: TRDTPPacketAbstract; out ds: TSERowSetArray);
+procedure WriteTSERowSetArrayToPacket(packet: TRDTPPacketAbstract; ds: TSERowSetArray);
 
-procedure WriteTStringListToPacket(packet: TRDTPPacket; slTakesOwnership: TStringList);
-procedure GetTStringListfromPacket(packet: TRDTPPacket; out sl: TStringList);
+procedure WriteTStringListToPacket(packet: TRDTPPacketAbstract; slTakesOwnership: TStringList);
+procedure GetTStringListfromPacket(packet: TRDTPPacketAbstract; out sl: TStringList);
 
 //--dictionary types
-procedure GetTFieldTypeFromPacket(packet: TRDTPPacket; out ft: TFieldTYpe);
-procedure WriteTFieldTypeToPacket(packet: TRDTPPacket; ft: TFieldTYpe);
+procedure GetTFieldTypeFromPacket(packet: TRDTPPacketAbstract; out ft: TFieldTYpe);
+procedure WriteTFieldTypeToPacket(packet: TRDTPPacketAbstract; ft: TFieldTYpe);
 
-procedure GetTDatabaseDictionaryFromPacket(packet: TRDTPPacket; out dd: TDatabaseDictionary);
-procedure WriteTDatabaseDictionaryToPacket(packet: TRDTPPacket; dd: TDatabaseDictionary);
+procedure GetTDatabaseDictionaryFromPacket(packet: TRDTPPacketAbstract; out dd: TDatabaseDictionary);
+procedure WriteTDatabaseDictionaryToPacket(packet: TRDTPPacketAbstract; dd: TDatabaseDictionary);
 
-procedure GetTTableDefinitionFromPacket(packet: TRDTPPacket; out td: TTableDefinition);
-procedure WriteTTableDefinitionToPacket(packet: TRDTPPacket; td: TTableDefinition);
+procedure GetTTableDefinitionFromPacket(packet: TRDTPPacketAbstract; out td: TTableDefinition);
+procedure WriteTTableDefinitionToPacket(packet: TRDTPPacketAbstract; td: TTableDefinition);
 
-procedure GetTFieldDefinitionFromPacket(packet: TRDTPPacket; out fd: TFieldDefinition);
-procedure WriteTFieldDefinitionToPacket(packet: TRDTPPacket; fd: TFieldDefinition);
+procedure GetTFieldDefinitionFromPacket(packet: TRDTPPacketAbstract; out fd: TFieldDefinition);
+procedure WriteTFieldDefinitionToPacket(packet: TRDTPPacketAbstract; fd: TFieldDefinition);
 
-procedure GetTStorageEngineInfoFromPacket(packet: TRDTPPacket; out se: TStorageEngineInfo);
-procedure WriteTStorageEngineInfoToPacket(packet: TRDTPPacket; se: TStorageEngineInfo);
+procedure GetTStorageEngineInfoFromPacket(packet: TRDTPPacketAbstract; out se: TStorageEngineInfo);
+procedure WriteTStorageEngineInfoToPacket(packet: TRDTPPacketAbstract; se: TStorageEngineInfo);
 
-procedure GetTTableRelationFromPacket(packet: TRDTPPAcket; out tr: TTableRelation);
-procedure WriteTTableRelationToPacket(packet: TRDTPPacket; tr: TTableRelation);
+procedure GetTTableRelationFromPacket(packet: TRDTPPacketAbstract; out tr: TTableRelation);
+procedure WriteTTableRelationToPacket(packet: TRDTPPacketAbstract; tr: TTableRelation);
 
-procedure GetTFileTransferReferenceFromPacket(packet: TRDTPPacket; out fr: TFileTransferReference);
-procedure WriteTFileTransferReferenceToPacket(packet: TRDTPPacket; tr: TFileTransferReference);
+procedure GetTFileTransferReferenceFromPacket(packet: TRDTPPacketAbstract; out fr: TFileTransferReference);
+procedure WriteTFileTransferReferenceToPacket(packet: TRDTPPacketAbstract; tr: TFileTransferReference);
 
-procedure WriteTStreamToPacket(packet: TRDTPPacket; s: TStream);
-procedure GetTStreamfromPacket(packet: TRDTPPacket; out s: TStream);
+procedure WriteTStreamToPacket(packet: TRDTPPacketAbstract; s: TStream);
+procedure GetTStreamfromPacket(packet: TRDTPPacketAbstract; out s: TStream);
 
-procedure WriteTDynByteArrayToPacket(packet: TRDTPPacket; ba: TDynByteArray);
-procedure GetTDynByteArrayFromPacket(packet: TRDTPPacket; out ba: TDynByteArray);
-procedure GetTDynInt64ArrayFromPacket(packet: TRDTPPacket; out ia: TDynInt64Array);
-procedure WriteTDynInt64ArrayToPacket(packet: TRDTPPacket; ia: TDynInt64Array);
+procedure WriteTDynByteArrayToPacket(packet: TRDTPPacketAbstract; ba: TDynByteArray);
+procedure GetTDynByteArrayFromPacket(packet: TRDTPPacketAbstract; out ba: TDynByteArray);
+procedure GetTDynInt64ArrayFromPacket(packet: TRDTPPacketAbstract; out ia: TDynInt64Array);
+procedure WriteTDynInt64ArrayToPacket(packet: TRDTPPacketAbstract; ia: TDynInt64Array);
 
-procedure WriteTDateTimeToPacket(packet: TRDTPPacket; dt: TDateTime);
-procedure GetTDateTimeFromPAcket(packet: TRDTPPacket; out dt: TDateTime);
+procedure WriteTDateTimeToPacket(packet: TRDTPPacketAbstract; dt: TDateTime);
+procedure GetTDateTimeFromPAcket(packet: TRDTPPacketAbstract; out dt: TDateTime);
 
-procedure WriteTRemoteFileRecToPacket(packet: TRDTPPacket; fr: TRemoteFileRec);
-procedure GetTRemoteFileRecFromPAcket(packet: TRDTPPacket; out fr: TRemoteFileRec);
+procedure WriteTRemoteFileRecToPacket(packet: TRDTPPacketAbstract; fr: TRemoteFileRec);
+procedure GetTRemoteFileRecFromPAcket(packet: TRDTPPacketAbstract; out fr: TRemoteFileRec);
 
-procedure WriteTRemoteFileArrayToPacket(packet: TRDTPPacket; fr: TRemoteFileArray);
-procedure GetTRemoteFileArrayFromPAcket(packet: TRDTPPacket; out fr: TRemoteFileArray);
+procedure WriteTRemoteFileArrayToPacket(packet: TRDTPPacketAbstract; fr: TRemoteFileArray);
+procedure GetTRemoteFileArrayFromPAcket(packet: TRDTPPacketAbstract; out fr: TRemoteFileArray);
 
 
 
@@ -127,26 +126,32 @@ procedure GetTRemoteFileArrayFromPAcket(packet: TRDTPPacket; out fr: TRemoteFile
 
 implementation
 
-procedure GetTFileInformationFromPacket(packet: TRDTPPacket; out inf: TFileInformation);
+procedure GetTFileInformationFromPacket(packet: TRDTPPacketAbstract; out inf: TFileInformation);
 var
   i: nativeint;
 begin
   inf := TFileInformation.create;
   inf.FullName := packet.SeqRead;
-  packet.SeqRead;//name is kinda redundant
-  i := packet.SeqRead;
+  //packet.SeqRead;//name is kinda redundant
+  var v: variant := packet.SeqRead;
+  if vartype(v) in [varDouble, varDAte] then begin
+    inf.Date := v;
+  end;
+  i := packet.SeqRead;;
   inf.UniversalAttributes := i;
+
 
 
 end;
 
-procedure WriteTFileInformationToPacket(packet: TRDTPPacket; inf: TFileInformation);
+procedure WriteTFileInformationToPacket(packet: TRDTPPacketAbstract; inf: TFileInformation);
 var
   i: nativeint;
   fa: TFileAttributes;
 begin
   packet.AddString(inf.Fullname);
-  packet.AddString(inf.Name);
+//  packet.AddString(inf.Name);
+  packet.AddDateTime(inf.Date);
 
   i := inf.UniversalAttributes;
 
@@ -155,11 +160,13 @@ begin
 
   packet.AddInt(i);
 
+
+
 end;
 
 
 
-procedure GetTFileTransferReferenceFromPacket(packet: TRDTPPacket; out fr: TFileTransferReference);
+procedure GetTFileTransferReferenceFromPacket(packet: TRDTPPacketAbstract; out fr: TFileTransferReference);
 var
   iLength: int64;
 begin
@@ -175,13 +182,13 @@ begin
     fr.o.EOF := packet.seqread;
     fr.o.Buffer := packet.SeqReadBytes(iLength);
     if fr.o.EOF then begin
-      fr.o.FileDate := packet.SeqRead;
+      fr.o.FileDateUTC := packet.SeqRead;
     end;
   end;
 end;
 
 
-procedure WriteTFileTransferReferenceToPacket(packet: TRDTPPacket; tr: TFileTransferReference);
+procedure WriteTFileTransferReferenceToPacket(packet: TRDTPPacketAbstract; tr: TFileTransferReference);
 begin
   try
     packet.addvariant(tr.o.FileName);
@@ -193,7 +200,7 @@ begin
       packet.AddVariant(tr.o.EOF);
       packet.addBytes(tr.o.Buffer, tr.o.Length);
       if tr.o.eof then begin
-        packet.AddVariant(tr.o.FileDate);
+        packet.AddVariant(tr.o.FileDateUTC);
       end;
     end;
   finally
@@ -203,10 +210,10 @@ begin
 
 end;
 
-procedure GetTCustomSQLDataSetFromPAcket(packet: TRDTPPacket; out ds: TCustomSQLDAtaSet);
+procedure GetTCustomSQLDataSetFromPAcket(packet: TRDTPPacketAbstract; out ds: TCustomSQLDAtaSet);
 var
   dt: TFieldType;
-  sName: ansistring;
+  sName: string;
   iFieldCount: integer;
   iRowCount: integer;
   t: integer;
@@ -235,7 +242,7 @@ begin
 
 end;
 
-procedure WriteTCustomSQLDataSetToPacket(packet: TRDTPPacket; ds: TCustomSQLDataSet);
+procedure WriteTCustomSQLDataSetToPacket(packet: TRDTPPacketAbstract; ds: TCustomSQLDataSet);
 var
   t: integer;
 begin
@@ -267,14 +274,14 @@ begin
   packet.AddBoolean(false);
 end;
 
-procedure GetTStringArrayFromPacket(packet: TRDTPPacket; out res: TStringArray);
+procedure GetTStringArrayFromPacket(packet: TRDTPPacketAbstract; out res: TStringArray);
 var
   iCount: integer;
   t: integer;
 begin
-  //get number of ansistrings
+  //get number of strings
   iCount := packet.SeqRead;
-  //get ansistrings
+  //get strings
   SetLength(res, iCount);
   for t:= low(res) to high(res) do begin
     res[t] := packet.seqread;
@@ -282,13 +289,13 @@ begin
 
 end;
 
-procedure GetInt64FromPacket(packet: TRDTPPacket; out res: int64);
+procedure GetInt64FromPacket(packet: TRDTPPacketAbstract; out res: int64);
 begin
   res := packet.seqread;
 
 end;
 
-procedure GetBooleanFromPacket(packet: TRDTPPacket; out res: boolean);
+procedure GetBooleanFromPacket(packet: TRDTPPacketAbstract; out res: boolean);
 var
   v: variant;
 begin
@@ -298,62 +305,56 @@ begin
 
 end;
 
-procedure GetStringFromPacket(packet: TRDTPPacket; out res: ansistring);
+procedure GetStringFromPacket(packet: TRDTPPacketAbstract; out res: string);
 begin
   res := packet.seqread;
 
 end;
 
-procedure GetStringFromPacket(packet: TRDTPPacket; out res: string);
-begin
-  res := packet.seqread;
-
-end;
-
-procedure GetIntegerFromPacket(packet: TRDTPPacket; out res: integer);
+procedure GetIntegerFromPacket(packet: TRDTPPacketAbstract; out res: integer);
 begin
   res := packet.seqread;
 
 end;
 
 
-procedure WriteBooleanToPacket(packet: TRDTPPacket; b: boolean);
+procedure WriteBooleanToPacket(packet: TRDTPPacketAbstract; b: boolean);
 begin
   packet.AddBoolean(b);
 
 end;
 
-procedure WriteIntegerToPacket(packet: TRDTPPacket; i: integer);
+procedure WriteIntegerToPacket(packet: TRDTPPacketAbstract; i: integer);
 begin
   packet.addvariant(i);
 end;
 
-procedure WriteInt64ToPacket(packet: TRDTPPacket; i: int64);
+procedure WriteInt64ToPacket(packet: TRDTPPacketAbstract; i: int64);
 begin
   packet.addlonglong(i);
 end;
 
-procedure WriteDoubleToPacket(packet: TRDTPPacket; f: double);
+procedure WriteDoubleToPacket(packet: TRDTPPacketAbstract; f: double);
 begin
   packet.adddouble(f);
 end;
-procedure WriteSingleToPacket(packet: TRDTPPacket; f: single);
+procedure WriteSingleToPacket(packet: TRDTPPacketAbstract; f: single);
 begin
   packet.AddDouble(f);
 end;
-procedure GetSingleFromPacket(packet: TRDTPPacket; out res: single);
+procedure GetSingleFromPacket(packet: TRDTPPacketAbstract; out res: single);
 begin
   res := packet.SeqRead;
 end;
 
 
 
-procedure WriteStringToPacket(packet: TRDTPPacket; s: string);
+procedure WriteStringToPacket(packet: TRDTPPacketAbstract; s: string);
 begin
   packet.addstring(s);
 end;
 
-procedure WriteTStringArrayToPacket(packet: TRDTPPacket; var ary: TStringArray);
+procedure WriteTStringArrayToPacket(packet: TRDTPPacketAbstract; var ary: TStringArray);
 var
   t: integer;
 begin
@@ -365,11 +366,11 @@ begin
 
 end;
 
-function DatasetToString(ds: TCustomSQLDAtaSet; destroyit: boolean = false): ansistring;
+function DatasetToString(ds: TCustomSQLDAtaSet; destroyit: boolean = false): string;
 var
   iCount: integer;
   t: integer;
-  s: ansistring;
+  s: string;
 begin
   s := '';
   for t:= 0 to ds.FieldCount-1 do begin
@@ -391,11 +392,11 @@ begin
 
 end;
 
-function RowsetToString(ds: TSERowSet; destroyit: boolean = false): ansistring;
+function RowsetToString(ds: TSERowSet; destroyit: boolean = false): string;
 var
   iCount: integer;
   t,u: integer;
-  s: ansistring;
+  s: string;
 begin
   s := '';
   for t:= 0 to ds.FieldCount-1 do begin
@@ -416,10 +417,10 @@ end;
 
 
 
-procedure GetTSERowSetFromPAcket(packet: TRDTPPacket; out ds: TSERowSet);
+procedure GetTSERowSetFromPAcket(packet: TRDTPPacketAbstract; out ds: TSERowSet);
 var
   dt: TFieldType;
-  sName: ansistring;
+  sName: string;
   iFieldCount: integer;
   iRowCount: integer;
   t: integer;
@@ -440,7 +441,11 @@ begin
   while not (packet.SeqRead) do begin
     iRow := ds.AddRow;
     for t:= 0 to iFieldCount-1 do begin
-      ds.Values[t,iRow] := packet.SeqRead;
+      var v := packet.SeqRead;
+      if VarIsType(v, varDouble) then
+        v := NanFix(v,0.0);
+
+      ds.Values[t,iRow] := v;
     end;
   end;
 
@@ -449,7 +454,7 @@ begin
 
 
 end;
-procedure WriteTSERowSetToPacket(packet: TRDTPPacket; ds: TSERowSet);
+procedure WriteTSERowSetToPacket(packet: TRDTPPacketAbstract; ds: TSERowSet);
 var
   t,u: integer;
 begin
@@ -484,17 +489,17 @@ begin
   end;
 end;
 
-procedure GetTFieldTypeFromPacket(packet: TRDTPPacket; out ft: TFieldTYpe);
+procedure GetTFieldTypeFromPacket(packet: TRDTPPacketAbstract; out ft: TFieldTYpe);
 begin
   ft := TFieldType(packet.SeqRead);
 end;
 
-procedure WriteTFieldTypeToPacket(packet: TRDTPPacket; ft: TFieldTYpe);
+procedure WriteTFieldTypeToPacket(packet: TRDTPPacketAbstract; ft: TFieldTYpe);
 begin
   packet.Addlong(integer(ft));
 end;
 
-procedure GetTSERowSetArrayFromPAcket(packet: TRDTPPacket; out ds: TSERowSetArray);
+procedure GetTSERowSetArrayFromPAcket(packet: TRDTPPacketAbstract; out ds: TSERowSetArray);
 var
   t: integer;
 begin
@@ -502,7 +507,7 @@ begin
   //read array
 
 end;
-procedure WriteTSERowSetArrayToPacket(packet: TRDTPPacket; ds: TSERowSetArray);
+procedure WriteTSERowSetArrayToPacket(packet: TRDTPPacketAbstract; ds: TSERowSetArray);
 var
   t: integer;
 begin
@@ -518,13 +523,13 @@ end;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
-procedure GetTDatabaseDictionaryFromPacket(packet: TRDTPPacket; out dd: TDatabaseDictionary);
+procedure GetTDatabaseDictionaryFromPacket(packet: TRDTPPacketAbstract; out dd: TDatabaseDictionary);
 var
   iCount: integer;
   t: integer;
   se: TStorageEngineInfo;
   td: TTableDefinition;
-  sContext: ansistring;
+  sContext: string;
 begin
   sContext := packet.SeqRead;
   dd := TDatabaseDictionary.create(sContext,'');
@@ -552,7 +557,7 @@ begin
   dd.fetched := true;
 end;
 //------------------------------------------------------------------------------
-procedure WriteTDatabaseDictionaryToPacket(packet: TRDTPPacket; dd: TDatabaseDictionary);
+procedure WriteTDatabaseDictionaryToPacket(packet: TRDTPPacketAbstract; dd: TDatabaseDictionary);
 var
   t: integer;
 begin
@@ -573,7 +578,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure GetTTableDefinitionFromPacket(packet: TRDTPPacket; out td: TTableDefinition);
+procedure GetTTableDefinitionFromPacket(packet: TRDTPPacketAbstract; out td: TTableDefinition);
 var
   t: integer;
   iCount: integer;
@@ -599,7 +604,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure WriteTTableDefinitionToPacket(packet: TRDTPPacket; td: TTableDefinition);
+procedure WriteTTableDefinitionToPacket(packet: TRDTPPacketAbstract; td: TTableDefinition);
 var
   t: integer;
 begin
@@ -617,7 +622,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure GetTFieldDefinitionFromPacket(packet: TRDTPPacket; out fd: TFieldDefinition);
+procedure GetTFieldDefinitionFromPacket(packet: TRDTPPacketAbstract; out fd: TFieldDefinition);
 begin
 //TODO -cunimplemented: unimplemented block
   fd := TFieldDefinition.create(nil);
@@ -626,13 +631,13 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure WriteTFieldDefinitionToPacket(packet: TRDTPPacket; fd: TFieldDefinition);
+procedure WriteTFieldDefinitionToPacket(packet: TRDTPPacketAbstract; fd: TFieldDefinition);
 begin
   packet.addvariant(fd.name);
   packet.addvariant(fd.FieldType);
 end;
 //------------------------------------------------------------------------------
-procedure GetTStorageEngineInfoFromPacket(packet: TRDTPPacket; out se: TStorageEngineInfo);
+procedure GetTStorageEngineInfoFromPacket(packet: TRDTPPacketAbstract; out se: TStorageEngineInfo);
 begin
   se := TStorageEngineInfo.create;
   se.ID := packet.seqread;
@@ -644,7 +649,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure WriteTStorageEngineInfoToPacket(packet: TRDTPPacket; se: TStorageEngineInfo);
+procedure WriteTStorageEngineInfoToPacket(packet: TRDTPPacketAbstract; se: TStorageEngineInfo);
 begin
   packet.AddVariant(se.id);
   packet.AddVariant(se.SE);
@@ -656,7 +661,7 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-procedure GetTTableRelationFromPacket(packet: TRDTPPAcket; out tr: TTableRelation);
+procedure GetTTableRelationFromPacket(packet: TRDTPPacketAbstract; out tr: TTableRelation);
 begin
   tr := TTableRelation.create;
   tr.JoinName := packet.SeqRead;
@@ -668,7 +673,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure WriteTTableRelationToPacket(packet: TRDTPPacket; tr: TTableRelation);
+procedure WriteTTableRelationToPacket(packet: TRDTPPacketAbstract; tr: TTableRelation);
 begin
   packet.AddVariant(tr.JoinName);
   packet.AddVariant(tr.MasterTable);
@@ -679,7 +684,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure GetTDirectoryFromPacket(packet: TRDTPPacket; out d: TDirectory);
+procedure GetTDirectoryFromPacket(packet: TRDTPPacketAbstract; out d: TDirectory);
 var
   count,t: integer;
   fi: TFileInformation;
@@ -706,7 +711,7 @@ begin
 
 end;
 //------------------------------------------------------------------------------
-procedure WriteTDirectoryToPacket(packet: TRDTPPacket; d: TDirectory);
+procedure WriteTDirectoryToPacket(packet: TRDTPPacketAbstract; d: TDirectory);
 var
   t: integer;
 begin
@@ -722,13 +727,13 @@ begin
 end;
 
 
-procedure GetTAdvancedFileChecksumFromPacket(packet: TRDTPPacket; out res: TAdvancedFileCheckSum);
+procedure GetTAdvancedFileChecksumFromPacket(packet: TRDTPPacketAbstract; out res: TAdvancedFileCheckSum);
 begin
   res.bytesum := packet.seqread;
   res.bytexor := packet.seqread;
   res.bytecount := packet.seqread;
 end;
-procedure WriteTAdvancedFileChecksumToPacket(packet: TRDTPPacket; cs: TAdvancedFileCheckSum);
+procedure WriteTAdvancedFileChecksumToPacket(packet: TRDTPPacketAbstract; cs: TAdvancedFileCheckSum);
 begin
   packet.addshort(cs.bytesum);
   packet.addshort(cs.bytexor);
@@ -738,45 +743,45 @@ end;
 
 
 
-procedure GetBoolFromPacket(packet: TRDTPPacket; out res: boolean);
+procedure GetBoolFromPacket(packet: TRDTPPacketAbstract; out res: boolean);
 begin
   GetBooleanFromPacket(packet, res);
 end;
 
 
 
-procedure WriteBoolToPacket(packet: TRDTPPacket;  b: boolean);
+procedure WriteBoolToPacket(packet: TRDTPPacketAbstract;  b: boolean);
 begin
   WriteBooleanToPacket(packet, b);
 end;
 
-procedure GetRealFromPacket(packet: TRDTPPacket; out res: real);
+procedure GetRealFromPacket(packet: TRDTPPacketAbstract; out res: real);
 begin
   res := packet.SeqRead;
 end;
 
-procedure WriteRealToPacket(packet: TRDTPPacket; r: real);
+procedure WriteRealToPacket(packet: TRDTPPacketAbstract; r: real);
 begin
   packet.adddouble(r);
 end;
 
-procedure GetNativeFloatFromPacket(packet: TRDTPPacket; out res: NativeFloat);
+procedure GetNativeFloatFromPacket(packet: TRDTPPacketAbstract; out res: NativeFloat);
 begin
   res := packet.SeqRead;
 end;
 
 
-procedure GetDoubleFromPacket(packet: TRDTPPacket; out res: double);
+procedure GetDoubleFromPacket(packet: TRDTPPacketAbstract; out res: double);
 begin
   res := packet.SeqRead;
 end;
-procedure WriteNativeFloatToPacket(packet: TRDTPPacket; r: NativeFloat);
+procedure WriteNativeFloatToPacket(packet: TRDTPPacketAbstract; r: NativeFloat);
 begin
   packet.adddouble(r);
 end;
 
 
-procedure WriteTStreamToPacket(packet: TRDTPPacket; s: TStream);
+procedure WriteTStreamToPacket(packet: TRDTPPacketAbstract; s: TStream);
 var
   ms: TMemoryStream;
 begin
@@ -800,7 +805,7 @@ begin
 
 end;
 
-procedure GetTStreamfromPacket(packet: TRDTPPacket; out s: TStream);
+procedure GetTStreamfromPacket(packet: TRDTPPacketAbstract; out s: TStream);
 var
   ms: TMemoryStream;
   pb: PByte;
@@ -824,7 +829,7 @@ begin
 
 end;
 
-procedure WriteTStringListToPacket(packet: TRDTPPacket; slTakesOwnership: TStringList);
+procedure WriteTStringListToPacket(packet: TRDTPPacketAbstract; slTakesOwnership: TStringList);
 var
   t: integer;
 begin
@@ -834,7 +839,7 @@ begin
   end;
 
 end;
-procedure GetTStringListfromPacket(packet: TRDTPPacket; out sl: TStringList);
+procedure GetTStringListfromPacket(packet: TRDTPPacketAbstract; out sl: TStringList);
 var
   t, count: integer;
 begin
@@ -866,7 +871,7 @@ begin
 
 end;
 
-procedure GetTRemoteDataFromPacket(packet: TRDTPPacket; out res: TRemoteData);
+procedure GetTRemoteDataFromPacket(packet: TRDTPPacketAbstract; out res: TRemoteData);
 var
   iPoo: int64;
   p: PByte;
@@ -885,7 +890,7 @@ begin
 
 
 end;
-procedure WriteTRemoteDataToPacket(packet: TRDTPPacket; cs: TRemoteData);
+procedure WriteTRemoteDataToPacket(packet: TRDTPPacketAbstract; cs: TRemoteData);
 begin
   packet.AddDouble(cs.TimeToOut);
   packet.AddDouble(cs.Position);
@@ -915,7 +920,7 @@ begin
 
 end;
 
-procedure WriteTDynByteArrayToPacket(packet: TRDTPPacket; ba: TDynByteArray);
+procedure WriteTDynByteArrayToPacket(packet: TRDTPPacketAbstract; ba: TDynByteArray);
 var
   ba2: PByte;
   l,l2: ni;
@@ -950,7 +955,7 @@ begin
 {$ENDIF}
 end;
 
-procedure GetTDynByteArrayFromPacket(packet: TRDTPPacket; out ba: TDynByteArray);
+procedure GetTDynByteArrayFromPacket(packet: TRDTPPacketAbstract; out ba: TDynByteArray);
 var
   ba2: TDynByteArray;
   l: int64;
@@ -968,12 +973,12 @@ begin
   end;
 end;
 
-procedure WriteTDynInt64ArrayToPacket(packet: TRDTPPacket; ia: TDynInt64Array);
+procedure WriteTDynInt64ArrayToPacket(packet: TRDTPPacketAbstract; ia: TDynInt64Array);
 begin
   WriteTDynByteArrayToPacket(packet, DynInt64ArrayToByteArray(ia));
 end;
 
-procedure GetTDynInt64ArrayFromPacket(packet: TRDTPPacket; out ia: TDynInt64Array);
+procedure GetTDynInt64ArrayFromPacket(packet: TRDTPPacketAbstract; out ia: TDynInt64Array);
 var
   ba: TDynByteArray;
 begin
@@ -981,17 +986,17 @@ begin
   ia := DynByteArrayToInt64Array(ba);
 end;
 
-procedure WriteTDateTimeToPacket(packet: TRDTPPacket; dt: TDateTime);
+procedure WriteTDateTimeToPacket(packet: TRDTPPacketAbstract; dt: TDateTime);
 begin
   packet.AddDateTime(dt);
 end;
 
-procedure GetTDateTimeFromPAcket(packet: TRDTPPacket; out dt: TDateTime);
+procedure GetTDateTimeFromPAcket(packet: TRDTPPacketAbstract; out dt: TDateTime);
 begin
   dt := packet.SeqRead;
 end;
 
-procedure WriteTRemoteFileRecToPacket(packet: TRDTPPacket; fr: TRemoteFileRec);
+procedure WriteTRemoteFileRecToPacket(packet: TRDTPPacketAbstract; fr: TRemoteFileRec);
 begin
   packet.AddString(fr.name);
   packet.AddString(fr.path);
@@ -999,7 +1004,7 @@ begin
   packet.AddInt(fr.attributes);
   packet.AddInt(fr.size);
 end;
-procedure GetTRemoteFileRecFromPAcket(packet: TRDTPPacket; out fr: TRemoteFileRec);
+procedure GetTRemoteFileRecFromPAcket(packet: TRDTPPacketAbstract; out fr: TRemoteFileRec);
 begin
   fr.name := packet.seqread;
   fr.path := packet.SeqRead;
@@ -1008,7 +1013,7 @@ begin
   fr.size := packet.SeqRead;
 end;
 
-procedure WriteTRemoteFileArrayToPacket(packet: TRDTPPacket; fr: TRemoteFileArray);
+procedure WriteTRemoteFileArrayToPacket(packet: TRDTPPacketAbstract; fr: TRemoteFileArray);
 var
   t: ni;
 begin
@@ -1019,7 +1024,7 @@ begin
 end;
 
 
-procedure GetTRemoteFileArrayFromPacket(packet: TRDTPPacket; out fr: TRemoteFileArray);
+procedure GetTRemoteFileArrayFromPacket(packet: TRDTPPacketAbstract; out fr: TRemoteFileArray);
 var
   t: ni;
 begin

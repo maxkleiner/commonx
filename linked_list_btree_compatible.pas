@@ -1,36 +1,53 @@
 unit linked_list_btree_compatible;
-
 interface
-
+{$DEFINE LINKABLE_IS_BETTER_OBJECT}
 uses
   typex, debug, sysutils, betterobject, unittest;
 
 type
+
   TLinkage<T> = class(TObject)
   public
     next: TLinkage<T>;
     prev: TLinkage<T>;
     obj: T;
   end;
+{$IFDEF LINKABLE_IS_BETTER_OBJECT}
+  TLinkAncestor = TBetterObject;
+{$ELSE}
+  TLinkAncestor = TObject;
+{$ENDIF}
 
-  TLinkable = class(TObject)
+  TLinkable = class(TBetterObject)
   public
     NExt: TObject;
     Prev: TObject;
     Tree: TObject;
     list: TObject;
+{$IFNDEF LINKABLE_IS_BETTER_OBJECT}
     constructor CReate;reintroduce;virtual;
+{$ENDIF}
 
   end;
 
-  TDirectlyLinkedList<T: TLinkable> = class(TBetterObject)
+  TSimpleIterateProcedure = reference to procedure([unsafe] ABTreeItem:TLinkable);
+  TIterateProcedure = reference to procedure([unsafe] ABTreeItem:TLinkable; var ANeedStop:boolean);
+
+
+  TDirectlyLinkedList<T: TLinkable> = class(TSharedObject)
   private
     FCount: nativeint;
+{$IFNDEF NO_LINKED_LIST_CACHING}
     function GetItem(idx: nativeint): T;
+{$ENDIF}
   protected
+{$IFNDEF NO_LINKED_LIST_CACHING}
     cached_index: nativeint;
     cached_link: T;
+{$ENDIF}
+{$IFNDEF NO_LINKED_LIST_CACHING}
     procedure MoveCacheTo(idx: nativeint);
+{$ENDIF}
 
     procedure ManageFirstLast(objLink: T);
     PROCEDURE ClearCache;
@@ -43,13 +60,19 @@ type
     procedure AddFirst(obj: T);
     procedure Remove(obj: T; bDontFree: boolean);
     procedure Replace(old, new: T);
+{$IFNDEF NO_LINKED_LIST_CACHING}
     property Items[idx: nativeint]: T read GetItem;default;
     procedure Delete(idx: nativeint);
+{$ENDIF}
     function Has(obj: T): boolean;
     property Count: nativeint read FCount;
+    procedure Iterate(const AProcedure:TSimpleIterateProcedure); overload;
+    procedure Iterate(AProcedure:TIterateProcedure); overload;
+
 
     procedure Clear;
     procedure ClearBruteForce;
+    procedure DestroyItems;
 
   end;
 
@@ -120,8 +143,10 @@ procedure TDirectlyLinkedList<T>.Clear;
 begin
   FirstItem := nil;
   LastItem := nil;
+{$IFNDEF NO_LINKED_LIST_CACHING}
   cached_link := nil;
   cached_index := -1;
+{$ENDIF}
   FCount := 0;
 end;
 
@@ -132,35 +157,84 @@ end;
 
 procedure TDirectlyLinkedList<T>.ClearCache;
 begin
+{$IFNDEF NO_LINKED_LIST_CACHING}
   cached_index := -1;
   cached_link := nil;
+{$ENDIF}
 
 end;
 
+procedure TDirectlyLinkedList<T>.DestroyItems;
+begin
+  Lock;
+  try
+    Iterate(procedure ([unsafe] itm: TLinkable) begin
+      itm.free;
+    end);
+    ClearBruteForce;
+  finally
+    Unlock;
+  end;
+
+end;
+
+{$IFNDEF NO_LINKED_LIST_CACHING}
 procedure TDirectlyLinkedList<T>.Delete(idx: nativeint);
 begin
   MoveCacheTo(idx);
   Remove(cached_link,true);
 end;
+{$ENDIF}
 
+{$IFNDEF NO_LINKED_LIST_CACHING}
 function TDirectlyLinkedList<T>.GetItem(idx: nativeint): T;
 begin
   MoveCacheTo(idx);
   result := (cached_link);
 
 end;
+{$ENDIF}
 
 function TDirectlyLinkedList<T>.Has(obj: T): boolean;
 var
   i: ni;
 begin
-  result := false;
-  for i := 0 to count-1 do begin
-    if self.Items[i] = obj then begin
-      result := true;
+  var res := false;
+  var o: TLinkable := obj;
+
+  Iterate(
+    procedure([unsafe] ABTreeItem:TLinkable; var ANeedStop:boolean)
+    begin
+      if ABTreeItem = o then begin
+        res := true;
+        ANeedStop := true;
+      end;
+    end
+  );
+  exit(res);
+end;
+
+procedure TDirectlyLinkedList<T>.Iterate(AProcedure: TIterateProcedure);
+begin
+  var itm : T := FirstItem;
+  var bStop: boolean := false;
+  while itm <> nil do begin
+    AProcedure(itm, bStop);
+    if bStop then
       break;
-    end;
+    itm := T(itm.next);
   end;
+end;
+
+procedure TDirectlyLinkedList<T>.Iterate(
+  const AProcedure: TSimpleIterateProcedure);
+begin
+  var itm : T := FirstItem;
+  while itm <> nil do begin
+    AProcedure(itm);
+    itm := T(itm.next);
+  end;
+
 end;
 
 procedure TDirectlyLinkedList<T>.ManageFirstLast(objLink: T);
@@ -173,6 +247,7 @@ begin
 
 end;
 
+{$IFNDEF NO_LINKED_LIST_CACHING}
 procedure TDirectlyLinkedList<T>.MoveCacheTo(idx: nativeint);
 begin
   if (idx = 0) then begin
@@ -212,6 +287,7 @@ begin
 
   end;
 end;
+{$ENDIF}
 
 procedure TDirectlyLinkedList<T>.Remove(obj: T; bDontFree: boolean);
 begin
@@ -260,8 +336,10 @@ end;
 
 procedure TDirectlyLinkedList<T>.Replace(old, new: T);
 begin
+{$IFNDEF NO_LINKED_LIST_CACHING}
   if cached_link = old then
     cached_link := new;
+{$ENDIF}
   new.Prev := old.Prev;
   new.next := old.next;
   if new.next <> nil then
@@ -289,10 +367,11 @@ end;
 
 
 { TLinkable }
-
+{$IFNDEF LINKABLE_IS_BETTER_OBJECT}
 constructor TLinkable.CReate;
 begin
   //
 end;
+{$ENDIF}
 
 end.

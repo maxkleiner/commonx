@@ -1,16 +1,15 @@
 object frmWebConsole: TfrmWebConsole
   Left = 0
   Top = 0
-  ActiveControl = cbNoDetails
   Anchors = [akLeft, akTop, akRight]
-  Caption = 'we'
-  ClientHeight = 516
-  ClientWidth = 765
+  Caption = 'f'
+  ClientHeight = 460
+  ClientWidth = 1926
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -12
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -2923,224 +2922,326 @@ object frmWebConsole: TfrmWebConsole
     00001FFFF007FFFE0000FFF00FFFFC03F000000000001FFFF803FFFE0000FFF8
     07FFFE01FE00000000000FFFFC01FFFF0000FFFC03FFFF00FFE00000007807FF
     FE01FFFFC000}
-  OldCreateOrder = True
   Position = poDesigned
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  Right = 780
-  Bottom = 554
-  DesignSize = (
-    765
-    516)
-  PixelsPerInch = 72
+  Right = 1951
+  Bottom = 530
+  ShowHardWork = False
+  PixelsPerInch = 192
   TextHeight = 13
   object txtActiveConnections: TLabel
-    Left = 136
-    Top = 21
-    Width = 50
-    Height = 18
+    Left = 362
+    Top = 56
+    Width = 125
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'Hits:'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblHits: TLabel
-    Left = 187
-    Top = 21
-    Width = 10
-    Height = 18
+    Left = 498
+    Top = 56
+    Width = 25
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = '0'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblBackgroundThreads: TLabel
-    Left = 187
-    Top = 97
+    Left = 498
+    Top = 258
     Width = 107
     Height = 13
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'lblBackgroundThreads'
     Transparent = False
   end
   object Label1: TLabel
-    Left = 116
-    Top = 37
-    Width = 70
-    Height = 18
+    Left = 310
+    Top = 98
+    Width = 175
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'Querys:'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblDOs2: TLabel
-    Left = 136
-    Top = 54
-    Width = 50
-    Height = 18
+    Left = 362
+    Top = 144
+    Width = 125
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'Data:'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblRQs: TLabel
-    Left = 187
-    Top = 37
-    Width = 10
-    Height = 18
+    Left = 498
+    Top = 98
+    Width = 25
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = '0'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblDOs: TLabel
-    Left = 187
-    Top = 54
-    Width = 10
-    Height = 18
+    Left = 498
+    Top = 144
+    Width = 25
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = '0'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object lblLWP: TLabel
-    Left = 187
-    Top = 116
+    Left = 498
+    Top = 310
     Width = 34
     Height = 13
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'lblLWP'
   end
   object lblThreadpool: TLabel
-    Left = 187
-    Top = 78
+    Left = 498
+    Top = 208
     Width = 65
     Height = 13
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'lblThreadPool'
   end
   object Label2: TLabel
-    Left = 119
-    Top = 78
+    Left = 318
+    Top = 208
     Width = 60
     Height = 13
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'Thread pool:'
   end
   object lblAccepts: TLabel
-    Left = 187
-    Top = 5
-    Width = 10
-    Height = 18
+    Left = 498
+    Top = 14
+    Width = 25
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = '0'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object Label4: TLabel
-    Left = 106
-    Top = 5
-    Width = 80
-    Height = 18
+    Left = 282
+    Top = 14
+    Width = 200
+    Height = 49
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
     Caption = 'Accepts:'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -16
+    Font.Height = -42
     Font.Name = 'Courier New'
     Font.Style = [fsBold]
     ParentFont = False
   end
   object Panel1: TPanel
-    Left = 10
-    Top = 130
-    Width = 748
-    Height = 372
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Left = 0
+    Top = 0
+    Width = 1926
+    Height = 460
+    Margins.Left = 8
+    Margins.Top = 8
+    Margins.Right = 8
+    Margins.Bottom = 8
+    Align = alClient
     Caption = 'Panel1'
     TabOrder = 0
     object Splitter2: TSplitter
-      Left = 744
+      Left = 1907
       Top = 1
-      Height = 370
+      Width = 18
+      Height = 458
+      Margins.Left = 18
+      Margins.Top = 18
+      Margins.Right = 18
+      Margins.Bottom = 18
       Align = alRight
-      ExplicitLeft = 327
+      ExplicitLeft = 1906
       ExplicitTop = 2
-      ExplicitHeight = 425
+      ExplicitHeight = 456
     end
     object Panel2: TPanel
-      Left = 272
-      Top = -64
-      Width = 185
-      Height = 41
+      Left = 1666
+      Top = -392
+      Width = 1134
+      Height = 252
+      Margins.Left = 18
+      Margins.Top = 18
+      Margins.Right = 18
+      Margins.Bottom = 18
       Caption = 'Panel2'
       TabOrder = 0
     end
     object Panel3: TPanel
       Left = 1
       Top = 1
-      Width = 743
-      Height = 370
+      Width = 1906
+      Height = 458
+      Margins.Left = 18
+      Margins.Top = 18
+      Margins.Right = 18
+      Margins.Bottom = 18
       Align = alClient
       Caption = 'Panel3'
       FullRepaint = False
       TabOrder = 1
+      ExplicitLeft = 2
+      ExplicitTop = 2
+      ExplicitWidth = 1904
+      ExplicitHeight = 456
       object Splitter1: TSplitter
-        Left = 283
+        Left = 683
         Top = 1
-        Height = 368
-        ExplicitLeft = 238
+        Width = 18
+        Height = 456
+        Margins.Left = 18
+        Margins.Top = 18
+        Margins.Right = 18
+        Margins.Bottom = 18
+        ExplicitLeft = 684
+        ExplicitTop = 2
+        ExplicitHeight = 452
       end
       object PageControl1: TPageControl
-        Left = 286
+        Left = 701
         Top = 1
-        Width = 456
-        Height = 368
-        ActivePage = TabSheet8
+        Width = 1204
+        Height = 456
+        Margins.Left = 18
+        Margins.Top = 18
+        Margins.Right = 18
+        Margins.Bottom = 18
+        ActivePage = TabSheet1
         Align = alClient
         TabOrder = 0
         object TabSheet1: TTabSheet
+          Margins.Left = 18
+          Margins.Top = 18
+          Margins.Right = 18
+          Margins.Bottom = 18
           Caption = 'Objects'
           object lvObjects: TListView
             Left = 0
             Top = 0
-            Width = 448
-            Height = 340
+            Width = 1188
+            Height = 415
+            Margins.Left = 18
+            Margins.Top = 18
+            Margins.Right = 18
+            Margins.Bottom = 18
             Align = alClient
             Columns = <
               item
                 Caption = 'Object'
-                Width = 200
+                Width = 1226
               end>
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -24
+            Font.Name = 'MS Sans Serif'
+            Font.Style = []
+            Items.ItemData = {}
+            ParentFont = False
             SmallImages = ImageList1
             TabOrder = 0
             ViewStyle = vsReport
+            ExplicitWidth = 1168
+            ExplicitHeight = 370
           end
         end
         object TabSheet2: TTabSheet
+          Margins.Left = 18
+          Margins.Top = 18
+          Margins.Right = 18
+          Margins.Bottom = 18
           Caption = 'Statistics'
           ImageIndex = 1
           object Chart1: TChart
             Left = 0
             Top = 0
-            Width = 448
-            Height = 340
+            Width = 1238
+            Height = 576
+            Margins.Left = 18
+            Margins.Top = 18
+            Margins.Right = 18
+            Margins.Bottom = 18
             AllowPanning = pmNone
             BackWall.Brush.Style = bsClear
             BackWall.Pen.Visible = False
@@ -3164,6 +3265,8 @@ object frmWebConsole: TfrmWebConsole
             DefaultCanvas = 'TGDIPlusCanvas'
             ColorPaletteIndex = 13
             object Series1: TPieSeries
+              HoverElement = []
+              Marks.Tail.Margin = 2
               XValues.Order = loAscending
               YValues.Name = 'Pie'
               YValues.Order = loNone
@@ -3186,172 +3289,24 @@ object frmWebConsole: TfrmWebConsole
               OtherSlice.Legend.Visible = False
               OtherSlice.Text = 'Other'
             end
-          end
-        end
-        object TabSheet3: TTabSheet
-          Caption = '&User Agents'
-          ImageIndex = 2
-          object Splitter3: TSplitter
-            Left = 0
-            Top = 259
-            Width = 448
-            Height = 3
-            Cursor = crVSplit
-            Align = alBottom
-            ExplicitTop = 203
-            ExplicitWidth = 362
-          end
-          object Chart2: TChart
-            Left = 0
-            Top = 0
-            Width = 448
-            Height = 259
-            AllowPanning = pmNone
-            BackWall.Brush.Style = bsClear
-            BackWall.Pen.Visible = False
-            Legend.Alignment = laLeft
-            Legend.DividingLines.Style = psDot
-            Legend.DividingLines.Visible = True
-            Legend.Font.Charset = ANSI_CHARSET
-            Legend.Font.Height = -8
-            Legend.Font.Name = 'Small Fonts'
-            Legend.ResizeChart = False
-            Title.Text.Strings = (
-              'Requests/Hits/DOs'
-              '')
-            Title.Visible = False
-            AxisVisible = False
-            ClipPoints = False
-            Frame.Visible = False
-            View3DOptions.Elevation = 315
-            View3DOptions.Orthogonal = False
-            View3DOptions.Perspective = 0
-            View3DOptions.Rotation = 360
-            View3DOptions.Zoom = 102
-            View3DWalls = False
-            Zoom.Allow = False
-            Zoom.Animated = True
-            Zoom.Pen.Mode = pmNotXor
-            Align = alClient
-            BevelOuter = bvNone
-            TabOrder = 0
-            DefaultCanvas = 'TGDIPlusCanvas'
-            ColorPaletteIndex = 13
-            object PieSeries1: TPieSeries
-              Marks.Style = smsPercent
-              Title = 'Pie'
-              XValues.Order = loAscending
-              YValues.Name = 'Pie'
-              YValues.Order = loNone
-              Frame.InnerBrush.BackColor = clRed
-              Frame.InnerBrush.Gradient.EndColor = clGray
-              Frame.InnerBrush.Gradient.MidColor = clWhite
-              Frame.InnerBrush.Gradient.StartColor = 4210752
-              Frame.InnerBrush.Gradient.Visible = True
-              Frame.MiddleBrush.BackColor = clYellow
-              Frame.MiddleBrush.Gradient.EndColor = 8553090
-              Frame.MiddleBrush.Gradient.MidColor = clWhite
-              Frame.MiddleBrush.Gradient.StartColor = clGray
-              Frame.MiddleBrush.Gradient.Visible = True
-              Frame.OuterBrush.BackColor = clGreen
-              Frame.OuterBrush.Gradient.EndColor = 4210752
-              Frame.OuterBrush.Gradient.MidColor = clWhite
-              Frame.OuterBrush.Gradient.StartColor = clSilver
-              Frame.OuterBrush.Gradient.Visible = True
-              Frame.Width = 4
-              OtherSlice.Legend.Visible = False
-              OtherSlice.Text = 'Other'
-            end
-          end
-          object lvAgents: TListView
-            Left = 0
-            Top = 262
-            Width = 448
-            Height = 78
-            Align = alBottom
-            Columns = <
-              item
-                Caption = 'Agent'
-                Width = 300
-              end
-              item
-                Caption = 'Hits'
-              end>
-            SmallImages = ImageList1
-            TabOrder = 1
-            ViewStyle = vsReport
-          end
-        end
-        object TabSheet4: TTabSheet
-          Caption = 'TabSheet4'
-          ImageIndex = 3
-          object lbRQs: TListBox
-            Left = 0
-            Top = 0
-            Width = 448
-            Height = 286
-            Align = alTop
-            ItemHeight = 13
-            TabOrder = 0
-          end
-          object Button3: TButton
-            Left = 6
-            Top = 296
-            Width = 75
-            Height = 25
-            Caption = '&Clear'
-            TabOrder = 1
-            OnClick = Button3Click
-          end
-        end
-        object TabSheet5: TTabSheet
-          Caption = 'TabSheet5'
-          ImageIndex = 4
-          DesignSize = (
-            448
-            340)
-          object memMarsh: TMemo
-            Left = 0
-            Top = 0
-            Width = 443
-            Height = 454
-            Anchors = [akLeft, akTop, akRight, akBottom]
-            Lines.Strings = (
-              'memMarsh')
-            TabOrder = 0
-          end
-          object Button4: TButton
-            Left = 6
-            Top = 461
-            Width = 75
-            Height = 25
-            Anchors = [akLeft, akBottom]
-            Caption = '&Clear'
-            TabOrder = 1
-            OnClick = Button4Click
-          end
-        end
-        object TabSheet6: TTabSheet
-          Caption = 'TabSheet6'
-          ImageIndex = 5
-          object memMem: TMemo
-            Left = 8
-            Top = 16
-            Width = 321
-            Height = 233
-            Lines.Strings = (
-              'memMem')
-            TabOrder = 0
           end
         end
         object TabSheet8: TTabSheet
+          Margins.Left = 18
+          Margins.Top = 18
+          Margins.Right = 18
+          Margins.Bottom = 18
           Caption = 'Background'
           ImageIndex = 7
           object FrameHostBackground: TFrameHostPanel
             Left = 0
             Top = 0
-            Width = 448
-            Height = 340
+            Width = 1238
+            Height = 576
+            Margins.Left = 18
+            Margins.Top = 18
+            Margins.Right = 18
+            Margins.Bottom = 18
             Align = alClient
             Caption = 'FrameHostBackground'
             TabOrder = 0
@@ -3361,35 +3316,61 @@ object frmWebConsole: TfrmWebConsole
       object Panel5: TPanel
         Left = 1
         Top = 1
-        Width = 282
-        Height = 368
+        Width = 682
+        Height = 456
+        Margins.Left = 18
+        Margins.Top = 18
+        Margins.Right = 18
+        Margins.Bottom = 18
         Align = alLeft
         Caption = 'Panel5'
         TabOrder = 1
+        ExplicitLeft = 2
+        ExplicitTop = 2
+        ExplicitHeight = 452
         object lvStatus: TListView
           Left = 1
           Top = 1
-          Width = 280
-          Height = 204
+          Width = 680
+          Height = 114
+          Margins.Left = 18
+          Margins.Top = 18
+          Margins.Right = 18
+          Margins.Bottom = 18
           Align = alClient
           Columns = <
             item
               Caption = 'Page'
-              Width = 200
+              Width = 1226
             end
             item
               Caption = 'Age'
-              Width = 75
+              Width = 458
             end>
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -24
+          Font.Name = 'MS Sans Serif'
+          Font.Style = []
+          Items.ItemData = {}
+          ParentFont = False
           SmallImages = ImageList2
           TabOrder = 0
           ViewStyle = vsReport
+          ExplicitLeft = 2
+          ExplicitTop = 2
+          ExplicitWidth = 678
+          ExplicitHeight = 108
         end
         object cObjects: TChart
           Left = 1
-          Top = 205
-          Width = 280
-          Height = 162
+          Top = 115
+          Width = 680
+          Height = 340
+          Margins.Left = 18
+          Margins.Top = 18
+          Margins.Right = 18
+          Margins.Bottom = 18
           Legend.Frame.Style = psDot
           Legend.Frame.SmallDots = True
           Legend.Shadow.Color = clGray
@@ -3408,9 +3389,13 @@ object frmWebConsole: TfrmWebConsole
           Zoom.Pen.Mode = pmNotXor
           Align = alBottom
           TabOrder = 1
+          ExplicitLeft = 2
+          ExplicitTop = 110
+          ExplicitWidth = 678
           DefaultCanvas = 'TGDIPlusCanvas'
           ColorPaletteIndex = 13
           object Series2: TBarSeries
+            HoverElement = []
             Marks.Visible = False
             XValues.Name = 'X'
             XValues.Order = loAscending
@@ -3420,77 +3405,6 @@ object frmWebConsole: TfrmWebConsole
         end
       end
     end
-  end
-  object Button1: TButton
-    Left = 14
-    Top = 3
-    Width = 75
-    Height = 25
-    Caption = '&Start Service'
-    TabOrder = 1
-    OnClick = Button1Click
-  end
-  object Button2: TButton
-    Left = 15
-    Top = 34
-    Width = 75
-    Height = 25
-    Caption = 'S&top Service'
-    TabOrder = 2
-    OnClick = Button2Click
-  end
-  object brnKill: TButton
-    Left = 14
-    Top = 66
-    Width = 75
-    Height = 25
-    Caption = '&Quit'
-    TabOrder = 3
-    OnClick = brnKillClick
-  end
-  object cbNoDetails: TCheckBox
-    Left = 600
-    Top = 107
-    Width = 81
-    Height = 17
-    Caption = '&No Details'
-    Checked = True
-    State = cbChecked
-    TabOrder = 4
-  end
-  object CheckBox1: TCheckBox
-    Left = 100
-    Top = 107
-    Width = 69
-    Height = 17
-    Caption = 'CheckBox1'
-    TabOrder = 5
-  end
-  object Edit1: TEdit
-    Left = 320
-    Top = 96
-    Width = 73
-    Height = 21
-    TabOrder = 6
-    Text = 'ETS'
-  end
-  object Button5: TButton
-    Left = 400
-    Top = 96
-    Width = 81
-    Height = 17
-    Caption = 'Set Log Filter'
-    TabOrder = 7
-    OnClick = Button5Click
-  end
-  object btnResetHits: TButton
-    Left = 263
-    Top = 6
-    Width = 75
-    Height = 20
-    Caption = 'Reset &Hits'
-    TabOrder = 8
-    OnClick = btnResetHitsClick
   end
   object ImageList1: TImageList
     Left = 32

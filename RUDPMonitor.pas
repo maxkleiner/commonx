@@ -24,7 +24,7 @@ type
   end;
 
 var
-  RUDPMon: TRUDPmonitor;
+  RUDPMon: TRUDPmonitor = nil;
 
 implementation
 
@@ -127,7 +127,8 @@ end;
 
 procedure ofinal;
 begin
-  RUDPMon.free;
+  if assigned(RUDPMon) then
+    RUDPMon.free;
   RUDPMon := nil;
 end;
 

@@ -6,10 +6,9 @@ interface
 
 uses IdSocketHandle, idglobal, IdTCPClient, IdTCPConnection,
      DtNetConst, Classes, sysutils, SimpleAbstractConnection,
-     debug, typex, numbers, endian;
+     debug, typex, numbers, endian, stringx;
 
 type
-  ESocketsDisabled = class(Exception);
 
   TSocksHeader = packed record
   private
@@ -58,7 +57,7 @@ type
 
     procedure Flush;override;
     property UseSocks: boolean read FUseSocks write FUseSocks;
-
+    function GetUniqueID: int64;override;
   end;
 
 
@@ -98,6 +97,11 @@ end;
 function TSimpleTCPconnection.ConnectDirect: boolean;
 Begin
   try
+    if isipv6(HostName) then
+      FTCP.IPVersion := TIdIPVersion.Id_IPv6
+    else
+      FTCP.IPVersion := TIdIPVersion.Id_IPv4;
+
     FTCP.Host := self.HostName;
     FTCP.Port := strtoint(self.EndPoint);
     FTCP.Connect;
@@ -105,7 +109,7 @@ Begin
   except
     on E: Exception do begin
       result := false;
-      Debug.Log(classname+' could not connect to '+FTCP.Host+':'+FTCP.Port.tostring);
+      Debug.Log(classname+' could not connect to '+FTCP.Host+':'+FTCP.Port.tostring+' '+e.message);
 
     end;
   end;
@@ -231,7 +235,19 @@ end;
 
 function TSimpleTCPconnection.GetConnected: boolean;
 begin
-  result := FTCP.Connected;
+  try
+    result := FTCP.Connected;
+  except
+    on e: exception do begin
+      Debug.Log('Exception (not raised) in getconnected (for host'+self.HostName+':'+self.EndPoint+') '+e.Message);
+      result := false;
+    end;
+  end;
+end;
+
+function TSimpleTCPConnection.GetUniqueID: int64;
+begin
+  result := FTCP.Socket.Binding.Handle;
 end;
 
 function TSimpleTCPconnection.DoSendData(buffer: pbyte; length: integer): integer;

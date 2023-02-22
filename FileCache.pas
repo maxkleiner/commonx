@@ -5,7 +5,7 @@ unit FileCache;
 
 interface
 uses
-  typex, systemx, RequestInfo, classes, windows, dialogs, sysutils,orderlyinit;
+  typex, systemx, RequestInfo, classes, windows, dialogs, sysutils,orderlyinit, mimetype;
 
 const
   MAX_FILE_COUNT = 5000;
@@ -30,11 +30,10 @@ type
 
   function GetCachedFile(rqInfo: TRequestInfo): PCachedFile;
   function StreamFileCached(rqInfo: TRequestInfo): boolean;
-  function GetContentTypeForExt(sExt: ansistring): ansistring;
   procedure LoadStreamIntoResult(rqInfo: TrequestInfo);
 
 var
-  slFileIndex: TStringList;
+  slFileIndex: TStringList = nil;
   sectFileCache: TCLXCriticalSection;
 
 
@@ -95,7 +94,7 @@ begin
       if not bCacheable then begin
         rqInfo.response.ContentStream := fs;
         rqInfo.response.ContentLength := fs.Size;
-        rqInfo.response.contentType := GetContentTypeForExt(rqInfo.request.documentext);
+        rqInfo.response.contentType := MimeTypeFromExt(rqInfo.request.documentext);
         if lowercase(copy(rqInfo.response.contentType,1,4)) = 'text' then begin
           LoadStreamIntoResult(rqInfo);
         end;
@@ -123,7 +122,7 @@ begin
           rec.Document := rqInfo.request.Document;
 
         rec.DocumentExt := rqInfo.request.DocumentExt;
-        rec.contentType := GetContentTypeForExt(rqInfo.request.DocumentExt);
+        rec.contentType := MimeTypeFromExt(rqInfo.request.DocumentExt);
         rec.Content := sFile; //again this only copies a pointer to the ansistring
         rec.Size := iFileSize;
 
@@ -238,97 +237,7 @@ begin
 
 end;
 
-function GetContentTypeForExt(sExt: ansistring): ansistring;
-//Returns an appropriate mime-type for a given file extension.  For example
-//".jpg" returns "image/jpeg".  For inclusion in HTTP headers.   Currently the
-//following are defined.<BR>
-//.jpg: image/jpeg<BR>
-//.swf: application/x-shockwave-flash<BR>
-//.gif: image/gif<BR>
-//.pdf: application/pdf<BR>
-//.html: text/html<BR>
-//.htm: text/html<BR>
-//.mp3: audio/x-mpeg<BR>
-//.lrm: application/encarta<BR>
-//.exe: application/x-octet-stream<BR>
-//.hqx: application/mac-binhex40<BR>
-//.doc: application/msword<BR>
-//.ica: application/x-ica<BR>
-//<BR>
-//Add new content types as necessary.
 
-begin
-  //Get the document extension
-  sExt := lowercase(sExt);
-  //Translate the document extension into the MIME type that corresponds
-  //to it
-  if sExt = '.svg' then begin
-    result := 'image/svg+xml';
-  end else
-  if sExt = '.jpg' then begin
-    result := 'image/jpeg';
-  end else
-  if sExt = '.png' then begin
-    result := 'image/png';
-  end else
-  if sExt = '.swf' then begin
-    result := 'application/x-shockwave-flash';
-  end else
-  if sExt = '.gif' then begin
-    result := 'image/gif';
-  end else
-  if sExt = '.pdf' then begin
-    result := 'application/pdf';
-  end else
-  if sExt = '.html' then begin
-    result := 'text/html';
-  end else
-  if sExt = '.ms' then begin
-    result := 'text/html';
-  end else
-  if sExt = '.js' then begin
-    result := 'text/javascript';
-  end else
-  if sExt = '.htm' then begin
-    result := 'text/html';
-  end else
-  if sExt = '.htc' then begin
-    result := 'text/x-component';
-  end else
-  if sExt = '.ts' then begin
-    result := 'text/typescript';
-  end else
-  if sExt = '.mp3' then begin
-    result := 'audio/x-mpeg';
-  end else
-  if (sExt = '.lrm') then begin
-    result := 'application/encarta';
-  end else
-  if (sExt = '.exe') then begin
-    result := 'application/octet-stream';
-  end else
-  if (sExt = '.css') then begin
-    result := 'text/css';
-  end else
-  if (sExt = '.cab') then begin
-    result := 'application/octet-stream';
-  end else
-  if (sExt = '.hqx') then begin
-    result := 'application/mac-binhex40';
-  end else
-  if (sExt = '.doc') then begin
-    result := 'application/msword';
-  end else
-  if (sExt = '.wml') then begin
-    result := 'text/vnd.wap.wml';
-  end else
-  if (sExt = '.mp4') then begin
-    result := 'video/mp4';
-  end else
-  if sExt = '.ica' then begin
-    result := 'application/x-ica';
- end;
-end;
 
 procedure LoadStreamIntoResult(rqInfo: TrequestInfo);
 var
@@ -366,7 +275,7 @@ end;
 
 procedure oinit;
 begin
-  ics(sectFileCache);
+  ics(sectFileCache, 'fileCache');
   slFileIndex := TStringList.create;
   slFileIndex.Sorted := true;
 

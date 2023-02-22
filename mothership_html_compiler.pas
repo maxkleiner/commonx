@@ -156,7 +156,7 @@ begin
 
     end;
 
-    exit;
+    exit(true);
     //load image to determine width and height
     sFile := slash(webconfig.WebServerConfig.ExternalResourcePath)+sFile;
     sFile := stringReplace(sFile, '/', '\', [rfReplaceAll]);

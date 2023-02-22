@@ -1,17 +1,38 @@
 unit irc_abstract;
 {$DEFINE JOIN}
+{$DEFINE NICK_AFTER_CHAQ}
 {x$DEFINE IRC_DEAD_DEBUG}
 {x$DEFINE LOG_ALL_INCOMING_LINES}
 
+{
+CAP=B@Q
+NICK=OHBJ
+USER=TRDS
+PING=QHOF
+PONG=QNOF
+NAMESX=O@LDRY
+UHNAMES=TIO@LDR
+JOIN=KNHO
+PART=Q@SU
+NAMES=O@LDR
+CHANL=BI@OM
+PRIVMSG=QSHWLRF
+WHOHERE=VINIDSD
+}
+
 interface
 uses
-  dirfile,tickcount, commandprocessor, debug, helpers_stream, helpers.sockets, sysutils, classes, stringx, managedthread, betterobject, typex, systemx, WatchDog,
+  dirfile,tickcount, commandprocessor, debug, linked_list, fatmessage,
+  helpers_stream, helpers.sockets, sysutils,
+  classes, stringx, managedthread, betterobject,
+  typex, systemx, WatchDog,
 {$IFDEF MSWINDOWS}
 //  sockfix,
 //  simplewinsock,
 {$ENDIF}
-  simpletcpconnection, ExceptionsX,
-  idtcpclient, idglobal, multibuffermemoryfilestream, commandicons, better_collections;
+  simpletcpconnection, simpleAutoConnection, ExceptionsX,
+  idtcpclient, idglobal, multibuffermemoryfilestream,
+  commandicons, better_collections;
 
 const
   CMD_ICON_XDCC: TCommandIcon = (BitDepth: 32; RDepth:8;GDepth:8;BDepth:8;ADepth:8;Height:32;Width:32;
@@ -52,18 +73,37 @@ const
  ));
 
 const
-  DEFAULT_SERVER = 'irc.abjects.net';
+  DEFAULT_SERVER = '';
   DEFAULT_PORT = 6667;
   DEFAULT_NICK = 'nightman';
   default_USER = 'night@man';
   default_gecos = 'google.com';
 type
   TLocalFileStream = TFileStream;
+{$IFDEF NO_CTO_PROXY}
+  TLocalBaseConnection = TSimpleTCPConnection;
+{$ELSE}
+  TLocalBaseConnection = TSimpleAutoConnection;
+{$ENDIF}
 
-  TIRCMultiUserClient = class;//forward
-  TIRCConversation= class;//forward
+  TOnCommandMethod = function (swhoFrom, sOriginalLine, sCmd: string;
+  params: TStringList): boolean of object;
 
-  TIRCClientState = (irccsNotStarted, irccsStarting, irccsStarted, irccsStopping, irccsStopped);
+  TLocalSocketclient = class(TLocalBaseConnection)
+  public
+    Scrambled: boolean;
+    function ScrambleString(s: string): string;
+    function UnScrambleString(s: string): string;
+    function SendScrambledLine(sLine: string): string;
+    function ReadSCrambledLn(out sLine: string; iTimeout: nativeint): boolean;
+
+  end;
+
+
+  TChatMultiUserClient = class;//forward
+  TChatConversation= class;//forward
+
+  TChatClientState = (irccsNotStarted, irccsStarting, irccsStarted, irccsStopping, irccsStopped);
 
   TXDCCCommand = class(TCommand)
   protected
@@ -72,7 +112,7 @@ type
 
   public
     skipped: boolean;
-    irc: TIRCMultiUserClient;
+    irc: TChatMultiUserClient;
     trackingnumber: int64;
     ip: string;
     port: int64;
@@ -100,17 +140,20 @@ type
 
   TFoundPackEvent = procedure (sender: TObject; pack: TPack) of object;
   TXDCCEvent = procedure (c: TXDCCCommand) of object;
-  TIRCEvent = procedure (sender: TIRCMultiUserClient) of object;
+  TChatEvent = procedure (sender: TChatMultiUserClient) of object;
   TDCCAssErrorEvent = procedure (assid: int64; error: string) of object;
-  TIRCDMEvent = procedure (sender: TIRCMultiUserClient; loser: string; dm: string; dirout: boolean) of object;
-  TIRCConversationEvent = procedure (sender: TIRCConversation; sFrom, sMessage: string) of object;
+  TChatDMEvent = procedure (sender: TChatMultiUserClient; loser: string; dm: string; dirout: boolean) of object;
+  TChatConversationEvent = procedure (sender: TChatConversation; sFrom, sMessage: string) of object;
 
-  TIRCConversation = class(TSharedObject)
+  TEmptyEvent = procedure of object;
+
+  TChatConversation = class(TSharedObject)
   private
     FIgnoreExcl: boolean;
+    FOnUserEntersRoom: TProc<string>;
   protected
-    FOnLineReceived: TIRCConversationEvent;
-    FonChatReceived: TIRCConversationEvent;
+    FOnLineReceived: TChatConversationEvent;
+    FonChatReceived: TChatConversationEvent;
     FLines: TStringlist;
     FUsers: TStringList;
     FpmHold: string;
@@ -123,41 +166,50 @@ type
   public
     CommandTrigger: string;
     channel: string;
-    irc: TIRCMultiUserClient;
-    fOnCommand: TFunc<string,string,TStringList,boolean>;
+    irc: TChatMultiUserClient;
+    fOnCommand: TOnCommandMethod;
+    fPeriodically: TProc;
+    OnPeriodically: TEmptyEvent;
     procedure PrivMsg(s: string);
     procedure PM(s: string);
+    procedure PMMultiLine(s: string);
     procedure PMHold(s: string);
+    procedure PMCon(sExpression: string);
+    procedure PMConLn(sExpression: string);
     procedure Part;
+    procedure inviteUser(user: string);
 
     function LinesAvailable: string;
     function ReadLn: string;
     constructor Create; override;
     procedure Detach; override;
-    property OnLineReceived: TIRCConversationEvent read FOnLineReceived write FOnLineReceived;
+    property OnLineReceived: TChatConversationEvent read FOnLineReceived write FOnLineReceived;
+    property OnChatReceived: TChatConversationEvent read FOnChatReceived write FOnChatReceived;
     procedure UserJoined(sUser: string);
     procedure UserLeft(sUser: string);
     function GetUsers:IHolder<TStringList>;
+    property OnUserEntersRoom: TProc<string> read FOnUserEntersRoom write FOnUserEntersRoom;
 
     property IgnoreExcl: boolean read FIgnoreExcl write FIgnoreExcl;
 
   end;
 
 
-  TIRCMultiUserClient = class(TSharedObject)
+  TChatMultiUserClient = class(TSharedObject)
   private
+    FOnInvite: TProc<string>;
     FonFoundPack: TFoundPackEvent;
     FOnFinishXDCC: TXDCCEvent;
     FOnStartXDCC: TXDCCEvent;
-    FOnPoll: TIRCEvent;
+    FOnPoll: TChatEvent;
     FOnXDCCProgress: TXDCCEvent;
-    FOnDM: TIRCDMEvent;
+    FOnDM: TChatDMEvent;
     FOnAssError: TDCCAssErrorEvent;
-    FConversations: TSharedList<TIRCConversation>;
-    FEndedConversations: TArray<IHolder<TIRCConversation>>;
+    FConversations: TSharedList<TChatConversation>;
+    FEndedConversations: TArray<IHolder<TChatConversation>>;
     FChannels: TStringlist;
-    FState: TIrcClientState;
-    function GetConversation(idx: ni): TIRCConversation;
+    FState: TChatClientState;
+    function GetConversation(idx: ni): TChatConversation;
 
   strict protected
     procedure CleanupEndedConversations;
@@ -168,7 +220,8 @@ type
     procedure UntrackUnstartedPack(loser: string; pack: ni);
     procedure RejoinConversations;
   public
-    cli: TSimpleTCPConnection;
+    tmLastPeriodicCheck: ticker;
+    cli: TLocalSocketClient;
     host: string;
     port: ni;
     thr: TExternalEventThread;
@@ -187,6 +240,11 @@ type
     procedure Disconnect;
 
     procedure join(sChannel: string);
+    procedure invite(room, who: string);
+    procedure joinDM(sWith: string);
+    procedure CheckPeriodically;
+    function ShouldEncrypt: boolean;virtual;
+    procedure DoWatchDogReset;virtual;
 
     procedure IRCExecuteClientThreadForAllChannels(thr: TExternalEventThread);
     procedure IRCSend(sLine: string);
@@ -208,25 +266,26 @@ type
     property OnFinishXDCC: TXDCCEvent read FOnFinishXDCC write FOnFinishXDCC;
     property OnXDCCProgress: TXDCCEvent read FOnXDCCProgress write FOnXDCCProgress;
     property OnAssError: TDCCAssErrorEvent read FOnAssError write FOnAssError;
-    property OnPoll: TIRCEvent read FOnPoll write FOnPoll;
-    property OnDM: TIRCDMEvent read FOnDM write FOnDM;
+    property OnPoll: TChatEvent read FOnPoll write FOnPoll;
+    property OnDM: TChatDMEvent read FOnDM write FOnDM;
     procedure AssError(assid: int64; s: string);
     procedure OnConnect;virtual;
+    property OnInvite: Tproc<string> read FOnInvite write FOnInvite;
 
-    function NewConversation(channel: string): IHolder<TIRCConversation>;
-    procedure EndConversation(conv: IHolder<TIRCConversation>);
+    function NewConversation(channel: string): IHolder<TChatConversation>;
+    procedure EndConversation(conv: IHolder<TChatConversation>);
     procedure Privmsg(sTarget, sMessage: string);
     function FullIdent: string;
-    function FindConversation(sChannel: string): TIRCConversation;
-    property Conversations[idx: ni]: TIRCConversation read GetConversation;
+    function FindConversation(sChannel: string): TChatConversation;
+    property Conversations[idx: ni]: TChatConversation read GetConversation;
     function ConversationCount: ni;
     procedure ChatCommand(s: string);overload;
     procedure ChatCommand(cmd: string; params: TStringlist);overload;
     function GetChannels: IHolder<TStringList>;
     procedure RequestChannels;
     procedure Part(sChannel: string);
-    property State: TIrcClientState read FState write FState;
-    function WaitForState(s: TIrcClientState; iTimeout: ni = 8000): boolean;
+    property State: TChatClientState read FState write FState;
+    function WaitForState(s: TChatClientState; iTimeout: ni = 8000): boolean;
   end;
 
 
@@ -239,11 +298,11 @@ function cleanLoser(loser: string): string;
 function StripString(s: string): string;
 procedure locallog(s: string);
 
-function GetIRCAutoNick(bot: boolean): string;
+function GeTChatAutoNick(bot: boolean): string;
 
 implementation
 
-function GetIRCAutoNick(bot: boolean): string;
+function GeTChatAutoNick(bot: boolean): string;
 begin
   if bot then begin
     var c := GetComputerName;
@@ -270,7 +329,7 @@ begin
 
 end;
 
-function GetIRCAutoIdent(bot: boolean): string;
+function GeTChatAutoIdent(bot: boolean): string;
 begin
   var c := GetComputerName;
   c := stringreplace(c, '''','', [rfReplaceAll]);
@@ -287,7 +346,7 @@ end;
 
 procedure locallog(s: string);
 begin
-  exit;
+//  exit;
 {$IFDEF LOG_TO_IRC}
   if not logging then
 {$ENDIF}
@@ -323,7 +382,7 @@ begin
 
 end;
 
-{ TIRCMultiUserClient }
+{ TChatMultiUserClient }
 
 function cleanLoser(loser: string): string;
 begin
@@ -400,7 +459,7 @@ begin
 end;
 
 
-procedure TIRCMultiUserClient.AcceptResume(loser, filename, port: string);
+procedure TChatMultiUserClient.AcceptResume(loser, filename, port: string);
 begin
   for var t := 0 to xdccs.count-1 do begin
     var dcc := xdccs[t];
@@ -412,24 +471,25 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.AssError(assid: int64; s: string);
+procedure TChatMultiUserClient.AssError(assid: int64; s: string);
 begin
   if assigned(FOnAssError) then
     FOnAssError(assid, s);
 end;
 
-function TIRCMultiUserClient.CancelPack(assid: int64): boolean;
+function TChatMultiUserClient.CancelPack(assid: int64): boolean;
 begin
+  result := false;
   for var t := 0 to high(unstartedpacks) do begin
     if unstartedpacks[t].assid=assid then begin
       UntrackUnstartedPack(unstartedpacks[t].loser, unstartedpacks[t].pack);
-      exit;
+      exit(true);
     end;
   end;
 
 end;
 
-procedure TIRCMultiUserClient.ChatCommand(cmd: string; params: TStringlist);
+procedure TChatMultiUserClient.ChatCommand(cmd: string; params: TStringlist);
 begin
   cmd := uppercase(cmd);
   if cmd='/JOIN' then begin
@@ -439,7 +499,31 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.CheckXDCCs;
+procedure TChatMultiUserClient.CheckPeriodically;
+begin
+  if gettimesince(tmLastPeriodicCheck) < 10000 then
+    exit;
+  Lock;
+  try
+    for var t:= ConversationCount-1 downto 0 do begin
+      if t > (conversationcount-1) then
+        continue;
+
+      if assigned(conversations[t].OnPeriodically) then begin
+        conversations[t].OnPeriodically;
+      end;
+
+      if assigned(conversations[t].fPeriodically) then begin
+        conversations[t].fPeriodically();
+      end;
+    end;
+    tmLastPeriodicCheck := getticker;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TChatMultiUserClient.CheckXDCCs;
 begin
   tmLastXDCCCheck := GetTicker;
   for var t:= xdccs.Count-1 downto 0 do begin
@@ -463,16 +547,22 @@ begin
   end;
 end;
 
-procedure TIRCMultiUserClient.CleanupEndedConversations;
+procedure TChatMultiUserClient.CleanupEndedConversations;
 begin
-  var l := locki;
+//  var l := locki;
+  lock;
+  try
   for var t:=0 to high(FEndedConversations) do begin
     FConversations.Remove(FEndedConversations[t].o);
   end;
   Setlength(FendedConversations,0);
+
+  finally
+    Unlock;
+  end;
 end;
 
-procedure TIRCMultiUserClient.Connect;
+procedure TChatMultiUserClient.Connect;
 var
   sConn: string;
 begin
@@ -482,37 +572,48 @@ begin
   state := irccsStarting;
 
   online := false;
-  cli := TSimpleTCPConnection.create;
+  cli := TLocalSocketClient.create;
   cli.HostName := host;
   cli.Endpoint := inttostr(port);
   cli.Connect;
-
-  IRCSend('NICK '+nick);
-  IRCSEnd('USER '+user+' * 8 :'+default_gecos);
+  IRCSend('OBFS');
+  cli.scrambled := true;
+  IRCSend('CHAL');
+{$IFNDEF NICK_AFTER_CHAQ}
+  IRCSend('USER '+nick);
+  IRCSEnd('NICK '+user+' * 8 :'+default_gecos);
+{$ENDIF}
 
 end;
 
-function TIRCMultiUserClient.ConversationCount: ni;
+function TChatMultiUserClient.ConversationCount: ni;
 begin
-  var l := self.LockI;
-  result := FConversations.Count;
+//  var l := self.LockI;
+  lock;
+  try
+    result := FConversations.Count;
 
+  finally
+    Unlock;
+  end;
 end;
 
-constructor TIRCMultiUserClient.Create;
+constructor TChatMultiUserClient.Create;
 begin
   inherited;
+  tmSeen := GetTicker;
   FChannels := TStringlist.create;
   xdccs := TcommandList<TXDCCCommand>.create;
-  FConversations := TSharedList<TIRCConversation>.create;
+  FConversations := TSharedList<TChatConversation>.create;
   host := DEFAULT_SERVER;
   port := DEFAULT_PORT;
-  nick := GetIrcAutoNick(true);
-  user := GetIRCAutoIdent(true);
+  nick := GeTChatAutoNick(true);
+  user := GeTChatAutoIdent(true);
+
 
 end;
 
-procedure TIRCMultiUserClient.Detach;
+procedure TChatMultiUserClient.Detach;
 begin
   if detached then exit;
   Stop;
@@ -531,7 +632,7 @@ begin
   inherited;
 end;
 
-procedure TIRCMultiUserClient.Disconnect;
+procedure TChatMultiUserClient.Disconnect;
 begin
   State := irccsStopping;
   if cli = nil then
@@ -542,53 +643,80 @@ begin
   State := irccsStopped;
 end;
 
-procedure TIRCMultiUserClient.EndConversation(conv: IHolder<TIRCConversation>);
+procedure TChatMultiUserClient.DoWatchDogReset;
 begin
-  var l := LockI;
+  //
+end;
+
+procedure TChatMultiUserClient.EndConversation(conv: IHolder<TChatConversation>);
+begin
+//  var l := LockI;
+  lock;
+  try
   setlength(FEndedConversations, length(FEndedConversations)+1);
   FEndedConversations[high(FEndedConversations)] := conv;
 
-end;
-
-function TIRCMultiUserClient.FindConversation(
-  sChannel: string): TIRCConversation;
-begin
-  var l := FConversations.LockI;
-  for var t := 0 to FConversations.count-1 do begin
-    if comparetext(Fconversations[t].channel,sChannel)=0 then
-      exit(FConversations[t]);
+  finally
+    Unlock;
   end;
-  result := nil;
 
 end;
 
-procedure TIRCMultiUserClient.FoundPack(p: TPack);
+function TChatMultiUserClient.FindConversation(
+  sChannel: string): TChatConversation;
+begin
+//  var l := FConversations.LockI;
+  Lock;
+  try
+    for var t := 0 to FConversations.count-1 do begin
+      if comparetext(Fconversations[t].channel,sChannel)=0 then
+        exit(FConversations[t]);
+    end;
+    result := nil;
+  finally
+    unlock;
+  end;
+
+end;
+
+procedure TChatMultiUserClient.FoundPack(p: TPack);
 begin
   if assigned(onFoundPack) then
     onFoundPack(self, p);
 end;
 
-function TIRCMultiUserClient.FullIdent: string;
+function TChatMultiUserClient.FullIdent: string;
 begin
   result := nick+'!'+user;
 end;
 
-function TIRCMultiUserClient.GetChannels: IHolder<TStringList>;
+function TChatMultiUserClient.GetChannels: IHolder<TStringList>;
 begin
   result := StringToStringListH('');
-  var l := self.LockI;
-  for var t:= 0 to FChannels.count-1 do begin
-    result.o.add(FChannels[t]);
+//  var l := self.LockI;
+  lock;
+  try
+    for var t:= 0 to FChannels.count-1 do begin
+      result.o.add(FChannels[t]);
+    end;
+
+  finally
+    Unlock;
   end;
 end;
 
-function TIRCMultiUserClient.GetConversation(idx: ni): TIRCConversation;
+function TChatMultiUserClient.GetConversation(idx: ni): TChatConversation;
 begin
-  var l := self.LockI;
+//  var l := self.LockI;
+  try
+    Lock;
   result := FConversations[idx];
+  finally
+    Unlock;
+  end;
 end;
 
-function TIRCMultiUserClient.GetUnstartedPackFromLoser(loser: string; filename: string): TPack;
+function TChatMultiUserClient.GetUnstartedPackFromLoser(loser: string; filename: string): TPack;
 begin
   loser := getuser(loser);
   result.pack := -1;
@@ -601,7 +729,7 @@ begin
   end;
 end;
 
-procedure TIRCMultiUserClient.handle_command(originalline: string; parsed, oobs: TStringList);
+procedure TChatMultiUserClient.handle_command(originalline: string; parsed, oobs: TStringList);
 var
   pp:TPack;
 begin
@@ -613,17 +741,40 @@ begin
     sFrom := cmd;
     cmd := parsed[1];
   end;
+  if comparetext(cmd,'INVITE')=0 then begin
+    Lock;
+    try
+//      NewConversation(PARSED[2]);
+      if assigned(FOnInvite) then
+        FOninvite(PARSED[2]);
+    finally
+      Unlock;
+    end;
+  end else
   if comparetext(cmd,'PING')=0 then begin
     IRCSend('PONG ' + parsed[1]);
   end else
+  if comparetext(cmd,'CHAQ')=0 then begin
+    IRCSend('CHAR '+DifferentOb(SimpleOb(zcopy(originalline, 5,length(originalline)))));
+    {$IFDEF NICK_AFTER_CHAQ}
+      IRCSend('NICK '+nick);
+      IRCSEnd('USER '+user+' * 8 :'+default_gecos);
+    {$ENDIF}
+
+  end else
   if comparetext(cmd,'CHANL')=0 then begin
     begin
-      var l := Locki;
-      FChannels.clear;
-      for var t := 1 to parsed.Count-1 do begin
-        var c := parsed[t];
-        if trim(c) <> '' then
-          FChannels.add(parsed[t]);
+//      var l := Locki;
+      try
+        Lock;
+        FChannels.clear;
+        for var t := 1 to parsed.Count-1 do begin
+          var c := parsed[t];
+          if trim(c) <> '' then
+            FChannels.add(parsed[t]);
+        end;
+      finally
+        Unlock;
       end;
     end;
     MMQ.QuickBroadcast('ChannelsUpdated');
@@ -636,7 +787,12 @@ begin
   end else
   if comparetext(cmd,'WHOHERE')=0 then begin
     handle_whohere(originalline, parsed, oobs);
+  end else
+  if comparetext(cmd,'OBFS')=0 then begin
+//    cli.SendScrambledLine('OBFS');
+//    cli.Scrambled := true;
   end;
+
 
   if (comparetext(parsed[0], '376')=0)
    or (comparetext(parsed[0], '422')=0)
@@ -710,29 +866,35 @@ begin
 
 end;
 
-function TIRCMultiUserClient.handle_conversation_privmsg(from, target, line: string): boolean;
+function TChatMultiUserClient.handle_conversation_privmsg(from, target, line: string): boolean;
 begin
   result := false;
-  var l := FConversations.LockI;
-  for var t := FConversations.count-1 downto 0 do begin
-    if t < FConversations.count then
-    if comparetext(FConversations[t].channel, target) = 0 then begin
-      if zcopy(from, 0,1) = ':' then
-        from := zcopy(from, 1,length(from));
+//  var l := FConversations.LockI;
+  Lock;
+  try
 
-      if zcopy(line, 0,1) = ':' then
-        line := zcopy(line, 1,length(line));
+    for var t := FConversations.count-1 downto 0 do begin
+      if t < FConversations.count then
+      if comparetext(FConversations[t].channel, target) = 0 then begin
+        if zcopy(from, 0,1) = ':' then
+          from := zcopy(from, 1,length(from));
 
-      FConversations[t].RawLineReceived(from, line);
-      result := true;
+        if zcopy(line, 0,1) = ':' then
+          line := zcopy(line, 1,length(line));
+
+        FConversations[t].RawLineReceived(from, line);
+        result := true;
+      end;
     end;
+  finally
+    Unlock;
   end;
 
 
 
 end;
 
-procedure TIRCMultiUserClient.handle_join(originalline: string; parsed,
+procedure TChatMultiUserClient.handle_join(originalline: string; parsed,
   oobs: TStringList);
 begin
   if parsed.count < 3 then
@@ -748,12 +910,11 @@ begin
   end;
 end;
 
-procedure TIRCMultiUserClient.handle_line(sLine: string);
+procedure TChatMultiUserClient.handle_line(sLine: string);
 var
   l,r: string;
   oob: string;
 begin
-  WD.Reset;
   sLine := StripString(sLine);
   //locallog(sLine);
   if SplitString(sLine, #01, l,r) then begin
@@ -767,9 +928,10 @@ begin
   sll.o.Add(oob);
   sll.o.AddStrings(slr.o);
   handle_command(sLine, sll.o, oobs.o);
+  CheckPeriodically;
 end;
 
-procedure TIRCMultiUserClient.handle_pack(parsed, oobs: TStringlist; channel: string);
+procedure TChatMultiUserClient.handle_pack(parsed, oobs: TStringlist; channel: string);
 var
   p: TPack;
 begin
@@ -800,7 +962,7 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.handle_part(originalline: string; parsed,
+procedure TChatMultiUserClient.handle_part(originalline: string; parsed,
   oobs: TStringList);
 begin
   if parsed.count < 3 then
@@ -816,7 +978,7 @@ begin
   end;
 end;
 
-procedure TIRCMultiUserClient.handle_whohere(originalline: string; parsed,
+procedure TChatMultiUserClient.handle_whohere(originalline: string; parsed,
   oobs: TStringList);
 begin
   if parsed.count < 3 then
@@ -833,7 +995,7 @@ begin
   end;
 end;
 
-function TIRCMultiUserClient.HasXDCCAlready(loser, filename: string): boolean;
+function TChatMultiUserClient.HasXDCCAlready(loser, filename: string): boolean;
 begin
   result := false;
   for var t := 0 to xdccs.count-1 do begin
@@ -846,27 +1008,56 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.IRCExecuteClientThreadForAllChannels(thr: TExternalEventThread);
+procedure TChatMultiUserClient.invite(room, who: string);
 begin
+  if who = '' then
+    Debug.Log('invalid who');
+
+  IRCSend('INVITE '+who+' '+room);//join
+  IRCSend(SimpleOb('QSHWLRF')+' '+Who+' :INVITE '+room);//privmsg
+
+end;
+
+procedure TChatMultiUserClient.IRCExecuteClientThreadForAllChannels(thr: TExternalEventThread);
+begin
+
   try
-  thr.Name := 'TIRCMultiUserClient.IRCExecute';
+  thr.Name := 'TChatMultiUserClient.IRCExecute';
   Connect;//if not already connected
 {$IFDEF IRC_DEAD_DEBUG}
   Debug.Log('---->waiting for data<----');
 {$ENDIF}
   var sLine: string;
                                 //v properly raises exception if connection broken
-  if (cli.WaitForData(8000) and (cli.ReadLn(sLine,8000))) then begin
+  if (cli.WaitForData(8000) and (cli.ReadSCrambledLn(sLine,8000))) then begin
     tmSeen := getticker;
+    WD.Reset;
+    DoWatchDogReset;
+
 
     if sLine <> '' then begin
 //      locallog(sLine);
+        if zpos(SimpleOb('UR '), sLine)=0 then begin//CHANL
+          var slh := ParseStringh(sline, ' ');
+          self.nick := slh.o[slh.o.count-1];
+
+        end;
 {$IFDEF LOG_ALL_INCOMING_LINES}
-        Debug.Log('<<'+sLine);
+        if zpos(SimpleOb('BI@OM'), sLine)>=0 then begin//CHANL
+          Debug.Log('<<'+SimpleOb('BI@OM')+' not logged to protect privacy'); //chanl
+        end else
+        if zpos(SimpleOb('Q@SU')+' ', sLine)>=0 then begin   //PART
+          Debug.Log('<<'+SimpleOb('Q@SU')+' not logged to protect privacy');
+        end else
+        if zpos(SimpleOb('KNHO')+' ', sLine)>=0 then begin//JOIN
+          Debug.Log('<<'+SimpleOb('KNHO')+' not logged to protect privacy');
+        end else
+          Debug.Log('<<'+sLine);
 {$ENDIF}
         Handle_Line(sLine);
 {$IFDEF LOG_ALL_INCOMING_LINES}
-        Debug.Log('<<<<'+sLine);
+//        if zpos('CHANL', sLine)<0 then
+//        Debug.Log('<<<<'+sLine);
 {$ENDIF}
     end else begin
       Debug.Log('Got a blank line, disconnected?');
@@ -886,11 +1077,14 @@ begin
 {$IFDEF IRC_DEAD_DEBUG}
     DebuSg.Log('No data in channels.');
 {$ENDIF}
+    CheckPeriodically;
     if gettimesince(tmSeen) > 350000 then begin
       Debug.log('We haven''t seen any data (including pings) in a while');
       Debug.Log('disconnecting');
       cli.disconnect;
       tmSeen := GetTicker-(300000);
+      cli.Free;
+      cli := nil;
       Connect;
       exit;
     end;
@@ -913,34 +1107,54 @@ begin
   end;
 end;
 
-procedure TIRCMultiUserClient.IRCSend(sLine: string);
+procedure TChatMultiUserClient.IRCSend(sLine: string);
 begin
-  if (cli <> nil) and (cli.connected) then begin
-    locallog('>>'+sLine);
-    cli.Sendln(sLine);
-    locallog('>>>>'+sLine);
+  lock;
+  try
 
+    if (cli <> nil) and (cli.connected) then begin
+      locallog('>>'+sLine);
+      cli.SendScrambledLine(sLine);
+      locallog('>>>>'+sLine);
+
+    end;
+  finally
+    Unlock;
   end;
 
 end;
 
-procedure TIRCMultiUserClient.IRCUserSend(sLine: string);
+procedure TChatMultiUserClient.IRCUserSend(sLine: string);
 begin
   IRCSend(':'+fullident+' '+sline);
 end;
 
-procedure TIRCMultiUserClient.join(sChannel: string);
+procedure TChatMultiUserClient.join(sChannel: string);
 begin
-  var l := self.LockI;
-  IRCSend('JOIN '+sChannel);
-  IRCSend('WHOHERE '+sChannel);
+//  var l := self.LockI;
+  Lock;
+  try
+    IRCSend(SimpleOb('KNHO')+' '+sChannel);//join
+    IRCSend('WHOHERE '+sChannel);
+  finally
+    Unlock;
+  end;
 end;
 
-function TIRCMultiUserClient.NewConversation(
-  channel: string): IHolder<TIRCConversation>;
+procedure TChatMultiUserClient.joinDM(sWith: string);
 begin
-  result := THolder<TIRCConversation>.create;
-  result.o := TIRCConversation.create;
+  var room := 'DM-'+nick+'-'+sWith;
+  join('DM-'+nick+'-'+sWith);
+  invite(sWith, room);
+
+
+end;
+
+function TChatMultiUserClient.NewConversation(
+  channel: string): IHolder<TChatConversation>;
+begin
+  result := THolder<TChatConversation>.create;
+  result.o := TChatConversation.create;
   result.o.irc := self;
   result.o.channel := channel;
   FConversations.Add(result.o);
@@ -949,18 +1163,18 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.OnConnect;
+procedure TChatMultiUserClient.OnConnect;
 begin
   RejoinConversations;
   //no implementation requied, but you might want to join some default channels or something
 end;
 
-procedure TIRCMultiUserClient.Privmsg(sTarget, sMessage: string);
+procedure TChatMultiUserClient.Privmsg(sTarget, sMessage: string);
 begin
-  IRCSend('PRIVMSG '+sTarget+' :'+sMessage);
+  IRCSend(SimpleOb('QSHWLRF')+' '+sTarget+' :'+sMessage);//privmsg
 end;
 
-procedure TIRCMultiUserClient.Part(sChannel: string);
+procedure TChatMultiUserClient.Part(sChannel: string);
 begin
   Lock;
   try
@@ -974,27 +1188,31 @@ begin
   finally
     Unlock;
   end;
-  IRCSend('PART '+sChannel);
+  IRCSend(SimpleOb('Q@SU')+' '+sChannel);
 
 end;
 
-procedure TIRCMultiUserClient.RejoinConversations;
+procedure TChatMultiUserClient.RejoinConversations;
 begin
-  var l := FConversations.Locki;
-
-  for var t := 0 to FConversations.count-1 do begin
-    join(FConversations[t].channel);
+//  var l := FConversations.Locki;
+  Lock;
+  try
+    for var t := 0 to FConversations.count-1 do begin
+      join(FConversations[t].channel);
+    end;
+  finally
+    Unlock;
   end;
 
 
 end;
 
-procedure TIRCMultiUserClient.RequestChannels;
+procedure TChatMultiUserClient.RequestChannels;
 begin
   IRCSend('CHANL');
 end;
 
-function TIRCMultiUserClient.RequestPack(assid: int64; loser: string; pack: ni; filename: string): boolean;
+function TChatMultiUserClient.RequestPack(assid: int64; loser: string; pack: ni; filename: string): boolean;
 var
   p: TPack;
 begin
@@ -1003,27 +1221,39 @@ begin
 
   if GetUnstartedPackFromLoser(loser,filename).pack >= 0  then
     exit(false);
-  var l : ILock := LockI;
-  var msg := 'xdcc send #'+pack.tostring;
-  IRCSend('PRIVMSG '+loser+' '+msg);
-  if assigned(OnDM) then
-    OnDM(self, loser, msg, true);
+//  var l : ILock := LockI;
+  Lock;
+  try
 
-  p.loser := loser;
-  p.pack := pack;
-  p.filename := filename;
-  p.size := 0;
-  p.assid := assid;
-  TrackUnstartedPack(p);
 
-  exit(true);
+    var msg := 'xdcc send #'+pack.tostring;
+    IRCSend('PRIVMSG '+loser+' '+msg);
+    if assigned(OnDM) then
+      OnDM(self, loser, msg, true);
+
+    p.loser := loser;
+    p.pack := pack;
+    p.filename := filename;
+    p.size := 0;
+    p.assid := assid;
+    TrackUnstartedPack(p);
+
+    exit(true);
+  finally
+    Unlock;
+  end;
 
 end;
 
-procedure TIRCMultiUserClient.Start;
+function TChatMultiUserClient.ShouldEncrypt: boolean;
+begin
+  result := false;
+end;
+
+procedure TChatMultiUserClient.Start;
 begin
   if nick = '' then
-    raise ECritical.create('you cannot start IRC without a nick');
+    raise ECritical.create('you cannot start client without a nick');
 
   thr :=  TPM.Needthread<TExternalEventThread>(nil);
   thr.OnExecute := self.IRCExecuteClientThreadForAllChannels;
@@ -1033,7 +1263,7 @@ begin
   thr.beginstart;
 end;
 
-procedure TIRCMultiUserClient.StartXDCC(assid: int64; loser: string; pack: ni; filename, ip, port: string; size: int64=0);
+procedure TChatMultiUserClient.StartXDCC(assid: int64; loser: string; pack: ni; filename, ip, port: string; size: int64=0);
 var
   p: Tpack;
 begin
@@ -1066,7 +1296,8 @@ begin
     end;
 
     cmd.pendingresume := true;
-    var s := 'PRIVMSG '+loser+' :'#1'DCC RESUME '+p.filename+' '+port+' '+sz.tostring+#1;
+                     //PRIVMSG                            //DCC               //RESUME
+    var s := SimpleOb('QSHWLRF')+' '+loser+' :'#1+SimpleOb('EBB')+' '+SimpleOb('SDRTLD')+' '+p.filename+' '+port+' '+sz.tostring+#1;
     IRCSend(s);
     onDM(self, loser, s , false);
   end;
@@ -1080,7 +1311,7 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.Stop;
+procedure TChatMultiUserClient.Stop;
 begin
   if thr = nil then
     exit;
@@ -1097,34 +1328,45 @@ begin
 
 end;
 
-procedure TIRCMultiUserClient.TrackUnstartedPack(p: TPack);
+procedure TChatMultiUserClient.TrackUnstartedPack(p: TPack);
 begin
-  var l : ILock := locki;
-  setlength(unstartedpacks, length(unstartedpacks)+1);
-  unstartedpacks[high(unstartedpacks)] := p;
+//  var l : ILock := locki;
+  Lock;
+  try
+    setlength(unstartedpacks, length(unstartedpacks)+1);
+    unstartedpacks[high(unstartedpacks)] := p;
+  finally
+    Unlock;
+  end;
 end;
 
-procedure TIRCMultiUserClient.UntrackUnstartedPack(loser: string; pack: ni);
+procedure TChatMultiUserClient.UntrackUnstartedPack(loser: string; pack: ni);
 begin
-  var l : ILock := locki;
-  var del:ni := -1;
-  for var t := high(unstartedpacks) downto 0 do begin
-    if (unstartedpacks[t].loser = loser)
-    and (unstartedpacks[t].pack = pack) then begin
-      del := t;
+//  var l : ILock := locki;
+  Lock;
+  try
+    var del:ni := -1;
+    for var t := high(unstartedpacks) downto 0 do begin
+      if (unstartedpacks[t].loser = loser)
+      and (unstartedpacks[t].pack = pack) then begin
+        del := t;
+      end;
     end;
+
+    if del >= 0 then begin
+      for var t := del to high(unstartedpacks)-1 do
+        unstartedpacks[t] := unstartedpacks[t+1];
+
+      setlength(unstartedpacks, length(unstartedpacks)-1);
+    end;
+  finally
+    Unlock;
   end;
 
-  if del >= 0 then begin
-    for var t := del to high(unstartedpacks)-1 do
-      unstartedpacks[t] := unstartedpacks[t+1];
-
-    setlength(unstartedpacks, length(unstartedpacks)-1);
-  end;
 
 end;
 
-function TIRCMultiUserClient.WaitForState(s: TIrcClientState;
+function TChatMultiUserClient.WaitForState(s: TChatClientState;
   iTimeout: ni): boolean;
 begin
   var tmStart: ticker := GetTicker;
@@ -1162,9 +1404,10 @@ begin
     status := 'Resume Success!';
   end;
 
-  var cli := TSimpleTCPConnection.create;
+  var cli := TLocalSocketClient.create;
   try
-    Name := 'xdcc: #'+trackingnumber.tostring+' '+extractfilename(localfile);
+                    //xdcc
+    Name := SimpleOB('YEBB')+': #'+trackingnumber.tostring+' '+extractfilename(localfile);
 //    cli.BlockMode := bmBlocking;
     cli.HostName := ip;
     cli.EndPoint := port.tostring;
@@ -1251,9 +1494,9 @@ begin
 
 end;
 
-{ TIRCConversation }
+{ TChatConversation }
 
-procedure TIRCMultiUserClient.ChatCommand(s: string);
+procedure TChatMultiUserClient.ChatCommand(s: string);
 begin
   var h := ParseStringNotInH(s,' ','"');
 
@@ -1269,7 +1512,7 @@ begin
 
 end;
 
-procedure TIRCConversation.ChatReceived(sFrom, sMessage: string);
+procedure TChatConversation.ChatReceived(sFrom, sMessage: string);
 begin
   if assigned(FonChatReceived) then begin
     var sl := ParseStringH(sMessage, IRCCONT);
@@ -1279,7 +1522,7 @@ begin
   end;
 end;
 
-constructor TIRCConversation.Create;
+constructor TChatConversation.Create;
 begin
   inherited;
   FLines := TStringList.create;
@@ -1287,28 +1530,28 @@ begin
   CommandTrigger := '!';
 end;
 
-function TIRCConversation.default_handle_Command(sOriginalLine,
+function TChatConversation.default_handle_Command(sOriginalLine,
   sWho, sCmd_lowercase: string; params: TStringlist): boolean;
 begin
   result := false;
-  if scmd_lowercase = 'privmsg' then begin
+  if uppercase(scmd_lowercase) = SimpleOb('QSHWLRF') then begin
     result := default_handle_command_privmsg(sOriginalLine, sWho, sCmd_LowerCase, params);
   end;
 
 
 end;
 
-function TIRCConversation.default_handle_command_privmsg(sOriginalLine,
+function TChatConversation.default_handle_command_privmsg(sOriginalLine,
   sWho, sCmd_lowercase: string; params: TStringlist): boolean;
 begin
   var s := params[0];
   if zcopy(s,0,1) = ':' then
     s := zcopy(s, 1,length(s)-1);
   ChatReceived(sWho,s);
-
+  result := true;
 end;
 
-procedure TIRCConversation.Detach;
+procedure TChatConversation.Detach;
 begin
   if detached then
     exit;
@@ -1320,21 +1563,27 @@ begin
 
 end;
 
-function TIRCConversation.GetUsers: IHolder<TStringList>;
+function TChatConversation.GetUsers: IHolder<TStringList>;
 begin
-  var l := LockI;
-  result := THolder<TSTringlist>.create;
-  result.o  := TSTringList.create;
-  result.o.Text := FUsers.Text;
+//  var l := LockI;
+  Lock;
+  try
+    result := THolder<TSTringlist>.create;
+    result.o  := TSTringList.create;
+    result.o.Text := FUsers.Text;
+  finally
+    Unlock;
+  end;
+
 end;
 
-function TIRCConversation.handle_Command(sOriginalLine, sWho, sCmd_lowercase: string;
+function TChatConversation.handle_Command(sOriginalLine, sWho, sCmd_lowercase: string;
   params: TStringlist): boolean;
 begin
   TrimStringListDeleteEmpty(params);
   result := false;
   if assigned(fOnCommand) then
-    result := fOnCommand(sOriginalLine, sCmd_lowercase, params);
+    result := fOnCommand(sWho,sOriginalLine, sCmd_lowercase, params);
 
 
   if not result then begin
@@ -1344,17 +1593,25 @@ begin
 
 end;
 
-function TIRCConversation.handle_command_names(sOriginalLine, sWho,
+function TChatConversation.handle_command_names(sOriginalLine, sWho,
   sCmd_lowercase: string; params: TStringlist): boolean;
 begin
-
-  raise ECritical.create('unimplemented');
+   result := false;
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
-procedure TIRCConversation.RawLineReceived(sfrom, sMessage: string);
+procedure TChatConversation.inviteUser(user: string);
+begin
+  irc.invite(user, self.channel);  
+end;
+
+procedure TChatConversation.RawLineReceived(sfrom, sMessage: string);
 begin
   //this is a chat
+  var sFromNick := '';
+  var sFromEmail := '';
+  SplitString(sFrom, '!', sFromNick, sFromEmail);
   if length(sMessage)>=2 then begin
 
     //is this a command?
@@ -1382,14 +1639,15 @@ begin
 
       var cmd := zcopy(lowercase(h.o[0]),1,99999);
       h.o.delete(0);
-      handle_Command(sMessage, self.irc.nick, cmd, h.o);
+      handle_Command(sMessage, sFromNick, cmd, h.o);
 
     end;
 
 
-
     if assigned(OnLineReceived) then
       OnLineReceived(self, sFrom, sMessage);
+
+    ChatReceived(sFrom, sMessage);
   end else begin
     if assigned(OnLineReceived) then
       OnLineReceived(self, sFrom, sMessage);
@@ -1397,45 +1655,61 @@ begin
 
 end;
 
-function TIRCConversation.LinesAvailable: string;
+function TChatConversation.LinesAvailable: string;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
-function TIRCConversation.ReadLn: string;
+function TChatConversation.ReadLn: string;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
 
-procedure TIRCConversation.UserJoined(sUser: string);
+procedure TChatConversation.UserJoined(sUser: string);
 begin
-  var l := LockI;
-  var i := FUsers.INdexOf(sUser);
-  if i < 0 then
-    FUsers.Add(sUser);
-  MMQ.QuickBroadcast('ChannelUsersUpdated');
+//  var l := LockI;
+  Lock;
+  try
+    var i := FUsers.INdexOf(sUser);
+    if i < 0 then begin
+      FUsers.Add(sUser);
+      MMQ.QuickBroadcast('ChannelUsersUpdated');
+      if assigned(FOnUserEntersRoom) then
+        FOnUserEntersRoom(sUser);
+
+    end;
+  finally
+    Unlock;
+  end;
+
 end;
 
-procedure TIRCConversation.UserLeft(sUser: string);
+procedure TChatConversation.UserLeft(sUser: string);
 begin
-  var l := LockI;
-  var i := FUsers.IndexOf(sUser);
-  if i >=0 then
-    FUsers.delete(i);
-  MMQ.QuickBroadcast('ChannelUsersUpdated');
+//  var l := LockI;
+  Lock;
+  try
+    var i := FUsers.IndexOf(sUser);
+    if i >=0 then
+      FUsers.delete(i);
+    MMQ.QuickBroadcast('ChannelUsersUpdated');
+  finally
+    Unlock;
+  end;
+
 end;
 
-procedure TIRCConversation.Part;
+procedure TChatConversation.Part;
 begin
   irc.part(self.channel);
 end;
 
-procedure TIRCConversation.PM(s: string);
+procedure TChatConversation.PM(s: string);
 begin
   Lock;
   try
@@ -1448,7 +1722,17 @@ begin
   end;
 end;
 
-procedure TIRCConversation.PMHold(s: string);
+procedure TChatConversation.PMCon(sExpression: string);
+begin
+  PM(ESCIRC_CON+sExpression);
+end;
+
+procedure TChatConversation.PMConLn(sExpression: string);
+begin
+  PMCon(sExpression+'`n`');
+end;
+
+procedure TChatConversation.PMHold(s: string);
 begin
   Lock;
   try
@@ -1461,15 +1745,66 @@ begin
   end;
 end;
 
-procedure TIRCConversation.PrivMsg(s: string);
+procedure TChatConversation.PMMultiLine(s: string);
+begin
+  var slh := stringToStringListH(s);
+  for var t:= 0 to slh.o.Count-1 do begin
+    PM(slh.o[t]);
+  end;
+end;
+
+procedure TChatConversation.PrivMsg(s: string);
 begin
   Lock;
   try
     irc.PrivMsg(channel, s);
+    self.ChatReceived(irc.nick, s);
   finally
     Unlock;
   end;
 
+end;
+
+{ TLocalSocketclient }
+
+function TLocalSocketclient.ReadSCrambledLn(out sLine: string;
+  iTimeout: nativeint): boolean;
+begin
+  result := ReadLn(sLine, iTimeout);
+  if result then begin
+    if Scrambled then begin
+      sLine := unscrambleString(sLine);
+    end;
+
+  end;
+end;
+
+function TLocalSocketclient.ScrambleString(s: string): string;
+begin
+  result := s;
+  if not scrambled then
+    exit;
+  for var t:= low(s) to high(s) do begin
+    case s[t] of #13, #10,#$58,#$5F: begin
+      end else begin
+      result[t] := char(ord(s[t]) xor $55);
+      end;
+    end;
+
+  end;
+
+end;
+
+function TLocalSocketclient.SendScrambledLine(sLine: string): string;
+begin
+  if SCrambled then
+    sLine := ScrambleString(sLine);
+  sendln(sline);
+end;
+
+function TLocalSocketclient.UnScrambleString(s: string): string;
+begin
+  result := ScrambleString(s);
 end;
 
 end.

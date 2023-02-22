@@ -1,0 +1,40 @@
+inherited mm: Tmm
+  Caption = 'Application'
+  ClientHeight = 656
+  ClientWidth = 480
+  Position = Designed
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnKeyUp = FormKeyUp
+  OnResize = FormResize
+  OnVirtualKeyboardShown = FormVirtualKeyboardShown
+  OnVirtualKeyboardHidden = FormVirtualKeyboardHidden
+  DesignerMasterStyle = 0
+  object BackGroundPanel: TPanel
+    Touch.InteractiveGestures = [Pan]
+    Align = Client
+    Size.Width = 480.000000000000000000
+    Size.Height = 656.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+  end
+  object TempMessageTimer: TTimer
+    Interval = 50
+    OnTimer = TempMessageTimerTimer
+    Left = 56
+    Top = 176
+  end
+  object BusyTimer: TTimer
+    Interval = 15
+    OnTimer = BusyTimerTimer
+    Left = 56
+    Top = 240
+  end
+  object tmIOSBG: TTimer
+    Enabled = False
+    Interval = 4000
+    OnTimer = tmIOSBGTimer
+    Left = 224
+    Top = 312
+  end
+end

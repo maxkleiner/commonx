@@ -5,9 +5,9 @@ unit ServerVideoParser;
 interface
 
 uses
-  soundinterfaces, commandicons, ffmpeg_tools, windows, advancedgraphics_dx, easyimage, graphics, debug,
+  soundinterfaces, commandicons, ffmpeg_tools_localexecution, windows, advancedgraphics_dx, easyimage, graphics, debug,
   sysutils, fileserviceClientEx, dir, dirfile, stringx,  commands_file, huestogram, fastbitmap, ColorBlending, colorconversion,
-  types, activex, betterobject, classes, commandprocessor, memoryfilestream, advancedgraphics, tickcount,
+  types, activex, betterobject, classes, commandprocessor, memoryfilestream, advancedgraphics, tickcount, graphicsx,
   systemx,  typex, generics.Collections, soundtools, multibuffermemoryfilestream;
 
 const
@@ -566,9 +566,9 @@ end;
 procedure Tcmd_RenderHuestogram_FromDir.PrepareFrames;
 begin
   if highres then
-    ffmpeg_tools.ExtractVideoFrames(self.FileName, self.directory, 400,225)
+    ExtractVideoFrames(self.FileName, self.directory, 400,225)
   else
-    ffmpeg_tools.ExtractVideoFrames(self.FileName, self.directory, 72,48);
+    ExtractVideoFrames(self.FileName, self.directory, 72,48);
 
   if FLengthInSEconds = 0 then
     FLengthInSEconds := GetLengthFromBoog;

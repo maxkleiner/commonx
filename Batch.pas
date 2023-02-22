@@ -5,7 +5,7 @@ unit Batch;
 interface
 
 uses
-  commands_file, commands_system, ConsoleGlobal, consoletools, dir, dirfile, systemx, typex, numbers, commandprocessor, stringx, sysutils, exe, filemirror;
+  commands_file, commands_system, ConsoleGlobal, ConsoleX, dir, dirfile, systemx, typex, numbers, commandprocessor, stringx, sysutils, exe, filemirror;
 
 
 

@@ -1,0 +1,1578 @@
+unit Packet64;
+//This unit defines
+// TRDTPPacket -- which builds packet for network communication
+//
+
+//JASON! if you change the format of the packets... there's a ZILLION places
+//to mess up.
+//1. GetDataCount
+//2. GetInsertionPOint <--- you forgot about this oen last time
+//3. The "Add" functions <--- you forgot about these ones last time
+//4. The NetworkBuffer routines (should probably be rewritten to be intel optimized
+//5. The GetData property getter for the Data[] array
+
+
+{x$INLINE AUTO}
+{$DEFINE VERBOSE_PACKET_LOGGING}
+interface
+uses SysUtils, betterobject, dtnetconst, NetworkBuffer, typex, Classes, stringx, variants, debug, ExceptionsX, systemx, numbers, zip, system.zlib, packetabstract;
+
+const
+  CK : array of byte =
+    [55,33,77,88,22,56,34,24,77,134,245,234,123,234,255,245,67,45,34,23,12,
+     34,56,45,34,23,12,123,45,234,243,132,98,76,43,65,32,21,76,65,54,43,87,76,32];
+
+
+//  PACKET_MARKER = $119B92A8;
+//  PACKET_ADDRESS_MARKER = 0;
+//  PACKET_ADDRESS_LENGTH = 4;
+//  PACKET_ADDRESS_TYPE = 8;
+//  PACKET_ADDRESS_CRC = 12;
+//  PACKET_ADDRESS_ENCRYPTION = 16;
+//  PACKET_ADDRESS_USERDATA = 18;
+  PACKET_INDEX_RESPONSE_TYPE = 0;
+  PACKET_INDEX_SESSION = 1;
+  PACKET_INDEX_RESULT = 2;
+  PACKET_INDEX_ERROR_CODE = 3;
+  PACKET_INDEX_MESSAGE = 4;
+  PACKET_INDEX_RESULT_DETAILS = 5;
+
+  PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION = 1;
+  ENCRYPT_VERBATIM = 0;//PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION xor 1;
+  ENCRYPT_RLE = 1;//PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION;
+
+type
+  TRDTPPacket64 = class;//forward
+  TRDTPCHar = char;
+  EPacketError = class(EClassException);
+
+//  PACKET_ADDRESS_MARKER = 0;
+//  PACKET_ADDRESS_PACKED_LENGTH = 4;
+//  PACKET_ADDRESS_UNPACKED_LENGTH = 8;
+//  PACKET_ADDRESS_TYPE = 13;
+//  PACKET_ADDRESS_CRC = 14;
+//  PACKET_ADDRESS_ENCRYPTION = 12;
+//  PACKET_ADDRESS_USERDATA = 18;
+
+
+  TRDTPHeader64 = packed record
+    marker: integer;//0-3
+    crc: integer;//4-7
+    packedlength: int64;//8-15
+    unpackedlength: int64;//16-23
+    encryption: byte;//25
+    packettype: byte;//26
+
+  end;
+
+
+
+
+  TRDTPDataType = byte;
+//----------------------------------------------------------------------------
+   TRDTPPacket64 = class(TRDTPPacketAbstract)
+  private
+    function GetBufferLength: int64;
+  protected
+    iSeqReadPos: integer;
+    FCRCUpdated: boolean;
+    iLastSearchIndex: integer;
+    iLastSearchPointer: integer;
+    bDataCountOutOfDate: boolean;
+    FDataCountCache: integer;
+    fPreviousGetDataType: integer;
+    FPreviousGetDataCountType: integer;
+    FPreviousGetinsertionpoinType: integer;
+    iInsertionPoint: integer; //keeps dibs on where the next UserData value is inserted
+    //Property-related functions
+    function GetMarker: integer;override;
+    procedure SetMarker(l: integer);override;
+    function GetPackedLength: int64;override;
+    function GetUnPackedLength: int64;override;
+    function GetPacketType: byte;override;
+    procedure SetPacketType(l: byte);override;
+    function GetDataType(idx: int64): TRDTPDataType;override;
+    function GetNextDataType: TRDTPDataType;override;
+    function GetSessionID: int64;override;
+    function GetCRC: cardinal;override;
+    function GetData(idx: int64): variant;override;
+    function GetDataCount: int64;override;
+    function GetResponseType: smallint;override;
+    function GetResult: boolean;override;
+    function GetErrorCode: smallint;override;
+    function GetMessage: string;override;
+    function GetDebugMessage2: string;
+   //These calls must be used to mark the beginnings and ends of changes and
+    //reads, to make sure the packet is in the correct state for reading/writing/etc.
+
+    function BeginPacketRead: boolean;inline;
+    function BeginPacketChange: boolean;inline;
+    function EndPacketChange: boolean;inline;
+
+    //Internal house-keeping functions
+
+    procedure CalcCRC;inline;
+    procedure RecalcLength;inline;
+
+    //Occasionally useful Funcitons
+    function GetPointerToData(idx: int64): int64;inline;
+    function GetLengthFromDataPointer(ptr: int64): int64;inline;
+    function ComputeCRC: cardinal;inline;
+    function GetEncryption: byte;override;
+    procedure SetEncryption(i:byte);override;
+
+  public
+    constructor Create;override;
+    destructor Destroy; override;
+    procedure Initialize;override;
+    procedure Clear;override;
+
+    //Debugging functions
+    procedure ShowDebugMessage;
+    function GetDebugMessage: string;override;
+
+
+    //Extended data reading
+    procedure DecodeObjectHeader(index: int64; OUT iObjectType, iKeys,
+        iFields, iAssociates, iObjects: cardinal);
+
+    //Packet Buidling Rountines
+    procedure Addlong(l: integer);override;
+    procedure AddShort(i: smallint);override;
+    procedure AddDouble(d: double);override;
+    procedure AddNull;override;
+    procedure AddBoolean(b: boolean);override;
+    procedure AddString(s: string);override;
+    procedure AddDateTime(d: TDateTime);override;
+    procedure AddBytes(pc: PByte; iLength: int64);override;
+    procedure AddObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddShortObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddLongObject(iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure UpdateLongObject(iPos: int64; iObjectType, iKeys, iFields, iAssociates, iObjects: int64);override;
+    procedure AddLongLong(int: int64);override;
+    procedure AddFlexInt(int: int64);override;
+    procedure AddInt(i: int64);override;
+    function AddVariant(v: variant): boolean;override;
+
+    //Sequetial reading function
+    procedure SeqDecodeObjectHeader(OUT iObjectType, iKeys,
+        iFields, iAssociates, iObjects: cardinal);override;
+
+    function SeqRead: variant;override;
+    procedure SeqSeek(iPos: int64);override;
+    function SeqReadBytes(out iLength: int64): PByte;overload;override;
+    function SeqReadBytes: TDynByteArray;overload;override;
+
+    function Eof: boolean;override;
+
+    procedure Encrypt;override;
+    procedure Decrypt;override;
+
+    function GetBufferAsString: string;
+    property BufferAsString: string read GetBufferAsString;
+
+
+
+    //Packet Integrity Checking
+    function IsMarkerValid: boolean;
+      //Tests the marker value against Pre-defined constant
+    function IsCRCValid: boolean;
+      //Performs CRC Check and compares against CRC Property of packet
+    function IsValid: boolean;
+      //Combines marker and CRC check in one call
+
+
+      //tells whether or not the packet is intended for sending or recieving
+    property SeqReadPos: integer read iSeqReadPos write iSeqReadPos;
+    property NextDataType: TRDTPDataType read GetNextDataType;
+
+    property SeqWritePos: integer read iInsertionPOint write iInsertionPOint;
+    property BufferLength: int64 read GetBufferLength;
+
+    procedure ReturnError(sMessage: string);
+
+  end;
+
+
+//Supplemental functions
+function VerbBool(b: boolean) : string;
+function BoolToStr(b: boolean) : string;
+function VArBoolToStr(v: variant) : string;
+procedure xorCrypt(buffer: PByte; iLength: int64; key: string);
+(*var
+  DefEncKey : string;*)
+
+implementation
+
+
+//###########################################################################
+// TRDTPPacket64
+//###########################################################################
+
+constructor TRDTPPacket64.create;
+//Things to do on create
+//--Create buffer for howling the RAW packet data
+//--Initialize field FEncrypted to FALSE
+//--Initialize InsertionPoint to 18 (beginning of UserData area)
+//--Initialize header values
+begin
+  inherited;
+  bDataCountOutOfDate  := true;
+
+  //Allocate the maximum possible size for the packet in memory
+  FBuffer := TNetworkBuffer.create(MAX_PACKET_SIZE);
+
+
+  //Initialize default packet values
+  initialize;
+
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.Initialize;
+begin
+  with FBuffer do begin
+    //Place initial values in packet header
+    //(rest of packet remains uninitialized)
+    Pokelong(PACKET_MARKER,  PACKET_ADDRESS_MARKER);
+    Pokelong($00000000,      PACKET_ADDRESS_PACKED_LENGTH);
+    Pokelong($00000000,      PACKET_ADDRESS_UnPACKED_LENGTH);
+    PokeByte($00000001,      PACKET_ADDRESS_TYPE);
+    PokeLong($000000000,     PACKET_ADDRESS_CRC);
+    PokeByte($0000,         PACKET_ADDRESS_ENCRYPTION);
+
+  end;
+  FEncrypted := false;
+  FCRCUpdated := false;
+  iInsertionPoint:=PACKET_ADDRESS_USERDATA;
+  iLastSearchIndex := 0;
+  iLastSearchPointer := PACKET_ADDRESS_USERDATA;
+  iSeqReadPos := 0;
+  bDataCountOutOfDate := true;
+  FDataCountCache:=0;
+  SeqSeek(0);
+end;
+
+//----------------------------------------------------------------------------
+destructor TRDTPPacket64.destroy;
+begin
+  FBuffer.free;
+  inherited;
+//  Debug.Log(self, 'Freeing packet.');
+end;
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetMarker: integer;
+begin
+  result := FBuffer.PeekLong(PACKET_ADDRESS_MARKER);
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.SetMarker(l: integer);
+begin
+  FBuffer.PokeLong(l, PACKET_ADDRESS_MARKER);
+end;
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetPackedLength: int64;
+begin
+  if Fbuffer = nil then
+    raise ECritical.create('packet has no Fbuffer');
+  result := FBuffer.PeekLong(PACKET_ADDRESS_PACKED_LENGTH);
+end;
+function TRDTPPacket64.GetUnPackedLength: int64;
+begin
+  if Fbuffer = nil then
+    raise ECritical.create('packet has no Fbuffer');
+  result := FBuffer.PeekLong(PACKET_ADDRESS_UNPACKED_LENGTH);
+end;
+
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetPacketType: byte;
+begin
+  result := FBuffer.PeekByte(PACKET_ADDRESS_TYPE);
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.SetPacketType(l: byte);
+begin
+  BeginPacketChange;
+  FBuffer.PokeByte(l, PACKET_ADDRESS_TYPE);
+  EndPacketChange;
+end;
+//----------------------------------------------------------------------------
+
+function TRDTPPacket64.GetCRC: cardinal;
+begin
+  result := cardinal(FBuffer.PeekLong(PACKET_ADDRESS_CRC));
+end;
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetDataType(idx: int64): TRDTPDataType;
+var
+  idxSearchPointer: int64;
+begin
+  BeginPacketRead;
+  idxSearchPointer := GetPointerToData(idx); //<<-Start Seraching at byte 18
+  result := DecryptedBuffer.PeekByte(idxSearchPointer);
+end;
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetData(idx: int64): variant;
+//This function is wierd
+var
+  idxSearchPointer: int64;
+  iDataType: TRDTPDataType;
+  i64Temp: int64;
+begin
+  BeginPacketRead;
+  //Get Pointer to data
+  idxSearchPointer := GetPointerToData(idx); //<<-Start Seraching at byte 18
+
+  //Now that the pointer (idxSearchPointer) is placed in the proper spot in the
+  //buffer... return the proper value
+  iDataType := DecryptedBuffer.PeekByte(idxSearchPointer); inc(idxSearchPointer);
+  try
+    case iDataType of
+      PDT_SHORT:  result := smallint(DecryptedBuffer.PeekShort(idxSearchPointer));
+      PDT_LONG:   result := DecryptedBuffer.PeekLong(idxSearchPointer);
+      PDT_STRING: begin
+                  //if a string, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  result := DecryptedBuffer.PeekFmtString(idxSearchPointer);
+                end;
+      PDT_BYTES:  begin
+                  //if a byte array, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  RAISE Exception.Create('bytes found... cannot read variant');
+
+                end;
+      PDT_DOUBLE: begin
+                    result := DecryptedBuffer.PeekDouble(idxSearchPointer);
+                  end;
+      PDT_SHORT_OBJECT: begin
+                    result := '(short object)';
+                  end;
+      PDT_LONG_OBJECT: begin
+                    result := '(long object)';
+                  end;
+      PDT_DATETIME: begin
+                    result := DecryptedBuffer.PeekDateTime(idxSearchPointer);
+                  end;
+      PDT_LONG_LONG: begin
+                    i64Temp := DecryptedBuffer.PeekLongLong(idxSearchPointer);
+                    result := i64Temp;
+                  end;
+      PDT_BOOLEAN:  begin
+                    result := DecryptedBuffer.PeekBoolean(idxSearchPointer);
+                  end;
+      PDT_NULL:  begin
+                    result := null;
+                  end;
+
+
+
+    else begin
+        //windows.beep(764, 200);
+        raise EPacketError.createFMT('GetData() Packet format error, unrecognized type byte at %d.  Value: %d ... Previous Data Type was %d '+#13#10+GetDebugMessage, [idxSearchPOinter,iDataTYpe, FPreviousgetDataType]);
+      end;
+    end;
+  except
+    on E: Exception do begin
+      e.message := 'Packet format error, value type at '+inttostr(idxSearchPOinter)+' could not be converted to type '+inttostr(iDAtaType)+' ** '+e.message;
+      raise;
+    end;
+  end;
+
+  FPreviousGetDataType := iDataType;
+end;
+//----------------------------------------------------------------------------
+function TRDTPPacket64.GetDataCount: int64;
+var
+  idxSearchPointer: int64;
+  iDataType: TRDTPDataType;
+  iDataLength: int64;
+begin
+  BeginPacketRead;
+  if not bDataCountOutOfDate then begin
+    result := FDataCountCache;
+    exit;
+  end;
+
+  result := 0;
+  idxSearchPointer := PACKET_ADDRESS_USERDATA; //<<-Start Seraching at byte 18
+
+  //Sift through all the entries in the packet... entries can vary
+  //in length.
+  //DO UNTIL THE SEARCH POINTER REACHES THE REPORTED LENGTH OF THE PACKET
+  while idxSearchPointer<self.UnpackedLength do begin
+    iDataType := DecryptedBuffer.PeekByte(idxSearchPointer); inc(idxSearchPointer);
+
+(*      showmessage(inttostr(idxSearchPointer)+' of '+inttostr(self.length)+'  pos: '+inttostr(result)+' Type: '+inttostr(iDataType));*)
+
+    case iDataType of
+      PDT_NULL:  inc(idxSearchPointer, 0);
+      PDT_SHORT:  inc(idxSearchPointer, 2);
+      PDT_LONG:   inc(idxSearchPointer, 4);
+      PDT_STRING: begin
+                  //if a string, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  iDataLength := DecryptedBuffer.PeekLongLong(idxSearchPointer);
+                  inc(idxSearchPointer, (iDataLength*sizeof(TRDTPchar))+8);
+                end;
+      PDT_BYTES:  begin
+                  //if a byte array, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  iDataLength := DecryptedBuffer.PeekLongLong(idxSearchPointer);
+                  inc(idxSearchPointer, iDataLength+8);
+                end;
+      PDT_DOUBLE: begin
+                  inc(idxSearchPointer, PDT_LENGTH_DOUBLE);
+                end;
+      PDT_SHORT_OBJECT: begin
+                  inc(idxSearchPointer, PDT_LENGTH_SHORT_OBJECT);
+                end;
+      PDT_LONG_OBJECT: begin
+                  inc(idxSearchPointer, PDT_LENGTH_LONG_OBJECT);
+                end;
+      PDT_DATETIME: begin
+                  inc(idxSearchPointer, PDT_LENGTH_DATETIME);
+                end;
+      PDT_LONG_LONG: begin
+                  inc(idxSearchPointer, PDT_LENGTH_LONG_LONG);
+                end;
+      PDT_BOOLEAN: begin
+                  inc(idxSearchPointer, PDT_LENGTH_BOOLEAN);
+                end;
+
+    else begin
+        //windows.beep(764, 200);
+        raise EPacketError.createFMT('GetDataCount() Packet format error, unrecognized type byte at %d.  Value: %d LastType=%d '+#13#10+GetDebugMessage, [idxSearchPointer,iDataTYpe, FPreviousGetDataCountType]);
+      end;
+    end;
+    //Increment the result count after readjusting pointer
+    inc(result);
+    FDataCountCache := result;
+    bDataCountOutOfDate := false;
+    FPreviousGetDataCountType := iDataType;
+  end;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetEncryption: byte;
+begin
+  result := FBuffer.PeekByte(PACKET_ADDRESS_ENCRYPTION);
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.Addlong(l: integer);
+begin
+{$IFDEF LOG_PACKET_DATA}GLOG.Debug('AddLong @'+inttostr(iInsertionPoint));{$ENDIF}
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_LONG, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeLong(l, iInsertionPoint);
+  inc(iInsertionPoint,4);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+
+end;
+procedure TRDTPPacket64.Clear;
+begin
+  BeginPacketCHange;
+  self.iInsertionPoint := GetPointerToData(0);
+  iLastSearchIndex := 0;
+  iLastSearchPointer := PACKET_ADDRESS_USERDATA;
+
+  EndPacketChange;
+
+
+
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.AddShort(i: smallint);
+begin
+{$IFDEF LOG_PACKET_DATA} GLOG.Debug('AddShort @'+inttostr(iInsertionPoint));{$ENDIF}
+
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_SHORT, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeShort(i, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.AddString(s: string);
+var
+  iTemp: int64;
+begin
+{$IFDEF LOG_PACKET_DATA}GLOG.Debug('AddString "'+s+'"@'+inttostr(iInsertionPoint));{$ENDIF}
+  BeginPacketChange;
+
+  //put the data type byte
+  FBuffer.PokeByte(PDT_STRING, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeFmtString(s, iInsertionPoint);
+  iTemp := (System.length(s)*sizeof(char))+8;
+  inc(iInsertionPoint, iTemp);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+{$IFDEF LOG_PACKET_DATA}GLOG.Debug('After AddString @'+inttostr(iInsertionPoint));{$ENDIF}
+
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.AddBytes(pc: Pbyte; iLength: int64);
+var
+  t: int64;
+  b: byte;
+begin
+  BeginPacketChange;
+  //put the data type byte
+  Fbuffer.PokeByte(PDT_BYTES, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  Fbuffer.PokeLongLong(iLength, iInsertionPoint);
+  inc(iInsertionPoint, 8);
+
+
+  //put the stuff
+{$IFDEF SLOW_POKE_BYTES}
+  for t := 0 to iLength-1 do begin
+    b := ord((PAddable(pc)+t)^);
+    Fbuffer.PokeByte(b, iInsertionPoint);
+    inc(iInsertionPoint,1);
+  end;
+{$ELSE}
+  FBuffer.pokeBytes(pc, iInsertionPoint, iLength);
+  inc(iInsertionPoint,ilength);
+{$ENDIF}
+  EndPacketChange;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.AddVariant(v: variant): boolean;
+//Adds a variant type to the packet by querying its type information
+//Returns true if successful
+//False if variant type not supported.... in which case you may handle externally
+var
+  t: int64;
+  i: int64;
+begin
+  result := true;
+  i := VarType(v);
+
+  if (i = 271) then //custom variant type for 64-bit mySQL int64s
+{$IFNDEF VER180}    v := VarAsType(v, varInt64);
+{$ELSE}             v := VarAsType(v, varDate);{$ENDIF}
+  if (i = 272) then      //custom variant type for MYSQL Dates
+{$IFNDEF VER180}    v := VarAsType(v, varDate);
+{$ELSE}             v := VarAsType(v, varInt64);{$ENDIF}
+
+
+
+  case Vartype(v) of
+    varint64, varInteger: AddFlexInt(v);
+    varSmallint, varShortInt, varByte, varWord, varLongWord: AddFlexInt(v);
+    varString, varUString, varOleStr: AddString(v);
+    varDate: AddDateTime(v);
+    varDouble, varSingle, varCurrency, 273, 274: AddDouble(v);
+    varNull,0: AddNull;
+
+    varBoolean: AddBoolean(v);
+  else
+    if (VarType(v) and VarArray) = varArray then begin
+      for t := VarArrayLowBound(v,1) to VarArrayHighBound(v,1) do begin
+        AddVariant(v[t]);
+      end;
+    end
+    else raise EPacketError.CreateFmt(sErrVariantUnsupported, [varType(v)]);
+
+    result :=false;
+  end;
+end;
+
+
+//---------------------------------------------------------------------------
+function TRDTPPacket64.IsMarkerVAlid;
+begin
+  result := (marker = PACKET_MARKER);
+end;
+
+//---------------------------------------------------------------------------
+function TRDTPPacket64.IsCRCValid: boolean;
+begin
+  result := (ComputeCRC = CRC);
+end;
+
+//---------------------------------------------------------------------------
+function TRDTPPacket64.IsValid: boolean;
+begin
+  result := (IsMarkerValid and IsCRCValid);
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.RecalcLength;
+begin
+  FBuffer.PokeLong(iInsertionPoint, PACKET_ADDRESS_UNPACKED_LENGTH);
+  bDataCountOutOfDate := true;
+end;
+procedure TRDTPPacket64.ReturnError(sMessage: string);
+var
+  iRQ: int64;
+  iSessionID: int64;
+  sService: string;
+begin
+  iRQ := data[0];
+  iSessionID := data[1];
+  sService := data[2];
+  Clear;
+
+  AddShort(iRQ);
+  AddLong(iSessionID);
+  //AddString(sService);
+  AddBoolean(false);//result
+  AddShort(0);//error code
+  AddString(sMessage);//error message
+end;
+
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetResponseType: smallint;
+begin
+  BeginPacketRead;
+  if not IsResponse then
+    raise EPacketError.createFMT('Attempting to read a response property '+
+    'from a packet that is not a response.',[]);
+  result := Data[PACKET_INDEX_RESPONSE_TYPE];
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetResult: boolean;
+begin
+  BeginPacketRead;
+  if not IsResponse then
+    raise EPacketError.createFMT('Attempting to read a response property '+
+    'from a packet that is not a response.',[]);
+  result := Data[PACKET_INDEX_RESULT]<>0;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetErrorCode: smallint;
+begin
+  BeginPacketRead;
+  if not IsResponse then
+    raise EPacketError.createFMT('Attempting to read a response property '+
+    'from a packet that is not a response.',[]);
+  result := Data[PACKET_INDEX_ERROR_CODE];
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetMessage: string;
+begin
+  BeginPacketRead;
+  if not IsResponse then
+    raise exception.create('Attempting to read a '+
+    'response property from a packet that is not a response.');
+
+  result := VarToStr(Data[PACKET_INDEX_MESSAGE]);
+
+
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetLengthFromDataPointer(ptr: int64): int64;
+begin
+  BeginPacketRead;
+  result := DecryptedBuffer.PeekLong(ptr+1);
+
+end;
+//---------------------------------------------------------------------------
+
+procedure TRDTPPacket64.SetEncryption(i: byte);
+begin
+//  BeginPacketChange;
+  FBuffer.PokeByte(i, PACKET_ADDRESS_ENCRYPTION);
+//  EndPacketChange;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetPointerToData(idx: int64): int64;
+//returns a pointer to the start of the data at a particular index
+//returns pointer will point to the type byte before the actual type payload
+var
+  iCurrentIndex: int64;
+  idxSearchPointer: int64;
+  iDataType: TRDTPDataType;
+  iDataLength: int64;
+begin
+  BeginPacketRead;
+  if Encrypted then Decrypt;
+  if (idx >= iLastSearchIndex) then begin
+    iCurrentIndex := iLastSearchIndex;
+    idxSearchPointer := iLastSearchPointer;
+  end else begin
+    iCurrentIndex :=0; //<<-Must sift though packet and increment
+    idxSearchPointer := PACKET_ADDRESS_USERDATA; //<<-Start Seraching at byte 18
+  end;
+
+  //Part II
+
+  //Sift through all the preceding entries in the packet... entries can vary
+  //in length.
+  //DO UNTIL WE LAND ON THE INDEX REQUESTED
+  while iCurrentIndex<idx do begin
+    //Get the data type byte from packet and increment search pointer
+    iDataType := FBuffer.PeekByte(idxSearchPointer);
+    inc(idxSearchPointer);
+    //depending on data type, increment search pointer by varying amounts
+    case iDataType of
+      PDT_NULL:  inc(idxSearchPointer, PDT_LENGTH_NULL);
+      PDT_SHORT:  inc(idxSearchPointer, PDT_LENGTH_SHORT);
+      PDT_LONG:   inc(idxSearchPointer, PDT_LENGTH_LONG);
+      PDT_LONG_LONG: inc(idxSearchPointer, PDT_LENGTH_LONG_LONG);
+      PDT_STRING: begin
+                  //if a string, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  iDataLength := FBuffer.PeekLong(idxSearchPointer);
+                  inc(idxSearchPointer, (iDataLength*sizeof(char))+8);
+                end;
+      PDT_BYTES:  begin
+                  //if a byte array, increment the pointer by the length of the string
+                  //as reported by the LONG following the Data Type Byte
+                  iDataLength := FBuffer.PeekLong(idxSearchPointer);
+                  inc(idxSearchPointer, iDataLength+8);
+                end;
+      PDT_DOUBLE: begin
+                  inc(idxSearchPointer, PDT_LENGTH_DOUBLE);
+                end;
+      PDT_SHORT_OBJECT: begin
+                  inc(idxSearchPointer, PDT_LENGTH_SHORT_OBJECT);
+                end;
+      PDT_LONG_OBJECT: begin
+                  inc(idxSearchPointer, PDT_LENGTH_LONG_OBJECT);
+                end;
+      PDT_DATETIME: begin
+                    inc(idxSearchPointer, PDT_LENGTH_DATETIME);
+                end;
+      PDT_BOOLEAN: begin
+                    inc(idxSearchPointer, PDT_LENGTH_BOOLEAN);
+                end;
+    else begin
+        //windows.beep(764, 200);
+        raise EPacketError.createFMT('GetInsertionpoint() Packet format error, unrecognized type byte at %d.  Value: %d', [idxSearchPOinter,iDataTYpe]);
+      end;
+    end;
+    //FINALLY: Increment the index after readjusting pointers
+
+    inc(iCurrentIndex);
+  end;
+  iLastSearchPOinter := idxSearchPointer;
+  iLastSearchIndex := iCurrentIndex;
+
+  result := idxSearchPointer;
+end;
+//---------------------------------------------------------------------------
+//INTERNAL HOUSEKEEPING
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+
+procedure TRDTPPacket64.Encrypt;
+var
+  pfrom, pto: Pbyte;
+  szfrom, szto: ni;
+begin
+  if encrypted then exit;
+  if unpackedlength = 0 then begin
+    Fencrypted := true;
+  end;
+(*  case self.Encryption of
+    1:;
+    0:
+      xorCrypt(FBuffer.RawBuffer+PACKET_ADDRESS_USERDATA,
+        self.Length-PACKET_HEADER_SIZE, DefEncKey);
+    2:
+      Raise EPacketError.createFMT('Unsupported encryption %d', [self.Encryption]);
+  else
+    Raise EPacketError.createFMT('Illegal encryption %d', [self.Encryption]);
+  end;*)
+
+  if 0<>(PlatformOptions and PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION) then begin
+    pfrom := self.FBuffer.FRealBuffer;
+    szFrom := self.UnpackedLength;
+    if szFrom <= 0 then
+      raise ETransportError.create('cannot encrypt a packet that is '+inttostr(szFrom)+' length.');
+    pto := GetMemory(szFrom);
+    //zip ram starting BEYOND header
+    szto := zip.ZipRam(@pFrom[sizeof(TRDTPHEader64)], @pTo[sizeof(TRDTPHEader64)], szFrom-sizeof(TRDTPHEADER64), szFrom-sizeof(TRDTPHEADER64), nil, clFastest);
+    //if compression successful
+    if szto > 0 then begin
+      //move header
+      movemem32(pto, pFrom, sizeof(TRDTPHEader64));
+
+      //encrypt everything AFTER header
+      XOREncrypt(@pto[sizeof(TRDTPHeader64)], szTo, @CK[0], length(CK));
+
+      self.FBuffer.AssignBuffer(pto, szTo+sizeof(TRDTPHEADER64));
+      FBuffer.PokeLong(szTo+sizeof(TRDTPHEADER64), PACKET_ADDRESS_PACKED_LENGTH);
+      Encryption := ENCRYPT_RLE;
+      FEncrypted := true;
+    end else begin
+      FBuffer.PokeLong(UnpackedLength, PACKET_ADDRESS_PACKED_LENGTH);
+      Encryption := ENCRYPT_VERBATIM;
+      FreeMemory(pTo);
+    end;
+  end else begin
+    FBuffer.PokeLong(UnpackedLength, PACKET_ADDRESS_PACKED_LENGTH);
+    Encryption := ENCRYPT_VERBATIM;
+  end;
+
+
+  FEncrypted := true;
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.Decrypt;
+var
+  szFrom, szTo, szNew: ni;
+  pFrom, pCopy, pTo: pbyte;
+begin
+  if not encrypted then exit;
+
+(*  case self.Encryption of
+    1:; //None
+
+    0:
+      xorCrypt(FBuffer.RawBuffer+PACKET_ADDRESS_USERDATA,
+        self.Length-PACKET_HEADER_SIZE, DefEncKey);
+    2:
+      Raise EPacketError.createFMT('Unsupported encryption %d', [self.Encryption]);
+  else
+    Raise EPacketError.createFMT('Illegal encryption %d', [self.Encryption]);
+  end;*)
+  case Encryption of
+    ENCRYPT_RLE:
+    begin
+      szFrom := Self.Packedlength;
+      szTo := self.UnPackedLength;
+      pTo := GetMemory(szTo);
+      try
+        pFrom := Fbuffer.FRealBuffer;
+        pCopy := GetMemory(szTo);
+        try
+          movemem32(pCopy, pFrom, szFrom);
+          //decrypt everything AFTER header
+          XORDecrypt(@pcopy[sizeof(TRDTPHeader64)], szFrom-sizeof(TRDTPHEADER64), @CK[0], length(CK));
+          //unzip decrypted results
+          szNew := UnZipRam(@pCopy[sizeof(TRDTPHEADER64)], @pTo[sizeof(TRDTPHEADER64)], szFrom-sizeof(TRDTPHEADER64), szTo-sizeof(TRDTPHEADER64), nil);
+          Movemem32(pTo, pCopy, sizeof(TRDTPHEADER64));
+          self.FBuffer.AssignBuffer(pTo, szNew+sizeof(TRDTPHEADER64), szTo+sizeof(TRDTPHEADER64));//destroys pFrom
+          pTo := nil;//pTO is consumed by AssignBuffer
+          Encryption := ENCRYPT_VERBATIM;
+        finally
+          FreeMemory(pCopy);
+        end;
+      finally
+        if pTo <> nil then
+          FreeMemory(pTo);
+      end;
+    end;
+    ENCRYPT_VERBATIM:
+    begin
+      //
+    end;
+  else
+    raise EPacketError.create('Unknown encryption 0x'+inttohex(Encryption,4));
+  end;
+
+
+  FEncrypted := false;
+
+end;
+
+procedure TRDTPPacket64.CalcCRC;
+begin
+  DecryptedBuffer.PokeLong(ComputeCRC, PACKET_ADDRESS_CRC);
+end;
+
+
+//---------------------------------------------------------------------------
+//STATE CHANGING
+//---------------------------------------------------------------------------
+function TRDTPPacket64.BeginPacketRead: boolean;
+begin
+  if Encrypted then Decrypt;
+  result := true;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.BeginPacketChange: boolean;
+begin
+  if Encrypted then Decrypt;
+  result := true;
+
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.EndPacketChange: boolean;
+begin
+  RecalcLength;
+  CalcCRC;
+  result := true;
+end;
+//---------------------------------------------------------------------------
+//SUPPLEMENTAL FUNCTIONS
+//---------------------------------------------------------------------------
+function TRDTPPacket64.ComputeCRC: cardinal;
+var
+  checksum : cardinal;
+  i: int64;
+  orgCRC: int64;
+begin
+  result := 0;
+  {$IFDEF DISABLE_CRC}
+  exit;
+  {$ENDIF}
+  if Encrypted then Decrypt;
+
+  checksum := 0;
+
+  //Get the original CRC from the packet;
+  orgCRC := self.CRC;
+
+  //Set the CRC to 0 so that is does not corrupt the CRC after
+  //being inserted into the packet
+  DecryptedBuffer.PokeLong($00000000, PACKET_ADDRESS_CRC);
+
+  for i := 0 to self.PackedLength-1 do begin
+    inc(CheckSum, ord(Fbuffer.RawBuffer[i]));
+
+    if (checksum and $80000000) = $80000000 then
+      checksum := LOWORD(checksum)+HIWORD(checksum);
+  end;
+  DecryptedBuffer.PokeLong(orgCRC, PACKET_ADDRESS_CRC);
+
+  result := checksum;
+end;
+
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.ShowDebugMessage;
+begin
+  raise Exception.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.DecodeObjectHeader(index: int64; OUT iObjectType, iKeys,
+    iFields, iAssociates, iObjects: cardinal);
+var
+  iPointer: int64;
+  iError: int64;
+  iType: int64;
+begin
+  iPointer := GetPointerToData(index);
+
+  iType := FBuffer.PeekByte(iPOinter);
+  case iType of
+    PDT_SHORT_OBJECT: begin
+      iObjectType := Word(Fbuffer.PeekShort(iPointer+1));
+      iKeys := Word(Fbuffer.PeekByte(iPointer+3));
+      iFields := Fbuffer.PeekByte(iPointer+4);
+      iAssociates := Fbuffer.PeekByte(iPointer+5);
+      iObjects := word(Fbuffer.PeekShort(iPointer+6));
+    end;
+    PDT_LONG_OBJECT: begin
+      iObjectType := word(Fbuffer.PeekShort(iPointer+1));
+      iKeys := word(Fbuffer.PeekShort(iPointer+3));
+      iFields := word(Fbuffer.PeekShort(iPointer+5));
+      iAssociates := word(Fbuffer.PeekShort(iPointer+7));
+      iObjects := cardinal(Fbuffer.PeekLong(iPointer+9));
+    end;
+  else
+    begin
+      iError := FBuffer.PeekByte(ipointer);
+      raise EPacketError.createFMT('Object header not found when attempting to read object from packet. Type found %d at index %d', [iError, index]);
+    end;
+  end;
+
+end;
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.SeqDecodeObjectHeader(OUT iObjectType, iKeys, iFields,
+              iAssociates, iObjects: cardinal);
+begin
+  DecodeObjectHeader(iSeqReadPos, iObjectType, iKeys, iFields, iAssociates, iObjects);
+  inc(iSeqReadPos);
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.SeqRead: variant;
+begin
+  //validation
+  if iSeqReadPos >= DataCount then begin
+    //windows.beep(763,200);
+    raise EPacketError.CreateFMT('Sequential read past end of packet. @'+inttostr(iSeqReadPos)+' where data count is '+inttostr(DataCount), []);
+
+  end;
+  result := Data[iSeqReadPos];
+  inc(iSeqReadPos);
+
+end;
+function TRDTPPacket64.SeqReadBytes: TDynByteArray;
+var
+  iType: byte;
+  idxSearchPointer: int64;
+  iLength: ni;
+begin
+  //check to make sure the next tyype is bytes
+  if datatype[self.SeqReadPos] <> PDT_BYTES then begin
+    raise EPacketError.create('expected bytes type in packet, but found type:'+inttostr(datatype[SeqReadPos])+#13#10+GetDebugMessage);
+
+  end;
+  //read the length
+  idxSearchPointer := GetPointerToData(SeqReadPos);
+  inc(idxSearchPointer);
+  //get the length of the buffer
+  iLength := self.DecryptedBuffer.PeekLongLong(idxSearchPointer);
+  setlength(result, iLength);
+  inc(IdxSearchPointer,8);
+  //allocate result buffer to length
+  if iLength > 0 then
+    MoveMem32(@result[0], Decryptedbuffer.FRealBuffer+idxSearchPointer, iLength);
+  SeqReadPos := SeqReadPos + 1;
+end;
+
+function TRDTPPacket64.SeqReadBytes(out iLength: int64): PByte;
+var
+  iType: byte;
+  idxSearchPointer: int64;
+begin
+  //check to make sure the next tyype is bytes
+  if datatype[self.SeqReadPos] <> PDT_BYTES then begin
+    raise EPacketError.create('expected bytes type in packet, but found type:'+inttostr(datatype[SeqReadPos])+#13#10+GetDebugMessage);
+
+  end;
+  //read the length
+  idxSearchPointer := GetPointerToData(SeqReadPos);
+  inc(idxSearchPointer);
+  //get the length of the buffer
+  iLength := self.DecryptedBuffer.PeekLongLong(idxSearchPointer);
+  inc(IdxSearchPointer,8);
+  //allocate result buffer to length
+  Getmem(result, iLength);
+  MoveMem32(result, Decryptedbuffer.FRealBuffer+idxSearchPointer, iLength);
+  SeqReadPos := SeqReadPos + 1;
+
+
+end;
+
+//---------------------------------------------------------------------------
+procedure TRDTPPacket64.SeqSeek(iPos: int64);
+begin
+  iSeqReadPos := iPos;
+end;
+//---------------------------------------------------------------------------
+function TRDTPPacket64.GetNextDataType: TRDTPDataType;
+begin
+  result := GetDataType(iSeqReadPos);
+end;
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+procedure xorCrypt(buffer: PByte; iLength: int64; key: string);
+var
+  i: int64;
+  j: byte;
+begin
+  j:=STRZ;
+  for i := 0 to iLength-1 do begin
+    buffer[i] := buffer[i] xor (ord(key[j]) and 255);
+    inc(j);
+    if (j > ((Length(key)-1)+STRZ)) then j:=STRZ;
+  end;
+end;
+//----------------------------------------------------------------------------
+function VerbBool(b: boolean) : string;
+begin
+  if b then result := 'VALID' else result := 'INVALID';
+end;
+//----------------------------------------------------------------------------
+function BoolToStr(b: boolean) : string;
+begin
+  if b then result := 'TRUE' else result := 'FALSE';
+end;
+
+function VArBoolToStr(v: variant) : string;
+begin
+  if varType(v) <> varBoolean then
+    result := '**NOT A BOOL**'
+  else
+  if v then result := 'TRUE' else result := 'FALSE';
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddObject(iObjectType, iKeys, iFields, iAssociates,
+  iObjects: int64);
+var
+  bUseLong: boolean;
+begin
+  //range checking
+
+  //if the negative bit is turned on for any values passes, then EXCEPT
+  if (iObjectType or iKeys or iFields or iAssociates or iObjects) < 0 then
+    raise Exception.create('Negative value passed to TRDTPPacket64.AddObject');
+
+  //if object type constant is greater than 16-bits wide then except
+  if not ((iObjectType and $FFFF0000) = 0) then
+    raise Exception.create('Object constant out of range.  Value: '+inttostr(iObjectType));
+
+  //if number of keys is greater than 16-bits wide then except
+  if not ((iKeys and $FFFF0000) = 0) then
+    raise Exception.create('Key count out of range.  Value: '+inttostr(iKeys));
+
+  //if number of fields is greater than 16-bits wide then except
+  if not ((iFields and $FFFF0000) = 0) then
+    raise Exception.create('Field count out of range.  Value: '+inttostr(iFields));
+
+  //if number of associates is greater than 16-bits wide then except
+  if not ((iAssociates and $FFFF0000) = 0) then
+    raise Exception.create('Associate count out of range.  Value: '+inttostr(iAssociates));
+
+  //number of objects can be 32-bits wide, so we don't need checking
+
+  //check to see what type of object header to use SHORT or LONG
+  bUseLong := false;
+  //if any of the parameters are out of range for the SHORT form, then use the long
+
+  //Key limit is 255 (one byte)
+  if not ((iKeys and $FFFFFF00) = 0) then
+    bUseLong := true;
+
+  //Field limit is 255 (one byte)
+  if not ((iFields and $FFFFFF00) = 0) then
+    bUseLong := true;
+
+  //Associate limit is 255 (one byte)
+  if not ((iAssociates and $FFFFFF00) = 0) then
+    bUseLong := true;
+
+  //Object limit is 65536/32768
+  if not ((iObjects and $FFFF0000) = 0) then
+    bUseLong := true;
+
+  //call appropriate SHORT/LONG call.
+  if bUseLong then
+    AddLongObject(iObjectType, iKeys, iFields, iAssociates, iObjects)
+  else
+    AddShortObject(iObjectType, iKeys, iFields, iAssociates, iObjects);
+
+
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddShortObject(iObjectType, iKeys, iFields,
+  iAssociates, iObjects: int64);
+//Description: Adds a header to mark the beginning of a Data object mashalled
+//into the packet in SHORT form.  See docuement "Marshall or UnMarshall".
+//NOTE:
+//this function should be protected and ONLY called by AddObject.  AddObject
+//should handle all range checking for this routine.
+begin
+  //put packet into change state
+  BeginPacketChange;
+
+  //put the data type BYTE
+  Fbuffer.PokeByte(PDT_SHORT_OBJECT, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the object type WORD
+  Fbuffer.PokeShort(iObjectType, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //put the key count BYTE
+  Fbuffer.PokeByte(iKeys, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the Field Count BYTE
+  Fbuffer.Pokebyte(iFields, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the Associate Count BYTE
+  Fbuffer.Pokebyte(iAssociates, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the Object Count WORD
+  Fbuffer.PokeShort(iObjects, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  EndPacketChange;
+
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddLongObject(iObjectType, iKeys, iFields,
+  iAssociates, iObjects: int64);
+//Description: Adds a header to mark the beginning of a Data object mashalled
+//into the packet in LONG form.  See docuement "Marshall or UnMarshall".
+//NOTE:
+//this function should be protected and ONLY called by AddObject.  AddObject
+//should handle all range checking for this routine.
+begin
+  //put packet into change state
+  BeginPacketChange;
+
+  //put the data type BYTE
+  Fbuffer.PokeByte(PDT_LONG_OBJECT, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the object type WORD
+  Fbuffer.PokeShort(iObjectType, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //put the key count WORD
+  Fbuffer.PokeShort(iKeys, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //put the Field Count WORD
+  Fbuffer.PokeShort(iFields, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //put the Associate Count WORD
+  Fbuffer.PokeShort(iAssociates, iInsertionPoint);
+  inc(iInsertionPoint,2);
+
+  //put the Object Count DWORD
+  Fbuffer.PokeLong(iObjects, iInsertionPoint);
+  inc(iInsertionPoint,4);
+
+  EndPacketChange;
+
+end;
+
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddLongLong(int: int64);
+begin
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_LONG_LONG, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeLongLong(int, iInsertionPoint);
+  inc(iInsertionPoint,8);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddDateTime(d: TDateTime);
+begin
+  BeginPacketChange;
+
+  //put the data type BYTE
+  Fbuffer.PokeByte(PDT_DATETIME, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  Fbuffer.PokeDateTime(d, iInsertionPoint);
+  inc(iInsertionPoint,8);
+
+  EndPacketChange;
+
+end;
+//----------------------------------------------------------------------------
+procedure TRDTPPacket64.AddBoolean(b: boolean);
+begin
+{$IFDEF LOG_PACKET_DATA}GLOG.Debug('AddBoolean @'+inttostr(iInsertionPoint));{$ENDIF}
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_BOOLEAN, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeBoolean(b, iInsertionPoint);
+  inc(iInsertionPoint,PDT_LENGTH_BOOLEAN);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+
+end;
+
+procedure TRDTPPacket64.AddDouble(d: double);
+begin
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_DOUBLE, iInsertionPoint);
+  inc(iInsertionPoint);
+
+  //put the stuff
+  FBuffer.PokeDouble(d, iInsertionPoint);
+  inc(iInsertionPoint,PDT_LENGTH_DOUBLE);
+
+  //Recalc internal length stored in packet
+  EndPacketChange;
+end;
+
+procedure TRDTPPacket64.AddFlexInt(int: int64);
+var
+  dn: int64;
+begin
+  if (int < int64(int64($80000000))) or (int > int64(int64($7FFFFFFF))) then
+    AddLongLong(int)
+  else begin
+    dn := int;
+    if (dn > 32767) or (dn < -32768) then
+      AddLong(int)
+    else
+      AddShort(int);
+
+  end;
+end;
+
+procedure TRDTPPacket64.AddInt(i: int64);
+begin
+//  if (int <= 255) and (int >=0) then
+//    AddByte(smallint(i));
+
+//  if (i <= 32767) and (i >=-32768) then begin
+//    AddShort(smallint(i));
+//    exit;
+//  end;
+//
+//  if (i <= $7fffffff) and (i >=(-2147483648)) then begin
+//    Addlong(int64(i));
+//    exit;
+//  end;
+
+   Addlonglong(i);
+
+
+
+
+end;
+
+function TRDTPPacket64.GetSessionID: int64;
+begin
+  BeginPacketRead;
+  if not IsResponse then
+    raise EPacketError.createFMT('Cannot read SessionID from a packet during '+
+    'construction.',[]);
+
+  result := Data[PACKET_INDEX_SESSION];
+
+end;
+
+function TRDTPPacket64.GetDebugMessage2: string;
+var
+  t: int64;
+  i: int64;
+begin
+  i := 0;
+  try
+    for t:= 0 to self.DataCount-1 do begin
+      i := t;
+      result := result+vartostr(Data[t])+#13#10;
+    end;
+  except
+    on E: Exception do begin
+      raise Exception.create('Exception getting debug message while reading data element '+inttostr(i)+': '+E.Message);
+    end;
+  end;
+end;
+
+function TRDTPPacket64.GetBufferAsString: string;
+var
+  t: int64;
+begin
+  SetLength(result, self.UnpackedLength);
+  for t:= 1 to self.UnpackedLength do begin
+    result := result + chr(DecryptedBuffer.RawBuffer[t]);
+  end;
+end;
+
+
+function TRDTPPacket64.GetBufferLength: int64;
+begin
+
+  result := self.FBuffer.FSize;
+end;
+
+function TRDTPPacket64.Eof: boolean;
+begin
+  result := iSeqReadPos >= DataCount;
+end;
+
+function TRDTPPacket64.GetDebugMessage: string;
+var
+  memo: Tstringlist;
+  iLoopStart: int64;
+  t: int64;
+  v: variant;
+  iDataType: int64;
+  iTemp : int64;
+  sDisp: string;
+begin
+  result := '';
+
+  {$IFNDEF VERBOSE_PACKET_LOGGING}
+  exit;
+  {$ENDIF}
+
+  memo := TStringlist.create;
+  try
+    try
+      memo.Clear;
+      memo.add('**********************************');
+      memo.add(verbBool(IsValid)+' packet');
+
+
+      memo.Add('  IsResponse = '+booltoStr(IsResponse));
+
+      memo.add('----------------------------------');
+      Memo.add('  MARKER: '+inttohex(Marker,8)+' '+VerbBool(IsMArkerValid));
+      Memo.add('  CRC: '+inttohex(CRC,8)+' '+VerbBool(IsCRCValid));
+      Memo.add('  ENCRYPTION: '+inttohex(Encryption,4));
+      Memo.add('  PackedLength: '+inttostr(PackedLength));
+      Memo.add('  UnpackedLength: '+inttostr(UnpackedLength));
+      Memo.add('  Type: '+inttostr(PacketType));
+      memo.Add('  ');
+      memo.Add('  DataCount = '+inttostr(datacount));
+
+//      if IsResponse then begin
+//        memo.add('  ------------------------');
+//        memo.add('  STANDARD RESPONSE FIELDS');
+//        memo.add('  ------------------------');
+//        memo.Add('  Data[0] ResponseType = '+inttostr(ResponseType));
+//        memo.Add('  Data[1] Result = '+varbooltostr(self.Result));
+//        memo.Add('  Data[2] ErrorCode = '+inttostr(ErrorCode));
+//        memo.Add('  Data[3] Message = '+Message);
+        iLoopStart:= 0;
+//      end else iLoopStart:=0;
+
+      memo.add('  -------------------------');
+      memo.add('  ADDITIONAL FIELDS');
+      memo.add('  -------------------------');
+      for t:=iLoopStart to DataCount -1 do begin
+        iDataType := DataType[t];
+        if iDAtaType <> PDT_BYTES then
+          v := Data[t];
+  (*      if (varSmallint = Vartype(v)) then
+          sDisp := inttostr(v);
+        if (Vartype(v)= varint64) then
+          sDisp := inttostr(v);
+        if (varType(v) = varString) then
+          sDisp := v;
+        if (varType(v) = varNull) then
+          sDisp := 'NULL (Binary)';*)
+        //GLog.Debug(VArToStr(v));
+        case iDataType of
+          PDT_SHORT: sDisp := '(short): '+varToStr(v);
+          PDT_LONG: sDisp := '(long): ' +varToStr(v);
+          PDT_LONG_LONG: sDisp := '(longlong): '+varToStr(v);
+          PDT_DOUBLE: sDisp := '(double): '+ varToStr(v);
+          PDT_DATETIME: begin
+            sDisp := '(datetime): '+ varToStr(v);
+          end;
+          PDT_STRING: sDisp := '(string): '+ varToStr(v);
+          PDT_BYTES: sDisp := 'bytes (' + inttostr(DecryptedBuffer.PeekLong(GetPointerToData(t)+1)) + ')';
+          PDT_BOOLEAN: sDisp := varbooltostr(v);
+          PDT_NULL: sDisp := 'NULL (special type, must be independently handled)';
+          PDT_SHORT_OBJECT: begin
+              iTemp := GetPointerToData(t);
+              sDisp := 'short object';
+              sDisp := sDisp + ' ID ' + inttohex(DecryptedBuffer.PeekShort(iTemp + 1), 4);//1+2=3
+              sDisp := sDisp + ' #Params ' + inttostr(DecryptedBuffer.PeekByte(iTemp + 3));//3+1=4
+              sDisp := sDisp + ' #Fields ' + inttostr(DecryptedBuffer.PeekByte(iTemp + 4));//4+1=5
+              sDisp := sDisp + ' #Associates ' + inttostr(DecryptedBuffer.PeekByte(iTemp + 5));//5+1=6
+              sDisp := sDisp + ' #Objects ' + inttostr(DecryptedBuffer.PeekShort(iTemp + 6));//6+2=8-1=7
+
+              end;
+          PDT_LONG_OBJECT: begin
+              iTemp := GetPointerToData(t);
+              sDisp := 'long object';
+              sDisp := sDisp + ' ID ' + inttohex(DecryptedBuffer.PeekShort(iTemp + 1), 4);//1+2=3
+              sDisp := sDisp + ' #Params ' + inttostr(DecryptedBuffer.PeekShort(iTemp + 3));//3+2=5
+              sDisp := sDisp + ' #Fields ' + inttostr(DecryptedBuffer.PeekShort(iTemp + 5));//5+2=7
+              sDisp := sDisp + ' #Associates ' + inttostr(DecryptedBuffer.PeekShort(iTemp + 7));//7+2=9
+              sDisp := sDisp + ' #Objects ' + inttostr(DecryptedBuffer.PeekLong(iTemp + 9));//9+4=13-1=12
+              end;
+
+        else
+          begin
+            sDisp := sDisp + ' UNKNOWN TYPE, CANNOT CONTINUE: '+inttostr(iDATAType);
+//          raise EPacketError.createFMT('Debug message for data type at byte %d is Unimplemented.  Value: %d', [t, iDataTYpe]);
+            break;
+          end;
+        end;
+        Memo.add('  Data['+inttostr(t)+'] = '+sDisp);
+      end;
+
+      //PacketDebugForm.ShowDebugMessage(memo.text);
+
+    except
+      Memo.add('  Exception reading packet');
+      Memo.add(Exception(ExceptObject).Message);
+      raise EPacketError.create('PACKET FORMAT ERROR: DEBUG INFO FOLLOWS'#13#10+memo.text);
+
+    end;
+  finally
+    result := memo.text;
+    memo.free;
+
+  end;
+end;
+
+procedure TRDTPPacket64.UpdateLongObject(iPos, iObjectType, iKeys, iFields,
+  iAssociates, iObjects: int64);
+begin
+  //put packet into change state
+  BeginPacketChange;
+
+  //put the data type BYTE
+  Fbuffer.PokeByte(PDT_LONG_OBJECT, iPos);
+  //put the object type WORD
+  Fbuffer.PokeShort(iObjectType, iPos+1);
+  //put the key count WORD
+  Fbuffer.PokeShort(iKeys, iPos+3);
+  //put the Field Count WORD
+  Fbuffer.PokeShort(iFields, iPos+5);
+  //put the Associate Count WORD
+  Fbuffer.PokeShort(iAssociates, iPos+7);
+  //put the Object Count DWORD
+  Fbuffer.PokeLong(iObjects, iPos+9);
+
+  EndPacketChange;
+
+end;
+
+procedure TRDTPPacket64.AddNull;
+begin
+  BeginPacketChange;
+  //put the data type byte
+  FBuffer.PokeByte(PDT_NULL, iInsertionPoint);
+  inc(iInsertionPoint);
+  //Recalc internal length stored in packet
+  EndPacketChange;
+
+end;
+
+
+{ EPacketError }
+
+
+initialization
+(*  DefEncKey :=
+    #$4f+#$5f+#$f8+#$40+#$e1+#$82+#$3e+#$9e+#$74+#$06+#$3e+#$39+#$12+
+    #$1a+#$7c+#$51+#$90+#$8c+#$9c+#$ce+#$c3+#$32+#$2f+#$ca+#$f1+#$88+
+    #$cd+#$4f+#$86+#$9a+#$64+#$62+#$08+#$25+#$cf+#$40+#$4d+#$f9+#$ab+
+    #$e7+#$ec+#$a1+#$66+#$d8+#$f1+#$46+#$98+#$1c+#$d5+#$d1+#$97+#$85+
+    #$ad+#$50+#$46+#$36+#$a1+#$9b+#$2d+#$65+#$a0+#$37+#$cf+#$60+#$52+
+    #$7a+#$37+#$ce+#$4e+#$f0+#$d5+#$38+#$8e+#$fe+#$88+#$c8+#$1f+#$c5+
+    #$fc+#$50+#$1d+#$49+#$36+#$8d+#$df+#$d3+#$6d+#$ae+#$6f+#$94+#$1c+
+    #$10+#$3d+#$8a+#$55+#$4c+#$14+#$a8+#$58+#$73+#$4c+#$31+#$64+#$98+
+    #$42+#$65+#$cd+#$8f+#$05+#$5f+#$4f+#$f5+#$52+#$3e+#$a2+#$70+#$c3+
+    #$83+#$4e+#$38+#$43+#$ba+#$c1+#$d7+#$c5+#$5d+#$9f+#$2d+#$36+#$f5+
+    #$59+#$b6+#$af+#$82+#$01+#$10+#$f0;*)
+
+end.
+
+
+
+

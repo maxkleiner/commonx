@@ -8,6 +8,7 @@ uses
 function LOWORD(c: cardinal): ni;
 function HIWORD(c: cardinal): ni;
 
+function IntToOct(Value: Longint; digits: Integer): string;
 function VarToDoubleNull(v: variant; ifNull: double): double;
 function IntToDec32(i: integer; digits: integer): string;
 function GetDec32Digit(b: byte): string;
@@ -22,19 +23,23 @@ function SnapToLess(d: double; snap: double): double;overload;
 function SnapToMore(d: double; snap: double): double;overload;
 
 function LesserOf(i1, i2: int64): int64;overload;inline;
+function LesserOfAtLeastZero(i1, i2: int64): int64;overload;inline;
 function LesserOf(i1, i2: integer): integer;overload;inline;
-function LesserOf(i1, i2: nativefloat): nativefloat;overload;inline;
+function LesserOf(i1, i2: single): single;overload;inline;
+function LesserOf(i1, i2: double): double;overload;inline;
 function LesserOf(i1, i2, i3: int64): int64;overload;inline;
 function LesserOf(i1, i2, i3: integer): integer;overload;inline;
 function LesserOf(i1, i2, i3: nativefloat): nativefloat;overload;inline;
 function LesserOf(p1,p2: TPoint): TPoint;overload;inline;
+function LessThanAndPositive(i1,i2: int64): boolean;
 
 function RoundPoint(p: TPointF): TPoint;
 function TruncPOint(p: TpointF): TPoint;
 
 function GreaterOf(i1, i2: int64): int64;overload;inline;
 function GreaterOf(i1, i2: integer): integer;overload;inline;
-function GreaterOf(r1,r2: nativefloat): nativefloat;overload;inline;
+function GreaterOf(r1,r2: single): single;overload;inline;
+function GreaterOf(r1,r2: double): double;overload;inline;
 function GreaterOf(i1, i2, i3: int64): int64;overload;inline;
 function GreaterOf(i1, i2, i3: integer): integer;overload;inline;
 function GreaterOf(i1, i2, i3: nativefloat): nativefloat;overload;inline;
@@ -175,6 +180,21 @@ begin
     result := i2;
 end;
 
+function LesserOfAtLeastZero(i1, i2: int64): int64;overload;inline;
+begin
+  if (i1<0) and (i2 <0) then
+    exit(-1);
+  if i1<0 then
+    exit(i2);
+  if i2<0 then
+    exit(i1);
+
+  if i1<i2 then
+    exit(i1);
+  exit(i2);
+
+end;
+
 function LesserOf(i1, i2: integer): integer;overload;
 begin
   if i1 < i2 then
@@ -186,13 +206,22 @@ end;
 
 
 
-function LesserOf(i1, i2: nativefloat): nativefloat;overload;
+function LesserOf(i1, i2: single): single;overload;
 begin
   if i1 < i2 then
     result := i1
   else
     result := i2;
 end;
+
+function LesserOf(i1, i2: double): double;overload;
+begin
+  if i1 < i2 then
+    result := i1
+  else
+    result := i2;
+end;
+
 
 
 
@@ -213,7 +242,7 @@ begin
 end;
 
 
-function GreaterOf(r1,r2: nativefloat): nativefloat;overload;
+function GreaterOf(r1,r2: single): single;overload;
 begin
   if r1  > r2 then
     result := r1
@@ -221,6 +250,16 @@ begin
     result := r2;
 
 end;
+
+function GreaterOf(r1,r2: double): double;overload;
+begin
+  if r1  > r2 then
+    result := r1
+  else
+    result := r2;
+
+end;
+
 
 function Order(var i1,i2: integer):boolean;
 var
@@ -1078,6 +1117,36 @@ begin
   result := iCode = 0;
 
 end;
+
+function IntToOct(Value: Longint; digits: Integer): string;
+var
+  rest: Longint;
+  oct: string;
+  i: Integer;
+begin
+  oct := '';
+  while Value <> 0 do
+  begin
+    rest  := Value mod 8;
+    Value := Value div 8;
+    oct := IntToStr(rest) + oct;
+  end;
+  for i := Length(oct) + 1 to digits do
+    oct := '0' + oct;
+  Result := oct;
+end;
+
+function LessThanAndPositive(i1,i2: int64): boolean;
+begin
+  if i1 < 0 then
+    exit(false);
+  if (i2 < 0) then//precluded that i1 was not negative
+    exit(true);
+  exit(i1<i2);
+
+
+end;
+
 
 
 end.

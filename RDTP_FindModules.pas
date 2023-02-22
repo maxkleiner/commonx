@@ -7,7 +7,7 @@ unit RDTP_FindModules;
 interface
 
 uses
-  betterobject, typex, classes, managedthread, tickcount, commandprocessor, dir, dirfile, rdtpserverlist, sharedobject, stringx, commonconstants, sysutils, windows, generics.collections.fixed, systemx, orderlyinit, debug;
+  betterobject, typex, classes, managedthread, tickcount, commandprocessor, dir, dirfile, rdtpserverlist, sharedobject, stringx, commonconstants, sysutils, windows, generics.collections.fixed, systemx, orderlyinit, debug, threadstatus;
 
 
 type
@@ -88,6 +88,7 @@ function TRDTPModule.Load(sFile: string): boolean;
 var
   p: pointer;
   regmod: TRegisterModulesProc;
+  AssimilateTSMProc: TAssimilateTSMProc;
 begin
   result := false;
   FFileName := sFile;
@@ -98,27 +99,35 @@ begin
   Debug.Log('******************************************************************');
   Debug.Log('******************************************************************');
   Debug.Log('Loading: '+sFile);
-  Debug.Log('******************************************************************');
-  Debug.Log('******************************************************************');
-  Debug.Log('******************************************************************');
-  Debug.Log('******************************************************************');
 
-  //windows.Beep(600, 100);
+ //windows.Beep(600, 100);
 
 
 
 
 
   FHandle := LoadLibrary(pchar(sFile));
+  Debug.Log('Loaded Library: '+sFile);
+
+Debug.Log('Assimilating Threads fromLIbrary: '+sFile);
+
+  p := GetProcAddress(FHandle, pchar('UseExternalThreadStatusManager'));
+  if p <> nil then begin//module will work without this export, but nice to have
+    AssimilateTSMProc := p;
+    AssimilateTSMProc(Threadstatus.TSM);//switch module to register ThreadStatuses with THIS (the loading) module
+  end;
 
   p := GetProcAddress(FHandle, pchar('RegisterModules'));
+
   if p = nil then begin
+  Debug.Log('Did not find Proc RegisterModules()');
     Unload;
     exit;
   end;
-
+  Debug.Log('Found Proc RegisterModules()');
   regmod := p;
   regmod(RDTPServers);
+  Debug.Log('Module Registered');
 
   result := true;
   Debug.Log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
@@ -203,7 +212,7 @@ end;
 procedure TRDTPModuleList.FindAndAggregateModules;
 begin
   RDTP_MODLIST.FindAndAggregateModules(dllPath);
-  RDTP_MODLIST.FindAndAggregateModules(dllPath+'..\');
+//  RDTP_MODLIST.FindAndAggregateModules(dllPath+'..\');
 end;
 
 procedure TRDTPModuleList.FindAndAggregateModules(sDir: string);
@@ -399,9 +408,15 @@ begin
   Debug.Log('Idle thread terminated');
 end;
 
+var
+  inithere: boolean = false;
 
 procedure oinit;
 begin
+  if inithere then
+    exit;
+
+  inithere := true;
   rdtp_Modlist := TRDTPModuleList.Create;
   RDTP_MODLIST.FindAndAggregateModules();
 end;

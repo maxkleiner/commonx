@@ -29,6 +29,7 @@ type
     FPreserveAspect: boolean;
     procedure SetInMotion(const Value: boolean);
   public
+    firfilter: boolean;
     constructor create(aowner: TComponent);override;
     property TargetLeft: integer read FTargetLeft write FTargetLeft;
     property TargetWidth: integer read FTargetWidth write FTargetWidth;
@@ -74,53 +75,61 @@ procedure TVelocityPanel.ApplyPhysics(var rpos, rvel: real;
 var
   dist: real;
   rchange: real;
+
 begin
-  dist := abs(rtarget-rpos);
-  rchange := 0;
-  if rpos < rtarget then begin
-    rchange := (AccelRate*(TimeSpan/1000));;
+  if not firfilter then begin
+    const YIN = 0.5;
+    const YANG = 0.5;
+    rpos := (rpos * YIN) + (rtarget * YANG);
 
-    if rtarget-rpos < rvel*rvel then
-        rvel := rvel * DecelRate;
+  end else begin
+
+    dist := abs(rtarget-rpos);
+    rchange := 0;
+    if rpos < rtarget then begin
+      rchange := (AccelRate*(TimeSpan/1000));;
+
+      if rtarget-rpos < rvel*rvel then
+          rvel := rvel * DecelRate;
 
 
 
-    if rchange > dist then
-      rchange := dist;
+      if rchange > dist then
+        rchange := dist;
 
-    rvel := rvel+rchange;
-    if rVel > rtarget-rpos then
-      rVel := rtarget-rpos;
+      rvel := rvel+rchange;
+      if rVel > rtarget-rpos then
+        rVel := rtarget-rpos;
+    end;
+
+    if rpos > rtarget then begin
+
+      rchange := 0-(AccelRate*(TimeSpan/1000));;
+
+      if rpos-rtarget < rvel*rvel then
+          rvel := rvel *DecelRate;
+
+
+      if rchange < 0-dist then
+        rchange := 0-dist;
+
+      rvel := rvel+rchange;
+
+      if rVel < rtarget-RPOS then
+        rVel := rtarget-RPOS;
+    end;
+
+
+
+  //  if rvel < 1 then rVel := 1;
+    if abs(rTarget-rPOs) <= 1 then
+      rPOs := round(rTarget);
+
+
+    rpos := rpos+rvel;
+    if rpos = rtarget then
+      rvel := 0;
   end;
-
-  if rpos > rtarget then begin
-
-    rchange := 0-(AccelRate*(TimeSpan/1000));;
-
-    if rpos-rtarget < rvel*rvel then
-        rvel := rvel *DecelRate;
-
-
-    if rchange < 0-dist then
-      rchange := 0-dist;
-
-    rvel := rvel+rchange;
-
-    if rVel < rtarget-RPOS then
-      rVel := rtarget-RPOS;
-  end;
-
-
-//  if rvel < 1 then rVel := 1;
-  if abs(rTarget-rPOs) <= 1 then
-    rPOs := round(rTarget);
-
-
-  rpos := rpos+rvel;
-  if rpos = rtarget then
-    rvel := 0;
-
-
 
 end;
 
@@ -129,8 +138,9 @@ end;
 constructor TVelocityPanel.create(aowner: TComponent);
 begin
   inherited;
-  FAccelRate := 3000;
-  FDecelRate := 0.1;
+  FAccelRate := 9000;
+  FDecelRate := 0.3;
+  doublebuffered := true;
 end;
 
 procedure TVelocityPanel.Resize;
@@ -158,7 +168,13 @@ end;
 
 procedure TVelocityPanel.StartSequence;
 begin
+
   if FInMotion then exit;
+
+  if (Left=FtargetLeft) and (Top=fTargetTop) and (Width=FTargetWidth) and (Height=ftargetHeight) then begin
+    InMotion := false;
+  end;
+
 
   FLastTick := GetTicker;
   InMotion := true;

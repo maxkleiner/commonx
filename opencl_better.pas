@@ -125,19 +125,19 @@ begin
     clGetProgramBuildInfo(clProgram, device_ids[0], CL_PROGRAM_BUILD_LOG, 0, nil, @returned_size);
     SetLength(s, returned_size+2);
     clGetProgramBuildInfo(clProgram, device_ids[0], CL_PROGRAM_BUILD_LOG, Length(s), PAnsiChar(s), @returned_size);
-    SetLength(s, Min(Pos(#0, s)-1, returned_size-1));
+    SetLength(s, Min(Pos(#0, string(s))-1, returned_size-1));
     error_string:=error_string+s;
-    Debug.Log(error_string);
+    Debug.Log(string(error_string));
     clReleaseProgram(clProgram);
     clReleaseContext(context);
-    raise EOpenCLError.create(error_string);
+    raise EOpenCLError.create(string(error_string));
     exit;
   end;
 	// Create a handle to the compiled OpenCL function (Kernel)
   f := ansistring(MainFunction);
 	clKernel:=clCreateKernel(clProgram, PAnsiChar(f), nil);
   if clKErnel = nil then
-    raise EOpenCLError.Create('probably did not find '+f+'()');
+    raise EOpenCLError.Create('probably did not find '+string(f)+'()');
 	CommandQueue:=clCreateCommandQueue(context, device_ids[0], 0, nil);
 end;
 
@@ -204,10 +204,10 @@ begin
 		for j:=0 to num_devices_returned-1 do begin
       SetLength(device_name, 1024);
 			clGetDeviceInfo(device_ids[j], CL_DEVICE_NAME, Length(device_name), PAnsiChar(device_name), @returned_size);
-      SetLength(device_name, Min(Pos(#0, device_name)-1, returned_size-1));
+      SetLength(device_name, Min(Pos(#0, string(device_name))-1, returned_size-1));
       SetLength(device_vendor, 1024);
 			clGetDeviceInfo(device_ids[j], CL_DEVICE_VENDOR, Length(device_vendor), PAnsiChar(device_vendor), @returned_size);
-      SetLength(device_vendor, Min(Pos(#0, device_vendor)-1, returned_size-1));
+      SetLength(device_vendor, Min(Pos(#0, string(device_vendor))-1, returned_size-1));
 
 		end;
 		SetLength(device_ids, 0);

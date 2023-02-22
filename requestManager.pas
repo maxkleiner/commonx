@@ -75,7 +75,7 @@ type
 
 
 var
-  rqMan: TRequestManager;
+  rqMan: TRequestManager = nil;
 
 {$ENDIF}
 implementation
@@ -441,7 +441,8 @@ end;
 
 procedure ofinal;
 begin
-  rqMan.free;
+  if assigned(rqMan) then
+    rqMan.free;
   rqMan := nil;
 
 

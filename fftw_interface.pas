@@ -139,7 +139,7 @@ end;
 
 procedure oinit;
 begin
-  ics(_fftw_sect);
+  ics(_fftw_sect, 'fftw');
 end;
 
 procedure ofinal;

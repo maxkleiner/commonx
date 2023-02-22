@@ -226,7 +226,7 @@ function HTTPStrSize(s: HTTPString): integer;
 procedure DebugStuff(sBufferString: string);inline;
 
 var
-  httpstatus: THTTPStatus;
+  httpstatus: THTTPStatus = nil;
   poop: string;
 
 

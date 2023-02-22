@@ -1,13 +1,13 @@
 unit MYSQLServerInterface;
 //Defines functions that interface with the data tier.
 //DONE 1: For Some reason errors are being suppressed... no errors raises when can't connect
-
+deprecated the serverinterface for mysql is just called serverinterface.pas
 {$D+}
 interface
 
-uses SysUtils, DataObject, tickcount,  xml.xmlintf, xml.xmldoc,
+uses SysUtils, DataObject, tickcount,  xml.xmlintf, xml.xmldoc, betterobject, lockqueue,
   DataObjectFactory, ExceptionsX, ServerInterfaceInterface, debug,
-  DataObjectCache, classes, sharedobject, variants, typex;
+  DataObjectCache, classes, sharedobject, variants, typex, DatabaseQueryEngine;
 
 const
   RQ_RECORD_QUERY = $0990;
@@ -375,6 +375,7 @@ function TMYSQLServerInterface.GhostFetch(cache: TDataObjectCache;
   out obj: TDataObject; sType: string; params: variant;
   iSessionID: integer; bLazy: boolean = true; iTimeoutMS: integer = 300000;bCheckCacheOnly: boolean = false): boolean;
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   if bCheckCacheOnly then begin
     obj := cache.GetExistingObject(sType, params, self.DataCenter, self.DataTier);
     result := not ((obj = nil) or obj.expired);
@@ -904,6 +905,7 @@ function TMYSQLServerInterface.GhostQueryMap(cache: TDataObjectCache;
   sBaseType: string; vBaseKeys: variant; slDebug: TStringList;
   sSubType: string; iSubKeys: integer): boolean;
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   result := LazyQueryMap(cache, obj, sQuery, iSessionID, iTimeoutMS, sBaseType, vBaseKeys, SLDebug, sSUbType, iSubkeys);
   if not result then begin
     result := Ghost(cache, obj, sBaseType, vBaseKeys, iSessionID);
@@ -918,6 +920,7 @@ function TMYSQLServerInterface.QueryMap(cache: TDataObjectCache;
   bLazy: boolean; iBaseType: integer; vBaseKeys: variant;
   slDebug: TStringList; iSubType, iSubKeys: integer): boolean;
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   result := self.QueryMap(cache, obj, sQuery, iSessionID, iTimeoutMS, bLazy, 0, iBaseType, vBasekeys, slDebug, iSubType, iSubKeys)
 
 end;
@@ -928,6 +931,7 @@ function TMYSQLServerInterface.QueryMap(cache: TDataObjectCache;
   bLazy: boolean; sBaseType: string; vBaseKeys: variant;
   slDebug: TStringList; sSubType: string; iSubKeys: integer): boolean;
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   result := self.QueryMap(cache, obj, sQuery, iSessionID, iTimeoutMS, bLazy, 0, sBaseType, vBaseKeys, slDebug, sSubType, iSubKeys);
 end;
 
@@ -997,6 +1001,7 @@ begin
 
 
   //build keys
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   if (vartype(vBaseKeys) and varArray) > 0 then begin
     for t:= varArrayLowBound(vBaseKeys,1) to varArrayHighBound(vBaseKeys,1) do begin
       squery := stringreplace(sQuery, '~~~'+inttostr(t-varArrayLowBound(vBaseKeys,1))+'~~~', vartostr(vBaseKeys[t]), [rfReplaceAll]);
@@ -1049,6 +1054,7 @@ function TMYSQLServerInterface.LazyQueryMap(cache: TDataObjectCache;
         sBaseType: string; vBaseKeys: variant;
         slDebug: TStringList; sSubType: string; iSubKeys: integer): boolean;
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   result := self.LazyQueryMap(cache, obj, sQuery, iSessionId, iTimeOutMS, 0, sBaseType, vBaseKeys, slDebug, sSubType, iSubKeys);
 end;
 

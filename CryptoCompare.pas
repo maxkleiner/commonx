@@ -72,8 +72,8 @@ begin
   if masterlist.o.HasNode('Data.'+uppercase(sMember)) then begin
     node := masterlist.o['Data'][uppercase(sMember)];
     result.baseRecord := StrToJSONH(node.ToJson);
-    result.details := STrToJSONh(httpscache.Acquire('https://www.cryptocompare.com/api/data/coinsnapshotfullbyid/?id='+vartostr(node['Id'].Value), '', 300000));
-    result.social := STrToJSONh(httpscache.Acquire('https://www.cryptocompare.com/api/data/socialstats/?id='+vartostr(node['Id'].Value), '', 300000));
+    result.details := STrToJSONh(httpscache.Acquire('https://www.cryptocompare.com/api/data/coinsnapshotfullbyid/?id='+vartostr(node['Id'].Value), '', '', '', 300000));
+    result.social := STrToJSONh(httpscache.Acquire('https://www.cryptocompare.com/api/data/socialstats/?id='+vartostr(node['Id'].Value), '', '', '', 300000));
 
   end else begin
     result.baseRecord := StrToJSONH('null');
@@ -87,7 +87,7 @@ procedure TCryptCompare.Refresh;
 var
   h: IHolder<TJSON>;
 begin
-  h := STrToJSONh(httpscache.Acquire('https://min-api.cryptocompare.com/data/all/coinlist', '', 300000));
+  h := STrToJSONh(httpscache.Acquire('https://min-api.cryptocompare.com/data/all/coinlist', '', '', '', 300000));
   masterlist := h;
 
 end;

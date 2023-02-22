@@ -11,7 +11,7 @@ interface
 
 
 uses
-  VirtualDisk_Advanced, PacketHelpers_VirtualDisk, VirtualDisk_Status, Classes, VirtualDiskParams, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  VirtualDisk_Advanced, PacketHelpers_VirtualDisk, VirtualDisk_Status, Classes, VirtualDiskParams, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -152,7 +152,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetPayloadConfiguration(iDiskID:integer):PVirtualDiskPayloadConfiguration;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -180,7 +180,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.GetPayloadConfiguration_Async(iDiskID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -201,7 +201,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetPayloadConfiguration_Response():PVirtualDiskPayloadConfiguration;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -217,7 +217,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ListDisks():TVirtualDiskStatusList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -244,7 +244,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ListDisks_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -264,7 +264,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ListDisks_Response():TVirtualDiskStatusList;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -280,7 +280,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadQuota(iDiskID:integer; iFileID:integer; max_size:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -310,7 +310,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetPayloadQuota_Async(iDiskID:integer; iFileID:integer; max_size:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -333,7 +333,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadQuota_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -349,7 +349,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.AddPayload(iDiskID:integer; sFile:string; max_size:int64; physical:int64; priority:int64; flags:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -382,7 +382,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.AddPayload_Async(iDiskID:integer; sFile:string; max_size:int64; physical:int64; priority:int64; flags:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -408,7 +408,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.AddPayload_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -424,7 +424,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.Decommissionpayload(iDiskID:integer; sFile:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -453,7 +453,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.Decommissionpayload_Async(iDiskID:integer; sFile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -475,7 +475,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.Decommissionpayload_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -491,7 +491,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetDefaultPayloadCacheParams(iDiskID:integer; iSegmentSize:int64; iSegmentCount:int64; bReadAhead:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -522,7 +522,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetDefaultPayloadCacheParams_Async(iDiskID:integer; iSegmentSize:int64; iSegmentCount:int64; bReadAhead:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -546,7 +546,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetDefaultPayloadCacheParams_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -562,7 +562,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadCacheParams(iDiskID:integer; iFileID:integer; iSegmentSize:int64; iSegmentCount:int64; bReadAhead:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -594,7 +594,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetPayloadCacheParams_Async(iDiskID:integer; iFileID:integer; iSegmentSize:int64; iSegmentCount:int64; bReadAhead:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -619,7 +619,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadCacheParams_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -635,7 +635,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadPriorty(iDiskID:integer; iFileID:integer; priority:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -665,7 +665,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetPayloadPriorty_Async(iDiskID:integer; iFileID:integer; priority:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -688,7 +688,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadPriorty_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -704,7 +704,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadPhysical(iDiskID:integer; iFileID:integer; physical:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -734,7 +734,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetPayloadPhysical_Async(iDiskID:integer; iFileID:integer; physical:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -757,7 +757,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetPayloadPhysical_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -773,7 +773,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.UnpauseScrubber(iDISKID:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -798,7 +798,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.UnpauseScrubber_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -819,7 +819,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ReSourcePayload(iDISKID:integer; iPayloadID:integer; sNewSource:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -849,7 +849,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ReSourcePayload_Async(iDISKID:integer; iPayloadID:integer; sNewSource:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -872,7 +872,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ReSourcePayload_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -888,7 +888,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.RefunctPayload(iDISKID:integer; iPayLoadID:integer; sNewSource:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -918,7 +918,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.RefunctPayload_Async(iDISKID:integer; iPayLoadID:integer; sNewSource:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -941,7 +941,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.RefunctPayload_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -957,7 +957,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ForceRepair(iDISKID:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -982,7 +982,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ForceRepair_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1003,7 +1003,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetDebugInfo(iDISKID:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1031,7 +1031,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.GetDebugInfo_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1052,7 +1052,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetDebugInfo_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1068,7 +1068,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetRepairLog(iDISKID:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1096,7 +1096,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.GetRepairLog_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1117,7 +1117,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetRepairLog_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1133,7 +1133,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DrainRepairLog(iDISKID:integer):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1161,7 +1161,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.DrainRepairLog_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1182,7 +1182,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DrainRepairLog_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1198,7 +1198,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ClearRepairLog(iDISKID:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1223,7 +1223,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ClearRepairLog_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1244,7 +1244,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetCachedStripes(iDISKID:integer; value:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1273,7 +1273,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetCachedStripes_Async(iDISKID:integer; value:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1295,7 +1295,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetCachedStripes_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1311,7 +1311,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetCachedStripes(iDISKID:integer):integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1339,7 +1339,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.GetCachedStripes_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1360,7 +1360,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.GetCachedStripes_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1376,7 +1376,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.QuickOnline(iDISKID:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1401,7 +1401,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.QuickOnline_Async(iDISKID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1422,7 +1422,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetMaxDriveSpan(iDISKID:integer; ival:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1448,7 +1448,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetMaxDriveSpan_Async(iDISKID:integer; ival:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1470,7 +1470,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetMinDriveSpan(iDISKID:integer; ival:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1496,7 +1496,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetMinDriveSpan_Async(iDISKID:integer; ival:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1518,7 +1518,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.NewDisk(di:TNewDiskParams):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1546,7 +1546,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.NewDisk_Async(di:TNewDiskParams);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1567,7 +1567,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.NewDisk_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1583,7 +1583,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.VerifyArcZone(iDiskID:integer; zoneidx:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1612,7 +1612,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.VerifyArcZone_Async(iDiskID:integer; zoneidx:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1634,7 +1634,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.VerifyArcZone_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1650,7 +1650,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.RepairArcZone(iDiskID:integer; zoneidx:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1679,7 +1679,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.RepairArcZone_Async(iDiskID:integer; zoneidx:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1701,7 +1701,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.RepairArcZone_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1717,7 +1717,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SelfTest(iDiskID:integer; testid:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1746,7 +1746,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SelfTest_Async(iDiskID:integer; testid:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1768,7 +1768,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SelfTest_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1784,7 +1784,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetTargetArchive(sArchive:string; sTargetHost:string; sEndPoint:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1814,7 +1814,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.SetTargetArchive_Async(sArchive:string; sTargetHost:string; sEndPoint:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1837,7 +1837,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.SetTargetArchive_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1853,7 +1853,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DeleteDisk(sDiskName:string; DeletePayloads:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1882,7 +1882,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.DeleteDisk_Async(sDiskName:string; DeletePayloads:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1904,7 +1904,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DeleteDisk_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1920,7 +1920,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.PauseArchive(iDiskID:integer; Pause:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1949,7 +1949,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.PauseArchive_Async(iDiskID:integer; Pause:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1971,7 +1971,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.PauseArchive_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1987,7 +1987,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetAndRepairFromTargetArchive(iDiskID:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2015,7 +2015,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ResetAndRepairFromTargetArchive_Async(iDiskID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2036,7 +2036,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetAndRepairFromTargetArchive_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2052,7 +2052,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetZone(iDiskID:integer; iZoneID:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2081,7 +2081,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ResetZone_Async(iDiskID:integer; iZoneID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2103,7 +2103,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetZone_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2119,7 +2119,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetDisk(iDiskID:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2147,7 +2147,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.ResetDisk_Async(iDiskID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2168,7 +2168,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.ResetDisk_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2184,7 +2184,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.VerifyAgainstArchive(diskid:integer; zone:int64; out csa:int64; out csb:int64; out difstart:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2216,7 +2216,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.VerifyAgainstArchive_Async(diskid:integer; zone:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2238,7 +2238,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.VerifyAgainstArchive_Response(out csa:int64; out csb:int64; out difstart:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -2257,7 +2257,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DumpBigBlock(diskid:integer; bbid:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2286,7 +2286,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVirtualDiskClient.DumpBigBlock_Async(diskid:integer; bbid:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -2308,7 +2308,7 @@ end;
 //------------------------------------------------------------------------------
 function TVirtualDiskClient.DumpBigBlock_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

@@ -4,22 +4,49 @@ interface
 
 
 uses
-  ConsoleTools;
+{$IFDEF MSWINDOWS}
+  windows,
+{$ENDIF}
+  ConsoleX;
 
 
 var
-  con: TConsole;
+  con: TConsole = nil;
 
 
 implementation
 
 
+
+
+{$IFDEF MSWINDOWS}
+procedure ctrlhandler;stdcall;
+begin
+  con.closeapp := true;
+{$IFDEF MSWINDOWS}
+  Windows.SetConsoleCtrlHandler(nil, false);
+{$ENDIF}
+
+
+end;
+{$ENDIF}
+
+
+
 initialization
   con := TConsole.create;
+{$IFDEF MSWINDOWS}
+  Windows.SetConsoleCtrlHandler(@ctrlhandler, true);
+{$ENDIF}
 
 
 finalization
-  con.free;
+{$IFDEF MSWINDOWS}
+  Windows.SetConsoleCtrlHandler(nil, false);
+{$ENDIF}
+
+  if assigned(con) then
+    con.free;
   con := nil;
 
 

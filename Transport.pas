@@ -2,7 +2,7 @@ unit Transport;
 //This unit has the astract connection class and the Transport class
 interface
 uses SysUtils, Windows, NetworkBuffer, typex, Classes, DtNetConst, tickcount,
-  Packet, SimpleAbstractConnection, ErrorHandler;
+  Packet, SimpleAbstractConnection, ErrorHandler, packetabstract;
 
 const
   NETWORK_TIMEOUT = 3000000; //Maximum length of time the transport will

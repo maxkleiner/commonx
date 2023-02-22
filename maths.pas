@@ -22,6 +22,8 @@ function CenterIterate2(cx,cy: ni; t: ni): TPoint;
 function CreateCenterIterateMap(w,h: ni): TPointArray;
 function Sin01(x: double): double;
 
+procedure ShufflePointArray(var a: TpointArray; x: int64);
+
 implementation
 
 function Sin01(x: double): double;
@@ -241,6 +243,23 @@ begin
   for t:= 1 to high(terms) do begin
     result := result + (terms[t]*power(x,t));
   end;
+end;
+
+procedure ShufflePointArray(var a: TpointArray; x: int64);
+begin
+  var t: int64 := 0;
+  while t < x do begin
+    var i1 := random(high(a));
+    var i2 := random(high(a));
+
+    var p := a[i1];
+    a[i1] := a[i2];
+    a[i2] := p;
+
+    inc(t);
+
+  end;
+
 end;
 
 end.

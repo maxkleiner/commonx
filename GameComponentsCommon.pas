@@ -338,8 +338,9 @@ end;
 
 procedure TGCWAypointFollower.Detach;
 begin
-  inherited;
   //
+  inherited;
+
 end;
 
 procedure TGCWAypointFollower.FixedUpdate;

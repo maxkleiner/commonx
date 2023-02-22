@@ -1,10 +1,10 @@
 unit EncoderMaster;
-{x$DEFINE REXE}
+{x$DEFINE REXE} //<<---DEFINE AT PROJECT LEVEL ONLY
 interface
 
 uses
-  debug, systemx, typex, stringx, betterobject, commandprocessor, managedthread,sysutils,
-  skill,herro, fileserviceclient, orderlyinit, PeriodicEvents;
+  debug, systemx, typex, stringx, betterobject, commandprocessor, managedthread,sysutils, numbers,
+  skill,herro, fileserviceclient, orderlyinit, MovWebIRConversation, irc_dt;
 
 type
   TEncoderMaster = class;//forward
@@ -50,16 +50,18 @@ type
     ConsoleOutput: string;
     Complete: boolean;
     FConsoleDrain: string;
+    AssignedToName: string;
     function DrainConsole: string;
     procedure AddToConsoleDrain(cc: string);
     procedure Init;
     function ToString: string;
     function PercentComplete: single;
     function PercentString: string;
+    procedure CopyVolatiles;
   end;
   PEncoderWork = ^TEncoderWork;
 
-  TEncoderCheckPeriodicEvent = class(TPeriodicEvent)
+  TEncoderCheckPeriodicEvent = class(TManagedThread)
   strict protected
     procedure DoExecute; override;
   public
@@ -72,6 +74,7 @@ type
     pe: TEncoderCheckPeriodicEvent;
     Fwork: TArray<TEncoderWork>;
     Fencoders: TArray<TEncoder>;
+    chat: TMovWebchatconversation;
     procedure StopPE;
     procedure StartPE;
 
@@ -88,6 +91,7 @@ type
     function GetUnstartedWork: PEncoderWork;
     function GetWork: TArray<TEncoderWork>;
   public
+    EncoderFilter: string;
     constructor Create; override;
     procedure Detach; override;
 
@@ -97,10 +101,11 @@ type
     function GetWorkStatus(hand: int64): TEncoderWork;
     procedure ReleaseWorkitem(handle: int64);
     function GetKnownResources(out cpus,memoryGB, gpus:single): boolean;
+    procedure ObjLog(s: string);
   end;
 
 var
-  EM: TEncoderMaster;
+  EM: TEncoderMaster = nil;
 
 
 implementation
@@ -117,6 +122,7 @@ begin
   e.init;
   e.info := sk;
   Fencoders[high(Fencoders)] := e;
+  ObjLog('Found Encoder '+e.info.Host);
 end;
 
 
@@ -160,13 +166,18 @@ end;
 constructor TEncoderMaster.Create;
 begin
   inherited;
+  chat := TMovWebChatConversation.Create(chatDT, 'Encoder','');
+
   StartPE;
+
 end;
 
 procedure TEncoderMaster.Detach;
 begin
   if detached then exit;
   StopPE;
+  chat.Free;
+  chat := nil;
   inherited;
 
 end;
@@ -207,6 +218,14 @@ begin
         end;
       end else begin
         slack := penc.CPUSlack;
+        if zpos('192.168.101.123',penc.info.hostid) >=0 then
+          slack := lesserof(slack,1.0);
+
+        //if this host matches the filter, then zero out slack
+        if Encoderfilter <> '' then
+          if zpos(Encoderfilter,penc.info.hostid) <0 then
+            slack := 0.0;
+
         if (slack > bestcpuslack) then begin
           bestcpuslack := slack;
           bestpenc := penc;
@@ -226,9 +245,9 @@ begin
     ext_resources := 'GPUExpense='+floatprecision(pew.gpuexpense,4);
   end;
 
-  var hand := penc.cli.o.StartExeCommandExFFMPEG(extractfilepath(pew.prog),extractfilename(pew.prog), pew.params, pew.gpuparams,pew.CPUExpense, pew.MemoryGBExpense, pew.GPUExpense);
+  var hand := penc.cli.o.StartExeCommandExFFMPEG('',extractfilename(pew.prog), pew.params, pew.gpuparams,pew.CPUExpense, pew.MemoryGBExpense, pew.GPUExpense);
   if hand = 0 then begin
-    Debug.Log('this might stall.  could not dispatch work because server rejected it');
+    ObjLog('this might stall.  could not dispatch work because server rejected it');
     exit(false);
   end;
 
@@ -250,6 +269,7 @@ begin
   var l := Locki;
   pew.ConsoleOutput := pew.assignedto.cli.o.EndExeCommand(pew.remotehandle);
   pew.Complete := true;
+  ObjLog('Completed work item '+pew.ConsoleOutput);
   if pew.assignedto <> nil then
     pew.assignedto.Ping;
 end;
@@ -297,6 +317,8 @@ begin
   var l:= LockI;
   result := Fwork;
   setlength(result, length(result));
+  for var t:= 0 to high(result) do
+    result[t].CopyVolatiles;
 
 end;
 
@@ -323,6 +345,24 @@ begin
   exit(false);
 end;
 
+procedure TEncoderMaster.ObjLog(s: string);
+begin
+  var slh := stringToStringListH(s);
+  if slh.o.Count < 16 then
+  for var t := 0 to slh.o.Count-1 do begin
+    chat.conv.PM(slh.o[t]);
+  end else begin
+    for var t := 0 to 7  do begin
+      chat.conv.PM(slh.o[t]);
+    end;
+    chat.conv.PM('... etc ... etc ... etc ...');
+    for var t := slh.o.Count-8 to slh.o.Count-1 do begin
+      chat.conv.PM(slh.o[t]);
+    end;
+  end;
+  Debug.Log(s);
+end;
+
 function TEncoder.HasResourcesAvailable: boolean;
 begin
   result := (CPUSlack > 0.0) or (GPUSlack > 0.0);// and (MemSlack > 0.0);
@@ -333,9 +373,13 @@ end;
 procedure TEncoderMaster.Periodically;
 begin
   try
+
+    var lck := Self.LockI;
     repeat
-    ScanForEncoders;
-    CheckExistingWork;
+      ScanForEncoders;
+      CheckExistingWork;
+      repeat
+      until not DispatchNewWork;
     until not DispatchNewWork;
   except
   end;
@@ -348,7 +392,8 @@ begin
   inc(nextworkhandle);
   w.handle := nextworkhandle;
   Fwork[high(Fwork)] := w;
-  Debug.Log('work queued '+w.prog+' '+w.params);
+  ObjLog('work queued '+w.prog+' '+w.params);
+//  Periodically;
   exit(w.handle);
 
 end;
@@ -404,11 +449,13 @@ begin
     exit;
 
 {$IFDEF REXE}
-  pe := TEncoderCheckPeriodicEvent.create;
-  pe.Frequency := 1000;
-  pe.Startimmediately := true;
+  pe := TPM.Needthread<TEncoderCheckPeriodicEvent>(nil);
+  pe.ColdRunInterval:= 1000;
+  pe.loop := true;
+  pe.runhot := false;
   pe.em := self;
-  PEA.Add(pe);
+  pe.start;
+
 {$ENDIF}
 end;
 
@@ -417,8 +464,9 @@ begin
 {$IFDEF REXE}
   if pe = nil then
     exit;
-  pea.Remove(pe);
-  pe.Free;
+  pe.stop;
+  pe.waitfor;
+  TPM.noNeedThread(PE);
   pe := nil;
 {$ENDIF}
 
@@ -506,12 +554,19 @@ begin
       GPUsconsumed := gpu;
       MemoryGBConsumed := gb;
       MemoryGBTotal := gbmax;
-      AliveTime := now;
+      if CLI.O.ReadyForEncoding then
+        AliveTime := now;
+
     end;
 
 
+
+
   except
-    timeofdeath := now;
+    on e: Exception do begin
+      Debug.Log('DEATH:'+e.message);
+      timeofdeath := now;
+    end;
   end;
 end;
 
@@ -534,6 +589,14 @@ begin
     em.Unlock;
   end;
 
+end;
+
+procedure TEncoderWork.CopyVolatiles;
+begin
+  if assignedto <> nil then
+    assignedtoname := AssignedTo.info.Host
+  else
+    assignedtoname := '';
 end;
 
 function TEncoderWork.DrainConsole: string;
@@ -578,10 +641,11 @@ begin
   else
     result := ' ';
 
-  result := result + PercentString+' '+params;
+
+  result := result + PercentString+' '+assignedtoname+' '+params;
 end;
 
 initialization
-  init.RegisterProcs('EncoderMaster', oinit, ofinal, 'PeriodicEvents');
+  init.RegisterProcs('EncoderMaster', oinit, ofinal, 'irc_dt');
 
 end.

@@ -1,6 +1,6 @@
 unit ServerInterfaceFactory;
 
-{$DEFINE POOL}//<--- don't use this because...
+{x$DEFINE POOL}//<--- don't use this because...
 //1. It is not needed because you should hold onto your own instance to preserve
 //   context (e.g. transaction state)
 //2. Pooling someone else's connect is likely to just get you in a bad transaction state
@@ -48,8 +48,8 @@ type
   end;
 
 var
-  SIF: TServerInterfaceFactory;
-  NextIDCache: TNextIDCache;
+  SIF: TServerInterfaceFactory = nil;
+  NextIDCache: TNextIDCache = nil;
 
 
 implementation
@@ -231,8 +231,10 @@ end;
 
 procedure ofinal;
 begin
-  SIF.free;
-  NextIDCache.free;
+  if assigned(SIF) then
+    SIF.free;
+  if assigned(NextIDCache) then
+    NextIDCache.free;
   SIF := nil;
   NextIDCache := nil;
 
@@ -257,30 +259,36 @@ end;
 
 function TNextIDCache.GetNextID(FHost, FEndPoint, FContext, sKey: string): int64;
 begin
-  var l : ILock := self.LockI;
-  var keytok := GetKeyTOken(fhost, fendpoint, fcontext, sKey);
+    var l : ILock := self.LockI;
+//  Lock;
+  try
 
-  var p: PNextIDCacheRec := Self.FindNextIDRec(keytok);
+    var keytok := GetKeyTOken(fhost, fendpoint, fcontext, sKey);
 
-  if p = nil then begin
-    setlength(keys, length(keys)+1);
-    keys[high(keys)].keytoken := keytok;
-    keys[high(keys)].next_unreserved := -1;
-    keys[high(keys)].nextvalue := 0;
-    p := @keys[high(keys)];
+    var p: PNextIDCacheRec := Self.FindNextIDRec(keytok);
+
+    if p = nil then begin
+      setlength(keys, length(keys)+1);
+      keys[high(keys)].keytoken := keytok;
+      keys[high(keys)].next_unreserved := -1;
+      keys[high(keys)].nextvalue := 0;
+      p := @keys[high(keys)];
+    end;
+
+    if p = nil then
+      raise ECritical.create('p should never be nil here');
+
+    if (p.nextvalue >= p.next_unreserved) then begin
+      var si := SIF.NeedServer(fhost, fendpoint, fcontext);
+      p.nextvalue := si.GetNextIDEx(sKey, KEY_RESERVE_COUNT);
+      p.next_unreserved := p.nextvalue+KEY_RESERVE_COUNT;
+    end;
+
+    result := p.nextvalue;
+    inc(p.nextvalue);
+  finally
+//    Unlock;
   end;
-
-  if p = nil then
-    raise ECritical.create('p should never be nil here');
-
-  if (p.nextvalue >= p.next_unreserved) then begin
-    var si := SIF.NeedServer(fhost, fendpoint, fcontext);
-    p.nextvalue := si.GetNextIDEx(sKey, KEY_RESERVE_COUNT);
-    p.next_unreserved := p.nextvalue+KEY_RESERVE_COUNT;
-  end;
-
-  result := p.nextvalue;
-  inc(p.nextvalue);
 
 
 end;

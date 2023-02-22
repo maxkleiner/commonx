@@ -1,10 +1,11 @@
 unit FastBitmap;
-
+{$R-}
 interface
 {$I DELPHIDEFS.inc}
 {$IFDEF WINDOWS}
 {$DEFINE ALLOW_OPENCL}
 {$ENDIF}
+{$DEFINE USE_TRANSLATION}
 
 uses
 {$DEFINE MT_FBM}//THIS MAKES TFastBitMapThreadSafe!
@@ -146,6 +147,7 @@ type
     destructor Destroy;override;
     property Owner: TFastBitmap read FOwner write SetOwner;
     property Pixels[x,y: integer]: TColor read GetPixels write SetPixels;
+    function ResamplePixel(x,y: double): TGiantColor;
 {$IFDEF FMX}
     property AlphaPixels[x,y: integer]: TAlphaColor read GetAlphaPixels write SetAlphaPixels;
     property AlphaPixelsWrap[x,y: integer]: TAlphaColor read GetAlphaPixelsWrap write SetAlphaPixelsWrap;
@@ -165,6 +167,7 @@ type
     procedure DrawChar_2X(c: char; x,y: nativeint);
     procedure DrawText(s: string);
     procedure ResetTextPos;
+    procedure Iterate(p: TProc<ni,ni>);
 
   end;
 
@@ -201,6 +204,8 @@ type
     centerx,centery: nativefloat;
     procedure Allocate(w,h: integer);
     constructor CopyCreate(fb: TFastBitmap);
+    class function CopyCreateH(fb: TFastBitmap): IHolder<TFastBitmap>;overload;
+    class function CopyCreateH(fb: IHolder<TFastBitmap>): IHolder<TFastBitmap>;overload;
     constructor Create;override;
     destructor Destroy;override;
     property Width: integer read FW write Setwidth;
@@ -251,7 +256,10 @@ type
     procedure SaveToFile_PNG(sFile: string);
     procedure SaveToFile_BMP(sFile: string);
 {$ENDIF}
-    procedure ResizeCanvas(wid,hit, translateX, translateY: nativeint;clBackGround: TColor);
+    procedure ResizeCanvas(wid,hit, translateX, translateY: nativeint;clBackGround: TColor);overload;
+    procedure ResizeCanvas(wid,hit, translateX, translateY: nativeint;fiBackgroundImage: TFastBitmap);overload;
+    procedure ResizeImage(wid, hit: nativeint; bNearest: boolean = false);
+    procedure Effect_MaskDetail;
     procedure Effect_Difference(op: TFastBitmap; bAverageCompensate: boolean; bCalcWeightedCenter: boolean = true);
     procedure Effect_LBloom;
     procedure Effect_LGate(rThres: nativefloat);
@@ -273,8 +281,11 @@ type
     function IterateExternalSource_begin(src: TFastBitmap; opencl: string; fallbackproc: TIterateExternalProc; notify: TTileNotifyEvent = nil): Tcmd_FastBitmapIterate;
     function ToByteArray: TDynByteArray;
     procedure FromByteArray(ba: TDynByteArray);
+    procedure RemoveAlpha(color: TColor);
 
 
+    class function SumDifferences(a, b: TfastBitmap): int64;
+    class function SummarizeDifferences(a,b: TfastBitmap):double;
 
 
   end;
@@ -411,7 +422,7 @@ begin
 end;
 {$ELSE}
 var
-  bmTemp: TPNGObject;
+  bmTemp: TPNGImage;
 begin
   if self = nil then exit;
 
@@ -463,6 +474,17 @@ constructor TFastBitmap.CopyCreate(fb: TFastBitmap);
 begin
   Create;
   FromFastBitmap(fb);
+end;
+
+class function TFastBitmap.CopyCreateH(
+  fb: IHolder<TFastBitmap>): IHolder<TFastBitmap>;
+begin
+  result := THolder<TFastBitmap>.create(TFastBitmap.CopyCreate(fb.o));
+end;
+
+class function TFastBitmap.CopyCreateH(fb: TFastBitmap): IHolder<TFastBitmap>;
+begin
+  result := THolder<TFastBitmap>.create(TFastBitmap.CopyCreate(fb));
 end;
 
 constructor TFastBitmap.Create;
@@ -577,6 +599,44 @@ begin
 
 end;
 
+
+procedure TFastBitmap.Effect_MaskDetail;
+begin
+  Canvas.Iterate(procedure (x,y: ni) begin
+    var tot := 0.0;
+    var hsl := RGBtoHSL(Canvas.Pixels[x,y]);
+    for var xx := x-1 to x+1 do begin
+      for var yy := y-1 to y+1 do begin
+        var a := abs(RGBtoHSL(Canvas.Pixels[xx,yy]).l - hsl.l);
+        tot := tot + a;
+      end;
+    end;
+    var fin := (tot/4);//greater means more changed
+
+    if fin > 1.0 then fin := 1.0;
+    if fin < 0.0 then fin := 0.0;
+    var c := (round(fin*255) shl 0)+ (round(fin*255) shl 8)+ (round(fin*255) shl 16)+(round(fin*255) shl 24);
+    canvas.pixels[x,y] := c;
+  end);
+
+{  Canvas.Iterate(procedure (x,y: ni) begin
+    var tot := 0.0;
+    for var xx := x-1 to x+1 do begin
+      for var yy := y-1 to y+1 do begin
+        var a := RGBtoHSL(Canvas.Pixels[xx,yy]).l;
+        tot := tot + a;
+      end;
+    end;
+    var fin := (tot/9);
+    if fin > 1.0 then fin := 1.0;
+    if fin < 0.0 then fin := 0.0;
+    var c := (round(fin*255) shl 0)+ (round(fin*255) shl 8)+ (round(fin*255) shl 16)+(round(fin*255) shl 24);
+    canvas.pixels[x,y] := c;
+  end);}
+
+  Effect_Invert();
+
+end;
 
 procedure TFastBitmap.Effect_MotionDetect(op: TFastBitmap; bAverageCompensate: boolean; bCalcWeightedCenter: boolean = true);
 var
@@ -877,6 +937,8 @@ end;
 
 {$IFNDEF FMX}
 procedure TFastBitmap.FromBitmap(bm: TBitmap);
+type
+  PCardinal = ^cardinal;
 var
   t: integer;
   w,h: integer;
@@ -891,6 +953,14 @@ begin
 
     for t:= 0 to h-1 do begin
       MoveMem32(FScanlines[t], bm.scanline[t], w * FAST_BITMAP_PIXEL_ALIGN);
+      for var x := 0 to w-1 do begin
+
+        var pc : Pcardinal := pcardinal(pbyte(FScanlines[t])+(x*FAST_BITMAP_PIXEL_ALIGN)+0);
+        var c := pc^;
+        c := c shl 8;
+        pc^ := c;
+
+      end;
     end;
   finally
     bm.canvas.unlock;
@@ -1256,6 +1326,15 @@ begin
 
 end;
 
+procedure TFastCanvas.Iterate(p: TProc<ni, ni>);
+begin
+  for var y := 0 to self.Owner.height-1 do begin
+    for var x := 0 to self.Owner.width-1 do begin
+      p(x,y);
+    end;
+  end;
+end;
+
 procedure TFastCanvas.LineTo(x1, y1: nativeint; c: TColor);
 var
   xx,yy,t1,t2: nativeint;
@@ -1396,6 +1475,31 @@ begin
 
 end;
 
+function TFastCanvas.ResamplePixel(x, y: double): TGiantColor;
+  var a,b,c,d,ab,cd,abcd: TGiantColor;
+begin
+  var xx: nativeint := trunc(x);
+  var xxx := xx + 1;
+  var yy: nativeint := trunc(y);
+  var yyy := yy + 1;
+
+  a.FromColor(pixels[xx,yy]);
+  b.FromColor(pixels[xxx,yy]);
+  c.FromColor(pixels[xx,yyy]);
+  d.FromColor(pixels[xxx,yyy]);
+
+  var lrblend := x-xx;
+  var udblend := y-yy;
+
+  ab := ColorBlend(a,b,lrblend);
+  cd := colorBlend(c,d,lrblend);
+  abcd := colorblend(ab,cd,udblend);
+  result := abcd;
+
+
+
+end;
+
 procedure TFastCanvas.ResetTextPos;
 begin
   textpos.x := 0;
@@ -1512,11 +1616,13 @@ begin
     xx := x*owner.FAST_BITMAP_PIXEL_ALIGN;
 
     p := @p[xx];
+{$DEFINE BIG_ENDIAN}
+{$IFDEF BIG_ENDIAN}
     if owner.EnableAlpha then begin
       p^ := byte((value shr 24) and 255);
       inc(p);
     end else begin
-      p^ := 255;
+      p^ := 0;
       inc(p);
     end;
     p^ := byte((value shr 16) and 255);
@@ -1524,6 +1630,30 @@ begin
     p^ := byte((value shr 8) and 255);
     inc(p);
     p^ := byte((value shr 0) and 255);
+    if not owner.enablealpha then begin
+//      p^ := 0;
+//      inc(p);
+
+    end;
+{$ELSE}
+    if owner.EnableAlpha then begin
+      p^ := byte((value shr 0) and 255);
+      inc(p);
+    end else begin
+      p^ := 0;
+      inc(p);
+    end;
+    p^ := byte((value shr 8) and 255);
+    inc(p);
+    p^ := byte((value shr 16) and 255);
+    inc(p);
+    p^ := byte((value shr 24) and 255);
+    if not owner.enablealpha then begin
+//      p^ := 0;
+//      inc(p);
+
+    end;
+{$ENDIF}
 
 
 
@@ -1786,6 +1916,19 @@ begin
   end;
 end;
 
+procedure TFastBitmap.RemoveAlpha(color: TColor);
+begin
+  for var y := 0 to height-1 do begin
+    for var x := 0 to width-1 do begin
+      var c : cardinal := self.Canvas.Pixels[x,y];
+      c := c or $FF000000;
+      self.canvas.pixels[x,y] := c;
+    end;
+  end;
+  self.EnableAlpha := false;
+
+end;
+
 procedure TFastBitmap.ResizeCanvas(wid, hit, translateX,
   translateY: nativeint; clBackGround: TColor);
 var
@@ -1820,6 +1963,56 @@ begin
 
 end;
 
+procedure TFastBitmap.ResizeCanvas(wid, hit, translateX, translateY: nativeint;
+  fiBackgroundImage: TFastBitmap);
+var
+  temp: TFastBitmap;
+  ox,oy: nativeint;
+begin
+  temp := TFastBitmap.CopyCreate(self);
+  try
+{$IFDEF USE_TRANSLATION}
+    ox := self.Canvas.Translation.X;
+    oy := self.Canvas.Translation.Y;
+{$ENDIF}
+    self.Canvas.ClearTranslation;
+
+    self.Width := wid;
+    self.Height := hit;
+    self.New;
+    self.canvas.iterate(procedure (x,y: ni) begin
+      self.canvas.pixels[x,y] := fiBackgroundImage.canvas.pixels[x,y];
+    end);
+
+    temp.canvas.ClearTranslation;
+//    self.canvas.translation.X := translateX;
+//    self.canvas.translation.Y := translateY;
+    self.Canvas.Paste(temp,translateX, translateY);
+{$IFDEF USE_TRANSLATION}
+    self.Canvas.translation.X := translateX + ox;
+    self.Canvas.translation.Y := translateY + oY;
+{$ENDIF}
+
+
+  finally
+    temp.Free;
+  end;
+
+end;
+
+procedure TFastBitmap.ResizeImage(wid, hit: nativeint; bNearest: boolean = false);
+begin
+{$IFNDEF FMX}
+
+
+
+
+  easyimage.ResizeImage(self, wid, hit, false, bNearest);
+{$ELSE}
+  raise ENotImplemented.create('ResizeImage is not implemented on this platform');
+{$ENDIF}
+
+end;
 procedure TFastBitmap.SaveToFile(sFile: string);
 begin
   if lowercase(extractfileext(sFile))= '.jpg' then begin
@@ -2003,6 +2196,33 @@ begin
   FW := Value;
 end;
 
+class function TFastBitmap.SumDifferences(a, b: TfastBitmap): int64;
+begin
+  var sum: int64 := 0;
+  if (a.Width<>b.width) or (b.height<>a.height) then
+    raise ECritical.create('cannot sumDifferences when different dimensions');
+
+  a.Canvas.iterate(procedure (x,y: ni) begin
+    var c := a.Canvas.GetPixels(x,y);
+    var cc := b.Canvas.GetPixels(x,y);
+    var r := abs((ni(c and $ff)) - (ni(cc and $ff)));
+    var g := abs((ni((c shr 8) and $ff)) - (ni((cc shr 8) and $ff)));
+    var b := abs((ni((c shr 16) and $ff)) - (ni((cc shr 16) and $ff)));
+    inc(sum,r+g+b);
+
+  end);
+
+  result := sum;
+
+end;
+
+class function TFastBitmap.SummarizeDifferences(a, b: TfastBitmap): double;
+begin
+  result := SumDifferences(a,b) / (a.width*a.height*3*256);
+
+
+end;
+
 {$IFNDEF FMX}
 function TFastBitmap.ToBitmap: TBitmap;
 var
@@ -2012,8 +2232,21 @@ begin
 
   result.canvas.lock;
   try
+    var w := width;
+    var h := height;
+
     for t:= 0 to height-1 do begin
       MoveMem32(result.scanline[t], FScanlines[t], width * FAST_BITMAP_PIXEL_ALIGN);
+
+      for var x := 0 to w-1 do begin
+
+        var pc : Pcardinal := pcardinal(pbyte(result.scanline[t])+(x*FAST_BITMAP_PIXEL_ALIGN)+0);
+        var c := pc^;
+        c := ColorFormat(c, 'xrgb','rgba');
+        pc^ := c;
+
+      end;
+
     end;
   finally
     result.canvas.unlock;
@@ -2057,10 +2290,10 @@ var
   t,x,y: integer;
   c: cardinal;
 begin
-//  if EnableAlpha then
+  if EnableAlpha then
     result := TPNGImage.CreateBlank(COLOR_RGBALPHA, 8, width,height)
-//  else
-//    result := TPNGImage.CreateBlank(COLOR_RGB, 8, width,height);
+  else
+    result := TPNGImage.CreateBlank(COLOR_RGB, 8, width,height);
   ;result.canvas.lock;
   try
     result.Canvas.Rectangle(0,0,width,height);
@@ -2073,6 +2306,7 @@ begin
     end;
 {$ELSE}
     for y:= 0 to height-1 do begin
+      var ymod := y mod 5;
       for x := 0 to width-1 do begin
         if EnableAlpha then begin
           c := self.Canvas.Pixels[x,y];
@@ -2086,9 +2320,17 @@ begin
           result.Canvas.Pixels[x,y] := colorformat(self.Canvas.Pixels[x,y], formatIn, formatOut);
 //          result.Canvas.Pixels[x,y] := self.Canvas.Pixels[x,y];
 {$ELSE}
-          const formatIn = 'rgb';
-          const formatOut = 'rgb';
-          Winapi.Windows.SetPixel(result.canvas.Handle, X, Y, colorformat(self.Canvas.Pixels[x,y], formatIn, formatOut));
+          var formatIn := 'rgb';//little endian
+          var formatOut := 'rgb';//little endian
+          case 0 of
+            0: formatOut := 'rgb';
+            1: formatOut := 'bgr';
+            2: formatOut := 'gbr';
+            3: formatOut := 'brg';
+            4: formatOut := 'grb';
+          end;
+//          Winapi.Windows.SetPixel(result.canvas.Handle, X, Y, colorformat($0000FF, formatIn, formatOut));
+          Winapi.Windows.SetPixel(result.canvas.Handle, X, Y, colorformat((self.Canvas.Pixels[x,y] shl 0), formatIn, formatOut));
 {$ENDIF}
         end;
 

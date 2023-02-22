@@ -125,9 +125,10 @@ end;
 
 procedure TPackageFile<_BACKSTREAM_>.Detach;
 begin
-  inherited;
+
   s.free;
   s := nil;
+  inherited;
 end;
 
 procedure TPackageFile<_BACKSTREAM_>.Init;

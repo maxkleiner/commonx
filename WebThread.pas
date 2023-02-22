@@ -3,7 +3,7 @@ unit WebThread;
 interface
 
 uses
-  Classes,ScktComp, RequestInfo, ErrorHandler, WebSTring, dialogs, betterobject, SharedObject, mothershipwebserver, WebFunctions, stringx, stringx.ansi, windows{$ifdef DELPHI7},SOCKETS{$ENDIF},orderlyinit;
+  Classes,ScktComp, RequestInfo, ErrorHandler, WebSTring, dialogs, betterobject, SharedObject, mothershipwebserver, WebFunctions, stringx, stringx.ansi, windows{$ifdef DELPHI7},SOCKETS{$ENDIF},orderlyinit, helpers_stream;
 
 type
   TRequestState = (rqsInit, rqsRegister, rqsExecute, rqsClientExecute, rqsInheritedExecute, rqsReadHeader, rqsReadBody, rqsDispatch, rqsScript, rqsWriteHeader, rqsWriteBody, rqsClosed);
@@ -58,7 +58,7 @@ type
   end;
 
 var
-  WebThreadMan: TWebThreadMan;
+  WebThreadMan: TWebThreadMan = nil;
 
 procedure QuickLog(s: string);
 implementation
@@ -148,18 +148,20 @@ end;
 //------------------------------------------------------------------------------
 procedure TWebThread.ReadAvailable(bHeaderComplete:boolean);
 var
-  s: string;
+  s: ansistring;
 //Reads bytes available on the socket.
 begin
+  if not bHEaderComplete then begin
+    s := ClientSocket.ReceiveText;
 
-  s := ClientSocket.ReceiveText;
+    //if the header has already been received, read into the content
+    //else read into the "raw" buffer.
+    rqInfo.Request.RawText := rqInfo.Request.RawText + s;
+  end else begin
+    rqInfo.Request.RawText := rqInfo.Request.RawText + s;
+    stream_GuaranteeWrite(rqInfo.Request.ContentStream.o, @s[low(s)], length(s));
 
-  //if the header has already been received, read into the content
-  //else read into the "raw" buffer.
-  if bHeaderComplete then
-    rqInfo.Request.Content := rqInfo.Request.Content + s
-  else
-    rqInfo.Request.Raw := rqInfo.Request.Raw + s;
+  end;
 end;
 //------------------------------------------------------------------------------
 procedure TWebThread.ReadRequest;
@@ -167,7 +169,7 @@ var
   tm2, tm1: cardinal;
   iFirstSpace: integer;
   iTemp: integer;
-  sTemp: string;
+  sTemp: rawbytestring;
   t: integer;
   sLeft, sRight : string;
   sLeft2, sRight2: string;
@@ -232,15 +234,17 @@ begin
     //If header has not been received then search of end of header and get the content length from the header
     if not bHeaderComplete then begin
       //if found end of header....
-      iTemp := pos(#13#10#13#10, rqInfo.Request.Raw);
+      iTemp := pos(#13#10#13#10, rqInfo.Request.RawText);
       if iTemp<>0 then begin
         //split the request at the delimiter into the request[header] and requestcontent
-        sTemp := rqInfo.Request.Raw;
-        rqInfo.Request.Content := copy(sTemp,  1, iTemp+3);
+        sTemp := rqInfo.Request.RawText;
+        rqInfo.Request.Header.text := copy(sTemp,  1, iTemp+3);
         //separate out and content bytes
-        rqInfo.Request.Content := copy(sTemp, iTemp+4, length(sTemp) - iTemp+3);
+        var sTemp2: rawbytestring := copy(sTemp, iTemp+4, length(sTemp) - iTemp+3);
+//        rqInfo.Request.ContentString := sTemp2;
+        stream_GuaranteeWrite(rqInfo.Request.ContentStream.o, @sTemp2[low(sTemp2)], length(sTemp2));
         bheaderComplete := true;
-        iContentLength := HackContentLength(rqInfo.Request.Raw);
+        iContentLength := HackContentLength(rqInfo.Request.RawText);
       end;
     end;
 
@@ -248,7 +252,7 @@ begin
     //that the header has been read AND the length of the RequestContent is
     //equal-to or greater than the content length specified in the header
 
-    bDoneReading := bHeaderComplete and (length(rqInfo.Request.Content)>=iContentLength);
+    bDoneReading := bHeaderComplete and (length(rqInfo.Request.ContentString)>=iContentLength);
 
     //Thread-hang prevention
     //if haven't recieved data in THREAD_READ_TIMEOUT seconds, then kill the thread
@@ -258,14 +262,14 @@ begin
     bDoneReading;
 
     //This triggers the "raw" stringlist to split the request into multiple lines for easier parsing.
-    rqInfo.request.raw := rqInfo.request.raw;
+    rqInfo.request.rawtext := rqInfo.request.rawtext;
 
   try
     //if nothing was recieved then exit
-    if length(rqInfo.Request.Raw)<1 then
+    if length(rqInfo.Request.Rawtext)<1 then
       exit;
 
-    sTemp := rqInfo.Request.Raw;
+    sTemp := rqInfo.Request.RawText;
 
     //Get the 'GET/POST' part of the request
 
@@ -292,7 +296,7 @@ begin
     t:= 0;
     sl := TStringList.create;
     try
-      sl.text := rqInfo.request.raw;
+      sl.text := rqInfo.request.rawtext;
       repeat
         rqInfo.request.Header.add(sl[t]);
         inc(t);
@@ -375,8 +379,8 @@ begin
     //If a multipart message
     if NOT IsMultiPart(rqInfo) then begin
       //GET CONTENT PARAMETERS
-      if length(rqInfo.Request.Content) > 0 then begin
-        sInlineParams := rqInfo.Request.Content;
+      if length(rqInfo.Request.ContentString) > 0 then begin
+        sInlineParams := rqInfo.Request.ContentString;
         repeat
 
           //segregate the first parameter definition from the inline parameters
@@ -484,7 +488,7 @@ begin
   //Send response down pipe
   self.WriteResponseData(s);
 
-  rqInfo.request.raw := rqInfo.request.raw;
+  rqInfo.request.rawtext := rqInfo.request.rawtext;
 
 end;
 //------------------------------------------------------------------------------
@@ -788,7 +792,8 @@ end;
 
 procedure ofinal;
 begin
-  WebThreadMan.free;
+  if assigned(webthreadman) then
+    WebThreadMan.free;
 
 end;
 

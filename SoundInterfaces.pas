@@ -8,6 +8,8 @@ unit SoundInterfaces;
 {$DEFINE SAFE_OVERSAMPLE_WIEGHT}
 {$DEFINE NEW_RESAMPLE}
 {$DEFINE USE_READ_FUNC}
+{$DEFINE RESAMPLE_AT_O}
+{x$DEFINE FFTNATIVE}
 
 interface
 
@@ -15,12 +17,17 @@ uses
 {$IFDEF NEED_FAKE_ANSISTRING}
   ios.stringx.iosansi,
 {$ENDIF}
-  system.types, soundwavesampler,
+  system.types, soundwavesampler, globalMultiQueue,
   typex, betterobject, sharedobject, classes, generics.collections.fixed,
   commandprocessor, math, geometry, multibuffermemoryfilestream,
   memoryfilestream, commandicons, sysutils, soundconversions_commandline,
+
 {$IFDEF MSWINDOWS}
+{$IFDEF FFTNATIVE}
+  ffts,ffttypes,fftcomplexs,
+{$ELSE}
   fftw_interface,
+{$ENDIF}
 {$ENDIF}
   debug, helpers_stream, numbers, systemx, soundsample;
 
@@ -154,7 +161,7 @@ type
     procedure SetCacheResults(const Value: boolean);
 
   protected
-    function MasterStreamSampleRate: ni;
+    function MasterStreamSampleRate: ni;virtual;
 
     procedure BeforeDestruction;override;
     procedure SetMasterStream(const Value: ISoundOscillatorRenderer);virtual;
@@ -204,8 +211,14 @@ type
 
   TOscBufferInfo = record
   public
+{$IFDEF FFTNATIVE}
+    FFT_Spatial: array[0..MAX_CHANNELS-1] of TArray<TComplex>; //array [0..8191] of double;
+    FFT_Frequency: array[0..MAX_CHANNELS-1] of TArray<TComplex>; //array [0..8191] of double;
+    scratch: array[0..MAX_CHANNELS-1] of TArray<TComplex>; //array [0..8191] of double;
+{$ELSE}
     FFT_Spatial: array[0..MAX_CHANNELS-1] of PAfftw_float; //array [0..8191] of double;
     FFT_Frequency: TComplexFrequencyArray; //array [0..8191] of double;
+{$ENDIF}
 
     allocated: boolean;
     Start: nativeint;
@@ -215,8 +228,12 @@ type
     Transitional: boolean;
     cmd: TCommand;
     OverSample: nativeint;
+{$IFNDEF FFTNATIVE}
     fft_plan1: array[0..MAX_CHANNELS-1] of PByte;
     fft_plan2: array[0..MAX_CHANNELS-1] of PByte;
+{$ELSE}
+    plan: TFFTPlan;
+{$ENDIF}
     procedure Init;
     procedure AllocateBuffers(iSize: nativeint);
     procedure FreeBuffers;
@@ -322,15 +339,13 @@ type
   TId3Header = packed record
     threecc: array[0..2] of byte;     //ID3v2/file identifier   "ID3"
     version: array[0..1] of byte;     //ID3v2 version           $03 00
-    flags: cardinal;     //ID3v2 flags             %abc00000
-    junk:array[0..4] of byte;
+    flags: byte;     //ID3v2 flags             %abc00000
     size_7bit: array[0..3] of byte;     //ID3v2 size              4 * %0xxxxxxx
-    junk2: array[0..1] of byte;
     function Size: integer;
   end;
 
   TMp3Info = packed record
-    id3header: TId3Header;
+    size: cardinal;
     samplerate: cardinal;
   end;
 
@@ -430,8 +445,9 @@ type
     procedure UpdateSampleFunctionPointer;
   public
     fnReadNextSample: TSoundSampleReadFunction;
-    filename: string;
+    Ffilename: string;
     SampleDataStart: int64;
+    OutOfBounds: boolean;
 
     constructor Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal);overload;
     constructor Create(const AFileName: string; Mode: cardinal);overload;
@@ -443,8 +459,8 @@ type
     property channels: smallint read FChannels write SetChannels;
     property samplerate: integer read FSampleRate write FSampleRate;
     procedure Rewind;
-    function GetResample(rTime: double; out ss: TStereoSoundSample): boolean;overload;
-    function GetResample(targetSampleRate: ni; rTime: double; out ss: TStereoSoundSample): boolean;overload;
+    function GetResample(rTimeInSamples: double; out ss: TStereoSoundSample): boolean;overload;
+    function GetResample(targetSampleRate: ni;rTimeInSamples: double; out ss: TStereoSoundSample): boolean;overload;
     function Read(var Buffer; Count: Longint): Longint; override;
     function Seek(const offset: int64; Origin: TSeekOrigin): int64; override;
 
@@ -494,7 +510,7 @@ type
     FfirstSampleRequested: boolean;
     FFreewheelMode: boolean;
     FFreewheelStartSample: int64;
-    FFreewheelSamplePOinter: int64;
+    FFreewheelSamplePointer: int64;
     FFreeWheelTriggeredSample: integer;
     FFreeWheelReferenceTime: single;
 {$IFDEF FREEWHEEL2}
@@ -521,13 +537,17 @@ type
     property Stream: TSoundStream read FStream;
   private
     FConcluded: boolean;
-    procedure SetPositionInSeconds(const Value: nativefloat);
-    function GetPositionInSeconds: nativefloat;
+    procedure SetPositionInSeconds(const Value: double);
+    function GetPositionInSeconds: double;
     procedure SetPosition(const Value: int64);
+
+  protected
+    function MasterStreamSampleRate: NativeInt; override;
 
   public
     SampleRate: nativeint;
     SampleCount: nativeint;
+    function OutOfBounds: boolean;
     constructor Create; override;
     destructor Destroy; override;
     property fileName: string read FFileName write SetFileName;
@@ -536,6 +556,8 @@ type
     procedure Pause;
     procedure UnPause;
     procedure Rewind;
+
+
     property StartAt: int64 read FStartAt write SetStartAt;
     property StartedAt: int64 read FStartedAt;
     property Started: boolean read FStarted;
@@ -554,12 +576,13 @@ type
     property Buffersize: integer read FBufferSize write FBufferSize;
     property SyncOffset: integer read FSyncOffset write FSyncOffset;
     property Loop: boolean read GetLoop write SetLoop;
+{$IFDEF FREEWHEEL2}
     property FreewheelAdjustment: nativefloat read FFreewheelAdjustment;
     property FreewheelTargetAdjustment: nativeint read FFreewheelTargetAdjustment;
-
+{$ENDIF}
 
     property Position: int64 read GetPosition write SetPosition;
-    property PositionInSeconds: nativefloat read GEtPositionInSeconds write SetPositionInSeconds;
+    property PositionInSeconds: double read GEtPositionInSeconds write SetPositionInSeconds;
     function SamplePosition: int64;
     function LengthInSeconds: nativefloat;
     property FirstSampleRequested: boolean read FFirstSampleREquested;
@@ -571,6 +594,7 @@ const
   SOUND_HEADER_LENGTH_v3 = sizeof(TBoogerHeader);
 
 function GetMp3Info(sFile: string): TMp3Info;overload;
+function GetMp3Info(s: TStream; out info: TMp3Info; bSeekForward: boolean): boolean;overload;
 function GetMp3Info(p: Pbyte): TMp3Info;overload;
 
 
@@ -1061,7 +1085,19 @@ begin
   for t:= 0 to MODIFIER_BUFFER_COUNT-1 do begin
     Self.FBufferInfos[t].AllocateBuffers(iSamples);
     FBufferOrders[t] := @FBufferInfos[t];
+//    setlength(FbufferInfos[t].aTime, iSamples);
+//    setlength(FbufferInfos[t].aFreq, iSamples);
+{$IFDEF FFTNATIVE}
+    for var u :=0 to MAX_CHANNELS-1 do begin
+      setlength(FbufferInfos[t].FFT_Spatial[u], iSamples);
+      setlength(FbufferInfos[t].FFT_Frequency[u], iSamples);
+      setlength(FbufferInfos[t].scratch[u], iSamples);
+    end;
+{$ENDIF}
+
+
   end;
+
 
 
 
@@ -1087,8 +1123,13 @@ begin
 
 
 
+{$IFDEF FFTNATIVE}
+      b.FFT_Spatial[0][t].re := ss.Left;
+      b.FFT_Spatial[1][t].re := ss.Right;
+{$ELSE}
       b.FFT_Spatial[0][t] := ss.Left;
       b.FFT_Spatial[1][t] := ss.Right;
+{$ENDIF}
     end;
   finally
     Unlock;
@@ -1365,17 +1406,27 @@ begin
   BufferSize := iSize;
 //  for t:= low(FFT_Spatial) to high(FFT_Spatial) do begin
     for u := 0 to MAX_CHANNELS-1 do begin
+{$IFnDEF FFTNATIVE}
       p := self.FFT_Spatial[u];
       if p <> nil then
         FreeMemory(p);
       p := self.FFT_FRequency[u];
       if p <> nil then
         FreeMemory(p);
-
+{$ENDIF}
+{$IFDEF FFTNATIVE}
+      setlength(self.FFT_Spatial[u], isize);// := p;
+{$ELSE}
       p := GetMemory(iSize*SizeOf(fftw_float));
       self.FFT_Spatial[u] := p;
+{$ENDIF}
+{$IFDEF FFTNATIVE}
+
+      setlength(self.FFT_Frequency[u], isize);// := p;
+{$ELSE}
       p := GetMemory(iSize*SizeOf(fftw_complex));
       self.FFT_Frequency[u] := p;
+{$ENDIF}
       Start := -1;
       Length := iSize;
     end;
@@ -1407,6 +1458,7 @@ begin
 {$ELSE}
   iWindowLength := length;//1024
 
+  {$IFNDEF FFTNATIVE}
   LockFFT;
   try
     for t:= 0 to MAX_CHANNELS-1 do begin
@@ -1419,6 +1471,7 @@ begin
   finally
     UnlockFFT;
   end;
+  {$ENDIF}
 {$ENDIF}
 
 end;
@@ -1438,6 +1491,7 @@ begin
 {$IFNDEF MSWINDOWS}
   raise ENotImplemented.create('not implemented on this platform');
 {$ELSE}
+  {$IFNDEF FFTNATIVE}
   LockFFT;
   try
     for t:= 0 to MAX_CHANNELS-1 do begin
@@ -1447,6 +1501,7 @@ begin
   finally
     UnlockFFT;
   end;
+  {$ENDIF}
 {$ENDIF}
 
 end;
@@ -1532,15 +1587,41 @@ begin
 {$IFNDEF MSWINDOWS}
   raise ENotImplemented.create('not implemented on this platform');
 {$ELSE}
+  {$IFNDEF FFTNATIVE}
   for t:= 0 to MAX_CHANNELS-1 do begin
+
     zeromemory(@FFT_Frequency[t][0], Length*sizeof(fftw_complex));
     fftw_execute(fft_plan1[t]);
     for u := 0 to (Length)-1 do begin
-      FFT_Frequency[t][u].i := FFT_Frequency[t][u].i/Length;//TODO: this can be optimized for SSE
-      FFT_Frequency[t][u].r := FFT_Frequency[t][u].r/Length;
+      FFT_Frequency[t][u].im := FFT_Frequency[t][u].im/Length;//TODO: this can be optimized for SSE
+      FFT_Frequency[t][u].re := FFT_Frequency[t][u].re/Length;
     end;
 
+
+
   end;
+  {$ELSE}
+//  ForX_QI(0, MAX_CHANNELS-1, 1, procedure (t: int64) begin
+
+  For t := 0 to MAX_CHANNELS-1 do begin
+    var len := BufferSize;
+
+//      for var x:= 0 to len-1 do begin
+//        atime[x] := FFT_Spatial[t][x];
+//      end;
+{$IFDEF FFTEX}
+      ffts.ForwardFFTEx(@FFT_Spatial[t], @FFT_Frequency[t], @scratch[t], len);
+{$ELSE}
+      ffts.ForwardFFT(plan, FFT_Spatial[t], FFT_Frequency[t], len);
+{$ENDIF}
+//      for var x:= 0 to len-1 do begin
+//        FFT_Frequency[t][x] := afreq[x];
+//      end;
+
+//  end, [fxEndInclusive]);
+  end;
+  {$ENDIF}
+
   {$ENDIF}
 
 
@@ -1555,6 +1636,7 @@ begin
   raise ENotImplemented.create('not implemented on this platform');
 {$ELSE}
   for t:= 0 to MAX_CHANNELS-1 do begin
+    {$IFNDEF FFTNATIVE}
     fftw_execute(fft_plan2[t]);
     for u := 0 to (Length)-1 do begin
       d := FFT_Spatial[t][u];
@@ -1563,6 +1645,27 @@ begin
       FFT_Spatial[t][u] := d;
 
     end;
+    {$ELSE}
+    begin
+      var len := BufferSize;
+{$IFDEF FFTEX}
+      ffts.InverseFFTEx(@FFT_Frequency[t], @FFT_Spatial[t],@scratch[t], len);
+{$ELSE}
+      ffts.InverseFFT(plan, FFT_Frequency[t], FFT_Spatial[t], len);
+{$ENDIF}
+{
+      for var x:= 0 to len-1 do begin
+        afreq[x] := FFT_Frequency[t][x];
+//        afreq[x].Im := FFT_Frequency[t][x].i;
+      end;
+      ffts.InverseFFT(afreq, atime, len);
+      for var x:= 0 to len-1 do begin
+        FFT_Spatial[t][x] := atime[x];
+      end;
+
+ }
+    end;
+    {$ENDIF}
 
   end;
   {$endif}
@@ -1684,7 +1787,7 @@ end;
 
 function TSoundStreamOscillator.GetPosition: int64;
 begin
-  if Started then begin
+  if Started and FirstSampleRequested then begin
     if assigned(masterstream) then begin
       result := round((MAsterStream.PlayPosition - FStartedAt) * (samplerate / MasterStream.SampleRate)) +  FStartAt;
     end else begin
@@ -1701,6 +1804,20 @@ begin
   result := SampleCount / SampleRate;
 end;
 
+
+function TSoundStreamOscillator.MasterStreamSampleRate: NativeInt;
+begin
+  //inherited;/// don't call inherited, this function overrides the
+  //exception that would occur if no master stream is assigned
+  //instead, if no master stream is assigned, the master sample rate
+  //is the native rate of this stream
+  if assigned(MasterStream) then
+    result := MasterStream.SampleRate
+  else begin
+    result := SampleRate;
+  end;
+
+end;
 
 procedure TSoundStreamOscillator.o(mt: ToscMessageType;
   out ss: TStereoSoundSAmple; iSampletime: int64);
@@ -1734,11 +1851,24 @@ begin
 //  if iSampleTime < FStartedAT then
 //    FStartedAT := iSampleTime;
 
-  iThisSample := iSampletime - FStartedAt;
+{x$DEFINE SS_FLOAT_TIME}
+{$IFDEF SS_FLOAT_TIME}
+  iThisSample := round(double(PositionInSeconds) * double(sampleRate));
+{$ELSE}
+
+{$IFDEF RESAMPLE_AT_O}
+  if assigned(MasterStream) then
+    iThisSample := round((iSampletime - FStartedAt) * (SampleRate/MasterStream.samplerate))
+  else
+    iThisSample := (iSampletime - FStartedAt);
+{$ELSE}
+  iThisSample := round((iSampletime - FStartedAt);
+{$ENDIF}
+{$ENDIF}
 
   if MAsterStream <> nil then begin
-    if MasterStream.samplerate <> self.SampleRate then
-      iThisSample := round(iThisSample * (samplerate / MasterStream.samplerate));
+//    if MasterStream.samplerate <> self.SampleRate then
+//      iThisSample := round(iThisSample * (samplerate / MasterStream.samplerate));
   end;
 
   if not FreeWheelMode then begin
@@ -1852,11 +1982,12 @@ begin
         exit;
       end;
 
-      FStream.SeekSample(FFreewheelSamplePOinter + SyncOffset);
-      FStream.GetNextSample(rLeft, rRight);
-
-      rLeft := rLeft * Boost * Volume;
-      rRight := rRight * Boost * Volume;
+//      FStream.SeekSample(FFreewheelSamplePOinter + SyncOffset);
+      FStream.GetResample(FFreewheelSamplePOinter + SyncOffset, ss);
+//      FStream.GetNextSample(rLeft, rRight);
+      ss := ss *bOOST * VOLUME;
+//      rLeft := rLeft * Boost * Volume;
+//      rRight := rRight * Boost * Volume;
       iDif := FFreewheelSamplePOinter - FFreeWheelTriggeredSample;
       if abs(iDif) > 22050 * 4 then begin
         FFreewheelSamplePOinter := FFreeWheelTriggeredSample;
@@ -1887,15 +2018,24 @@ begin
 
 end;
 
+function TSoundStreamOscillator.OutOfBounds: boolean;
+begin
+  if stream = nil then
+    result := false
+  else
+    result := Stream.outofbounds;
+end;
+
 procedure TSoundStreamOscillator.Pause;
 begin
   FStarted := false;
   FStartAt := FLastSampleREquested;
+  Ffirstsamplerequested := false;
 
 end;
 
 
-function TSoundStreamOscillator.GetPositionInSeconds: nativefloat;
+function TSoundStreamOscillator.GetPositionInSeconds: double;
 begin
   if self.samplerate = 0 then
     result := 0
@@ -1919,6 +2059,7 @@ end;
 procedure TSoundStreamOscillator.Rewind;
 begin
   FStartAt := 0;
+  Ffirstsamplerequested := false;
 end;
 
 function TSoundStreamOscillator.SamplePosition: int64;
@@ -1961,6 +2102,7 @@ begin
   SampleRate := FStream.samplerate;
   SampleCount := FStream.SampleCount;
 
+
 end;
 
 procedure TSoundStreamOscillator.SetFreeWheelMode(const Value: boolean);
@@ -1984,7 +2126,7 @@ begin
     Start;
 end;
 
-procedure TSoundStreamOscillator.SetPositionInSeconds(const Value: nativefloat);
+procedure TSoundStreamOscillator.SetPositionInSeconds(const Value: double);
 begin
   if self.samplerate = 0 then
     Position := 0
@@ -2003,14 +2145,18 @@ begin
   FfirstSampleRequested := false;
   FStarted := true;
   FConcluded := false;
+//  if assigned(MasterStream) then begin
+//    FStartedAt := MasterStream.PlayPosition;
+//    FFirstSampleRequested := true;
+//  end;
 
   if assigned(MasterStream) then begin
-    Debug.Log(self,'StartAt:'+inttostr(self.StartAt));
+{    Debug.Log(self,'StartAt:'+inttostr(self.StartAt));
     while not FFirstSampleRequested do sleep(0);
     Debug.Log(self,'MasterStream Time at Start:'+inttostr(MasterStream.PlayPosition));
     Debug.Log(self,'StartedAt:'+inttostr(self.StartedAt));
     Debug.Log(self,'Position:'+inttostr(self.Position));
-    Debug.Log(self,'PositionInSeconds:'+floattostr(self.PositionInSeconds));
+    Debug.Log(self,'PositionInSeconds:'+floattostr(self.PositionInSeconds));}
   end;
 
 end;
@@ -2037,9 +2183,10 @@ constructor TSoundStream.Create(const AFileName: string; Mode: cardinal; Rights:
 begin
   FChannels := 1;
   FSampleFormat := sf8;
-  inherited CReate();
-  filename := afilename;
+  FFileName := AFilename;//<---set this or Mp3 decompression will fail
+//  inherited CReate();
   Create(TSoundFileStreamBase.create(afilename, mode, rights, flags), extractfileext(aFileName));
+//  filename := afilename;
 
 
 end;
@@ -2053,8 +2200,8 @@ constructor TSoundStream.Create(stream_takes_ownership: TStream; ext: string);
 var
   bh: TBoogerHeader;
 begin
-  FSampleFormat := sf8;
-  FChannels := 1;
+  FSampleFormat := sf16;
+  FChannels := 2;
   inherited Create();
   FRestingPOint := INVALID_RESTING_POINT;
   FUnderStream := stream_takes_ownership;
@@ -2072,11 +2219,13 @@ begin
       {$IFNDEF MSWINDOWS}
         raise ENotImplemented.create('not implemented on this platform');
       {$ELSE}
-      if self.filename = '' then
+      if self.Ffilename = '' then
         raise ENotImplemented.create('mp3 decompression only supported against file-based sound streams');
-
-      FUnCompressed := Mp3ToRawMemoryStream(filename,mp3info);
       FChannels := 2;
+      var mp3info := GetMp3Info(FFilename);
+      var decoded := MP3ToRawMemoryStreamFixed2020(Ffilename, mp3info);
+      FUnCompressed := decoded;
+
       Resampled := true;
       FSampleRate := mp3info.samplerate;
 //      FOriginalSampleRate := 44100;
@@ -2117,12 +2266,21 @@ begin
   if (Position < 0) or (Position > iLastSampleStart) then begin
     ss.Init;
     result := false;
+    OutOfBounds := true;
+    if PositionInSeconds > 0.0 then begin
+//      Debug.Log('anomaly '+floattostr(position)+' '+floattostr(positioninseconds));
+    end;
     exit;
   end;
+  OutOfBounds := false;
+   if Position < 0 then begin
+//    Debug.Log('anomaly '+floattostr(position)+' '+floattostr(positioninseconds));
+  end;
 
-{$IFDEF USE_READ_FUNC}
+
+  if assigned(fnReadNextSample) then begin
     ss := fnReadNextSample;
-{$ELSE}
+  end else
   begin
     var
       iL, iR: smallint;
@@ -2136,7 +2294,6 @@ begin
     ss.Left := iL / 32767;
     ss.Right := iR / 32767;
   end;
-{$ENDIF}
 
   ss.Left := ss.Left * Volume;
   ss.Right := ss.Right * Volume;
@@ -2184,17 +2341,17 @@ begin
 
 end;
 
-function TSoundStream.GetResample(rTime: double; out ss: TStereoSoundSample): boolean;
+function TSoundStream.GetResample(rTimeInSamples: double; out ss: TStereoSoundSample): boolean;
 var
   iSAmp1, iSamp2: int64;
   rWeight: NativeFloat;
   ssTemp: TStereoSoundSample;
 begin
   result := false;
-  iSamp1 := Floor(rTime);
+  iSamp1 := Floor(rTimeInSamples);
   iSamp2 := iSamp1 + 1;
 
-  rWeight := rTime - iSAmp1;
+  rWeight := rTimeInSamples - iSAmp1;
   if rWeight = 0 then begin
     SeekSample(iSamp1);
     result := GetNextSample(ss);
@@ -2209,12 +2366,16 @@ begin
 
 end;
 
-function TSoundStream.GetResample(targetSampleRate: ni; rTime: double;
+function TSoundStream.GetResample(targetSampleRate: ni; rTimeInSamples: double;
   out ss: TStereoSoundSample): boolean;
 begin
   if targetsamplerate = 0 then
     targetsamplerate := 44100;
-  var nuTime := rTime;//(TArgetSampleRate *rTime) / SampleRate;
+{$IFDEF RESAMPLE_AT_O}
+  var nuTime :=rTimeInSamples;//(}SampleRate *rTimeInSamples) / TargetSampleRate;
+{$ELSE}
+  var nuTime :={rTimeInSamples;//}(SampleRate *rTimeInSamples) / TargetSampleRate;
+{$ENDIF}
   result := GetResample(nuTime, ss);
 end;
 
@@ -2442,7 +2603,7 @@ begin
     //NEW IN 2020, better, more universal sampler for WAV files,
     //should support lots of formats and sample rates
     microsoftWAV := TSoundWaveSampler.Create;
-    microsoftWAV.fileName := self.filename;
+    microsoftWAV.fileName := self.Ffilename;
 
     var fmt := microsoftWAV.GetFormat;
     Channels := fmt.channels;
@@ -2659,8 +2820,54 @@ end;
 
 
 
+function SkipID3DataIfRequired(stream: TStream): boolean;
+var
+  data: array[0..2] of ansichar;
+  len: array[0..3] of byte;
+  id3: TId3Header;
+begin
+    var pos := stream.position;
+    stream_guaranteeRead(stream,@data[0],3);// //data = m_file.read(3);
+                                                  //Q_ASSERT(data.size() == 3);
+    if (data[0] <> 'I')
+    or (data[1] <> 'D')
+    or (data[2] <> '3') then begin
+      stream.position := pos;
+      exit(true);
+    end;
+
+    stream.seek(0,soBeginning);
+    stream_GuaranteeRead(stream,@id3,sizeof(id3));
+    stream.seek(id3.Size+sizeof(id3), soBeginning);
+
+    exit(true);
+end;
 
 
+function GetMp3Info(s: TStream; out info: TMp3Info; bSeekForward: boolean): boolean;overload;
+var
+  mp3header: array[0..3] of byte;
+begin
+  if s.position=0 then
+    SkipId3DataIfRequired(s);
+
+  while s.Position <= (s.size-4) do begin
+    var pos := s.Position;
+    stream_guaranteeread(s, @mp3header[0], 4, true);
+    if (mp3header[0] = $ff) and ((mp3header[1] and $D0) = $D0) then begin
+      info := GetMp3Info(@mp3header[0]);
+      s.position := pos;
+      exit(true);
+    end;
+    if not bSeekForward then
+      exit(false);
+    s.position := pos+1;
+  end;
+  exit(false);
+
+
+
+end;
 function GetMp3Info(sFile: string): TMp3Info;overload;
 var
   p: pbyte;
@@ -2671,10 +2878,13 @@ begin
 //  res
     fs := TFileStream.Create(sFile, fmOpenRead+fmShareDenyWrite);
     try
-      for t:= 0 to fs.size-5 do begin
+      if fs.position=0 then
+        SkipId3DataIfRequired(fs);
+
+      for t:= fs.position to fs.size-5 do begin
         fs.seek(t,soBeginning);
         stream_guaranteeread(fs, @mp3header[0], 4, true);
-        if (mp3header[0] = $ff) and ((mp3header[1] and $D0) = $D0) then begin
+        if (mp3header[0] = $ff) and ((mp3header[1] and $F0) in [$F0,$E0]) then begin
           result := GetMp3Info(@mp3header[0]);
           exit;
         end;

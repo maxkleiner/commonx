@@ -4,6 +4,7 @@ interface
 {$ENDIF}
 {$IFNDEF DISABLE_INTERFACE}
 {$DEFINE SIMPLEHEAPS}
+
 {$D-}
 
 type
@@ -795,7 +796,7 @@ type
     Procedure Unlock;{$IFNDEF NOINLINE}inline;{$ENDIF}
 
     //!Garbage collection
-    procedure Clean; virtual;
+    function Clean: integer; virtual;
 
     //!debug
     function CheckMem: BBBool;{$IFNDEF NOINLINE}inline;{$ENDIF}
@@ -831,7 +832,7 @@ type
     //!Overrides
     function AllocateNewBlock(const Size: NativeInt): PSuperMemBlock; override;
     procedure NoNeedBlock(const block: pSuperMemBlock);{$IFNDEF NOINLINE}inline;{$ENDIF}
-    procedure Clean; override;
+    function Clean: integer; override;
     property LastOwnedThreadID: cardinal read FLastOwnedThreadID write FLastOwnedThreadID;
   end;
 
@@ -886,7 +887,7 @@ type
     function TryLock: BBBool;{$IFNDEF NOINLINE}inline;{$ENDIF}
 
     //!Garbage collection
-    procedure Clean;{$IFNDEF NOINLINE}inline;{$ENDIF}
+    function Clean: integer;{$IFNDEF NOINLINE}inline;{$ENDIF}
 
     //!Experimental
     function LockFirstAvailable: TThreadBlockManager;{$IFNDEF NOINLINE}inline;{$ENDIF}
@@ -1920,7 +1921,7 @@ begin
 
 end;
 
-procedure TBlockManager.Clean;
+function TBlockManager.Clean: integer;
 {$IFNDEF DO_NOT_GIVE_TO_OS}
 var
   t,cx: NativeInt;
@@ -1928,9 +1929,11 @@ var
   bl: TLockedBlockList;
 {$ENDIF}
 begin
+  result := 0;
   UpdateLocalTickCount;
 {$IFNDEF DO_NOT_GIVE_TO_OS}
   if not trylock then exit;
+  result := 1;
 
 {$IFDEF EXTRA_ERR_CHECKING}try{$ENDIF}
     cx := 0;
@@ -1963,13 +1966,14 @@ begin
 end;
 
 
-procedure TThreadBlockManager.Clean;
+function TThreadBlockManager.Clean: integer;
 var
   t,u: NativeInt;
   block: PSuperMemBlock;
   cx: NativeInt;
   bl: TLockedBlockList;
 begin
+  result := 1;
 
   Lock;
   try
@@ -2137,14 +2141,16 @@ begin
 end;
 
 
-procedure TBlockManagerManager.Clean;
+function TBlockManagerManager.Clean: integer;
 var
   t: NativeInt;
   man: TBlockManager;
 //  tm1, tm2: cardinal;
 begin
+  result := 0;
   {$IFNDEF FREEMAN}exit;{$ENDIF}
 
+  result := 1;
   //tm2:= GetTickCount;
   try
     for t:= ManagerCount-1 downto 0 do begin

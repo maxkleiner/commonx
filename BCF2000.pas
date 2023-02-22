@@ -310,8 +310,9 @@ end;
 
 procedure TBCF2000.Detach;
 begin
-  inherited;
+
   DataSource := nil;
+  inherited;
 end;
 
 procedure TBCF2000.EnableRobotics(iChannel: nativeint; bEnabled: boolean);
@@ -442,7 +443,7 @@ begin
   if not FMIDI.CheckConnected then
     exit;
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
@@ -618,8 +619,9 @@ end;
 
 procedure TBCF2000DataSource.Detach;
 begin
-  inherited;
+
   BCF := nil;
+  inherited;
 end;
 
 

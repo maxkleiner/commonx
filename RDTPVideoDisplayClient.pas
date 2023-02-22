@@ -10,7 +10,7 @@ interface
 
 
 uses
-  VideoMarshall, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  VideoMarshall, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -100,7 +100,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.PrepareVideo(sFile:string; sAudioFile:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -126,7 +126,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.PrepareVideo_Async(sFile:string; sAudioFile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -148,7 +148,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.PlayVideo(rStartingPoint:nativefloat);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -173,7 +173,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.PlayVideo_Async(rStartingPoint:nativefloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -194,7 +194,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPosition():NativeFloat;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -221,7 +221,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.GetPosition_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -241,7 +241,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPosition_Response():NativeFloat;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -257,7 +257,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Pause();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -281,7 +281,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Pause_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -301,7 +301,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Rewind();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -325,7 +325,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Rewind_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -345,7 +345,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVolume(rVol:NativeFloat);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -370,7 +370,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVolume_Async(rVol:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -391,7 +391,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Fade(rVolFrom:NativeFloat; rVolTo:NativeFloat; rTime:NativeFloat; bNoVideo:boolean);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -419,7 +419,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Fade_Async(rVolFrom:NativeFloat; rVolTo:NativeFloat; rTime:NativeFloat; bNoVideo:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -443,7 +443,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetLength():NativeFloat;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -470,7 +470,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.GetLength_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -490,7 +490,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetLength_Response():NativeFloat;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -506,7 +506,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPlaybackInfo(out position:NativeFloat; out length:NativeFloat; out playing:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -536,7 +536,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.GetPlaybackInfo_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -556,7 +556,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPlaybackInfo_Response(out position:NativeFloat; out length:NativeFloat; out playing:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -575,7 +575,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetPosition(pos:NativeFloat);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -600,7 +600,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetPosition_Async(pos:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -621,7 +621,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Unload();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -645,7 +645,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.Unload_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -665,7 +665,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetBoost(rMultiplier:NativeFloat);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -690,7 +690,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetBoost_Async(rMultiplier:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -711,7 +711,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPlaybackInfoEx(out pi:TPlaybackInfo):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -739,7 +739,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.GetPlaybackInfoEx_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -759,7 +759,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.GetPlaybackInfoEx_Response(out pi:TPlaybackInfo):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -776,7 +776,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoSync(rSeconds:NativeFloat):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -804,7 +804,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVideoSync_Async(rSeconds:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -825,7 +825,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoSync_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -841,7 +841,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoZoom(rZoom:NativeFloat):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -869,7 +869,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVideoZoom_Async(rZoom:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -890,7 +890,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoZoom_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -906,7 +906,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoCentering(x:integer; y:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -935,7 +935,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVideoCentering_Async(x:integer; y:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -957,7 +957,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoCentering_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -973,7 +973,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetEQ(x1:NativeFloat; x2:NativeFloat; x3:NativeFloat; x4:NativeFloat; b1:NativeFloat; b2:NativeFloat; b3:NativeFloat; b4:NativeFloat; b5:NativeFloat):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1009,7 +1009,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetEQ_Async(x1:NativeFloat; x2:NativeFloat; x3:NativeFloat; x4:NativeFloat; b1:NativeFloat; b2:NativeFloat; b3:NativeFloat; b4:NativeFloat; b5:NativeFloat);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1038,7 +1038,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetEQ_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1054,7 +1054,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoState(bOn:boolean):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1082,7 +1082,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TVideoDisplayClient.SetVideoState_Async(bOn:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1103,7 +1103,7 @@ end;
 //------------------------------------------------------------------------------
 function TVideoDisplayClient.SetVideoState_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

@@ -2,7 +2,7 @@ unit CoreWebScriptFunctions;
 
 interface
 
-uses typex, classes, requestinfo, math, Dataobject, webscript, scriptfunctions, variants, variantlist, beeper;
+uses typex, classes, requestinfo, math, Dataobject, webscript, scriptfunctions, variants, variantlist, beeper, mysqlstoragestring;
 
 function DispatchScriptCommand(sTagBody, sCommand: string; params: TVariantList; rqInfo: TRequestInfo; var iStartRow, iStartCol: integer; out bHandled: boolean; out bDispatched: boolean): string;
 
@@ -87,10 +87,57 @@ begin
   end;
 end;
 
+function ScriptupdatequeryDT(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  with sev do begin vt := sptString;
+
+    UpdateQueryDT(rqInfo, params[0],params[1]);
+    result := '';
+  end;
+end;
+
+function ScriptupdatequeryGVS(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  with sev do begin vt := sptString;
+    result := gvs(params[0]);
+  end;
+end;
+
+
+
 function LoadStringFromFile(sFile: string): string;
 begin
   result := LoadStringFromFile(slash(webserverconfig.ExternalResourcePath)+sFile);
 end;
+
+
+function Scriptch_keys(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  result := 'now(),'+floattostr(now())+',';
+end;
+function ScriptSTR(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  result := VartoStrEx(params[0]);
+end;
+
+function ScriptHasParamWithValue(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  result := sev.rqinfo.response.hasvar(params[0])
+            and (sev.rqinfo.response.varpool[params[0]] <> '');
+
+end;
+
+
+function ScriptChecked(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  result := booltostr(params[0],'CHECKED','');
+
+end;
+
+
+
+
+
 
 
 
@@ -134,6 +181,8 @@ begin
   vt := sptString;
   result := friendlysizename(params[0]);
 end;
+
+
 
 function scriptIsPieceOfShit(sTagBody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
 begin
@@ -950,7 +999,7 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function Scriptif(sTagbody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
+function Scriptvif(sTagbody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
 var
   iEndRow, iEndcol: integer;
 begin
@@ -959,10 +1008,13 @@ begin
 
   //if condition NOT definted -- erase HTML in conditional area...else
   //do nothing but replace the tag
-  if NOT sev.rqInfo.response.HasVar(params[0]) then begin
+  var endtag := params[0];
+  if params.count > 1 then
+    endtag := params[1];
+  if (NOT sev.rqInfo.response.HasVar(params[0])) and (not sev.rqINfo.Response.HasObject(params[0])) then begin
     result := '';
     //Find the end of the conditional area [[[:end/fieldname]]]
-    FindEnd(sev.rqInfo.response.content, '[[[:end('''+vartostr(params[1])+''')]]]', sev.iStartRow, iEndCol, iEndRow);
+    FindEnd(sev.rqInfo.response.content, '[[[:end('''+vartostr(endtag)+''')]]]', sev.iStartRow, iEndCol, iEndRow);
     //Erase the conditional area
     DeleteStringListArea(sev.rqInfo.response.content, sev.iStartCol, sev.iStartRow, iEndCol, iEndRow);
     sev.bHandled := true;
@@ -1002,17 +1054,50 @@ begin
 end;
 //------------------------------------------------------------------------------
 
-function Scriptifn(sTagbody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
+function Scriptbifn(sTagbody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
+var
+  sTemp: string;
+  iendcol, iEndrow: integer;
+begin
+  vt := sptString;
+  //Find the end of the conditional area [[[:end/fieldname]]]
+
+  //if condition NOT definted -- erase HTML in conditional area...else
+  //do nothing but replace the tag
+  if (lowercase(params[0]) = 'true') then begin
+    result := '';
+
+    if params.count > 1 then
+      sTemp := ''''+vartostr(params[1])+''''
+    else
+      sTemp := '';
+
+
+    //Find the end of the conditional area [[[:end/fieldname]]]
+    FindEnd(sev.rqInfo.response.content, '[[[:end('+sTemp+')]]]', sev.iStartRow, iEndCol, iEndRow);
+    //Erase the conditional area
+    DeleteStringListArea(sev.rqInfo.response.content, sev.iStartCol, sev.iStartRow, iEndCol, iEndRow);
+    sev.bHandled := true;
+  end else begin
+    result := '';
+  end;
+end;
+//------------------------------------------------------------------------------
+
+function Scriptvifn(sTagbody, sCommand: string; var sev: TScriptEngineVars; params: TScriptParamList; out vt: TScriptParameterType): variant;
 var
   iEndRow, iEndCol: integer;
 begin
   vt := sptString;
   //if condition NOT definted -- erase HTML in conditional area...else
   //do nothing but replace the tag
-  if sev.rqInfo.response.HasVar(params[0]) then begin
+  var endtag := params[0];
+  if params.count > 1 then
+    endtag := params[1];
+  if (sev.rqInfo.response.HasVar(params[0])) or (sev.rqInfo.response.HasObject(params[0])) then begin
     result := 'conditional not met - '+vartostr(params[0]);
     //Find the end of the conditional area [[[:end/fieldname]]]
-    FindEnd(sev.rqInfo.response.content, '[[[:end('''+vartostr(params[0])+''')]]]', sev.iStartRow, iEndCol, iEndRow);
+    FindEnd(sev.rqInfo.response.content, '[[[:end('''+vartostr(endtag)+''')]]]', sev.iStartRow, iEndCol, iEndRow);
     //Erase the conditional area
     DeleteStringListArea(sev.rqInfo.response.content, sev.iStartCol, sev.iStartRow, iEndCol, iEndRow);
     sev.bHandled := true;
@@ -1962,6 +2047,15 @@ begin
   else
     result := 'false';
 end;
+
+function ScriptObjectDefined(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  // :hasobject('masterlist', 'lookuplist', masteridx)
+  //returns true/false
+  result := sev.rqINfo.Response.HasObject(params[0]);
+end;
+
 //------------------------------------------------------------------------------
 
 function Scriptgetsubobjectcount(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
@@ -2106,6 +2200,70 @@ begin
 end;
 
 //------------------------------------------------------------------------------
+function ScriptQuery(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  //varpool object name is param[0]
+  //object type is param[1]
+  //params 2..n are alternating type, value
+  WebScriptMTDTInterface.ScriptQuery(sev.rqInfo, false, Params, true);
+  result := '';
+end;
+
+//------------------------------------------------------------------------------
+function ScriptQuerySingle(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  //varpool object name is param[0]
+  //object type is param[1]
+  //params 2..n are alternating type, value
+  WebScriptMTDTInterface.ScriptQuery(sev.rqInfo, false, Params, false);
+  result := '';
+end;
+//------------------------------------------------------------------------------
+
+function ScriptQuerySingleDT(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  //varpool object name is param[0]
+  //object type is param[1]
+  //params 2..n are alternating type, value
+  WebScriptMTDTInterface.ScriptQueryDT(sev.rqInfo, false, Params, false);
+  result := '';
+end;
+
+function ScriptFunctionQueryDT(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  //varpool object name is param[0]
+  //object type is param[1]
+  //params 2..n are alternating type, value
+  result := WebScriptMTDTInterface.ScriptFunctionQueryDT(sev.rqInfo, false, Params, false);
+end;
+
+
+
+
+
+
+//------------------------------------------------------------------------------
+function ScriptLazyQuery(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  //varpool object name is param[0]
+  //object type is param[1]
+  //params 2..n are alternating type, value
+  WebScriptMTDTInterface.ScriptQuery(sev.rqInfo, true, Params, true);
+  result := '';
+end;
+
+
+
+
+
+
+
+//------------------------------------------------------------------------------
 function ScriptLazyFetch(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
 begin
   vt := sptString;
@@ -2237,11 +2395,14 @@ function Scriptquicksession(sTagBody, sCommand: string; var sev: TscriptEngineVa
 begin
   vt := sptString;
   //varpool object name is param[0]
-  if params.count > 0 then
-    sev.rqInfo.response.objectpool[params[0]] := QuickSession(sev.rqInfo)
-  else
-    sev.rqInfo.response.objectpool['session'] := QuickSession(sev.rqInfo);
+  var o := QuickSession(sev.rqInfo);
+  if o <> nil then begin
+    if params.count > 0 then
+      sev.rqInfo.response.objectpool[params[0]] := o
+    else
+      sev.rqInfo.response.objectpool['session'] := o;
 //    ScriptFetch(rqInfo, true, Params);
+  end;
   result := '';
 end;
 
@@ -2588,20 +2749,20 @@ begin
   vt := sptString;
   result := '';
 end;
+
 function ScriptJstr(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
 begin
   vt := sptString;
   result := JStr(params[0]);
 end;
 
-
-
-
-
-
+function ScriptCommaize(sTagBody, sCommand: string; var sev: TscriptEngineVars; params: TscriptParamList; out vt: TScriptParameterType): variant;
+begin
+  vt := sptString;
+  result := commaize(params[0]);
+end;
 
 initialization
-
 
 scriptfunctions.sf.RegisterFunction('test', TestScriptFunction);
 scriptfunctions.sf.RegisterFunction(':for', ScriptFor);
@@ -2621,7 +2782,6 @@ scriptfunctions.sf.RegisterFunction(':now', scriptnow);
 scriptfunctions.sf.RegisterFunction(':today', scripttoday);
 
 //DONE 1: Check that all script function returns have VT assigned
-
 
 scriptfunctions.sf.registerfunction(':loadfromfile', Scriptloadfromfile);
 scriptfunctions.sf.registerfunction(':rehash', Scriptrehash);
@@ -2736,9 +2896,10 @@ scriptfunctions.sf.registerfunction(':Dollar', ScriptDollar);
 scriptfunctions.sf.registerfunction(':floatprecision', Scriptfloatprecision);
 scriptfunctions.sf.registerfunction(':chunk', Scriptchunk);
 scriptfunctions.sf.registerfunction(':monthstr', Scriptmonthstr);
-scriptfunctions.sf.registerfunction(':if', Scriptif);
-scriptfunctions.sf.registerfunction(':ifn', Scriptifn);
+scriptfunctions.sf.registerfunction(':vif', Scriptvif);
+scriptfunctions.sf.registerfunction(':vifn', Scriptvifn);
 scriptfunctions.sf.registerfunction(':bif', Scriptbif);
+scriptfunctions.sf.registerfunction(':bifn', Scriptbifn);
 scriptfunctions.sf.registerfunction(':default', Scriptdefault);
 scriptfunctions.sf.registerfunction(':setobjectfromsubobject', Scriptsetobjectfromsubobject);
 scriptfunctions.sf.registerfunction(':getbookmark', Scriptgetbookmark);
@@ -2792,11 +2953,28 @@ scriptfunctions.sf.registerfunction(':nonbreaking', scriptNonBreaking);
 scriptfunctions.sf.registerfunction(':loadxml',scriptLoadXML);
 scriptfunctions.sf.registerfunction(':includebody',scriptincludebody);
 scriptfunctions.sf.registerfunction(':jstr',scriptjstr);
+scriptfunctions.sf.registerfunction(':commaize',scriptcommaize);
 scriptfunctions.sf.registerfunction(':setcookie',scriptsetcookie);
 scriptfunctions.sf.registerfunction(':quotesingle',scriptquotesingle);
 scriptfunctions.sf.registerfunction(':quotedouble',scriptquotedouble);
 scriptfunctions.sf.registerfunction(':friendlysizename',scriptfriendlysizename);
 scriptfunctions.sf.registerfunction(':ispieceofshit',scriptIsPieceOfShit);
+scriptfunctions.sf.registerfunction(':objectdef',scriptObjectDefined);
+scriptfunctions.sf.registerfunction(':query',scriptquery);
+scriptfunctions.sf.registerfunction(':querysingle',scriptquerysingle);
+scriptfunctions.sf.registerfunction(':querysingledt',scriptquerysingledt);
+scriptfunctions.sf.registerfunction(':functionquerydt',scriptfunctionquerydt);
+scriptfunctions.sf.registerfunction(':queryfunctiondt',scriptfunctionquerydt);
+scriptfunctions.sf.registerfunction(':queryfndt',scriptfunctionquerydt);
+scriptfunctions.sf.registerfunction(':lazyquery',scriptlazyquery);
+scriptfunctions.sf.registerfunction(':ch_keys',scriptch_keys);
+scriptfunctions.sf.registerfunction(':updatequerydt', ScriptupdatequeryDT);
+scriptfunctions.sf.registerfunction(':gvs', ScriptupdatequeryGVS);
+scriptfunctions.sf.registerfunction(':str', ScriptSTR);
+scriptfunctions.sf.registerfunction(':hasparamwithvalue', ScriptHasParamWithValue);
+scriptfunctions.sf.registerfunction(':hasval', ScriptHasParamWithValue);
+scriptfunctions.sf.registerfunction(':checked', ScriptChecked);
+
 
 
 end.

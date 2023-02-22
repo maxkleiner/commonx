@@ -1,5 +1,7 @@
 unit dmx_objects;
 {$DEFINE DISABLE_VUE}
+{$DEFINE PIX_OFF}
+{x$DEFINE DMX_REMOTE_ONLY}
 // [ ]add stage to universe
 // [ ]load stage data loads all light data
 // [ ]include vector graphics for stage setup
@@ -139,6 +141,7 @@ const
   VUE_MACRO_SOUND = '255';
   VUE_MACRO_NONE = '0';
   BALL_HIST_SIZE = 6;
+  PIXEL_SCALE = 0.25;
 
 type
   TDMXTransport = (transDMX, transArtNet);
@@ -760,7 +763,7 @@ type
     procedure Unlock;
     procedure DebugChannelRange(iStart: integer; iCount: integer);
 
-    property Remote: boolean read FRemote;
+    property Remote: boolean read FRemote write FRemote;
     property Host: string read FHost write SetHost;
     property DebugMode: boolean read FDebugMode write FDebugMode;
     procedure DebugByte(chan: nativeint; val: byte);
@@ -873,11 +876,16 @@ type
   TDMXPixelWall = class(TDMXChannelCluster, IDMXStrobe)
   private
     FPixelOffset: TPoint;
+    FPixelScale: single;
     function GetPixelBase(X, Y: ni): TDMXPixel;
     function GetPixelLinear(idx: ni): TDMXPixel;
     function GetPixel(X, Y: ni): TDMXPixel;
     function GetDimensions: TPoint;
     procedure SetOrientation(const Value: TLightOrientation);
+{$IFDEF PIX_OFF}
+    procedure SetPixelOffset(const Value: TPoint);
+    procedure SetPixelScale(const Value: single);
+{$ENDIF}
   protected
     FStrobeSpeed: nativefloat;
     FStrobeIntensity: nativefloat;
@@ -888,6 +896,7 @@ type
     strobestate: boolean;
     FStrobeEnable: boolean;
 
+    property PixelScale: single read FPixelScale write SetPixelScale;
     procedure Channelchanged; override;
     procedure WriteDMXData; override;
     procedure CoordinateUpdated; override;
@@ -918,7 +927,9 @@ type
     property PixelCount: ni read GetPixelCount;
     property Dimensions: TPoint read GetDimensions;
     property orientation: TLightOrientation read FOrientation write SetOrientation;
-    property PixelOffset: TPoint read FPixelOffset write FPixelOffset;
+{$IFDEF PIX_OFF}
+    property PixelOffset: TPoint read FPixelOffset write SetPixelOffset;
+{$ENDIF}
 
     property StrobeSpeed: NativeFloat read GetStrobeSpeed write SetStrobeSpeed;
     procedure StrobeStrike;
@@ -1525,6 +1536,8 @@ type
 
     procedure UpdatePhysics(iTriggerNumber: integer; rTime: NativeFloat;
       rAmplitude: single);
+    procedure UpdatePhysicsForEffect(iTriggerNumber: integer; rTime: NativeFloat;
+      rAmplitude: single);virtual;
     procedure UpdatePhysicsforlight(iGroupID, iGroupOf: integer;
       l: TDMXChannelCluster; iTriggerNumber: integer; rTime: NativeFloat;
       rAmplitude: single); virtual;
@@ -1897,8 +1910,9 @@ type
   end;
 
 var
-  FirstUniverse: TDMXUniverse;
-  MultiVerse: TDMXMultiVerse;
+  FirstUniverse: TDMXUniverse = nil;
+  MultiVerse: TDMXMultiVerse = nil;
+  open_port_fail: boolean = false;
 
 implementation
 
@@ -2781,7 +2795,9 @@ begin
   MultiVerse.remove(self);
   udpc.free;
 {$IFNDEF DMX_REMOTE_ONLY}
-  dmx_h.closeport(h);
+  if h <> nil then
+    if not (open_port_fail) then
+      dmx_h.closeport(h);
 {$ENDIF}
   DeleteCriticalSection(sect);
 
@@ -2940,7 +2956,7 @@ begin
   if not Remote then
   begin
 {$IFNDEF DMX_REMOTE_ONLY}
-    h := dmx_h.openport(0);
+//    h := dmx_h.openport(0);
 {$ENDIF}
   end
   else
@@ -2948,7 +2964,6 @@ begin
     udpc.RemoteHost := Value;
     udpc.RemotePort := '999';
     udpc.LocalPort := '998';
-    udpc.active := true;
   end;
 
 end;
@@ -2972,7 +2987,7 @@ begin
   begin
     Fthr.Stop;
     Fthr.WaitForFinish;
-    Fthr.free;
+    TPM.NoNeedthread(FThr);
   end;
   Fthr := nil;
 end;
@@ -3017,7 +3032,7 @@ end;
 procedure TDMXChannelCluster.Reset;
 begin
 
-  raise ECritical.Create('unimplemented');
+//  raise ECritical.Create('unimplemented');
   // TODO -cunimplemented: unimplemented block
 end;
 
@@ -3184,12 +3199,28 @@ begin
   LeaveCriticalSection(sect);
 end;
 
+
+
 procedure TDMXUniverse.Update;
 var
   sa: TSockAddr;
   IP: TDynByteArray;
 begin
-
+  if not Remote then
+  begin
+{$IFNDEF DMX_REMOTE_ONLY}
+    if h = nil then begin
+      if not (open_port_fail) then begin
+        h := dmx_h.openport(0);
+        if h = nil then
+          open_port_fail := true;
+      end;
+    end;
+{$ENDIF}
+  end
+  else
+    if not udpc.active then
+      udpc.active := true;
 
   Lock;
   try
@@ -3245,7 +3276,8 @@ begin
       begin
 {$IFNDEF DMX_REMOTE_ONLY}
         // debug.ConsoleLog(inttostr(FDAta[414]));
-        dmx_h.SendData(6, @FData[0], 513);
+        if not (open_port_fail) then
+          dmx_h.SendData(6, @FData[0], 513);
 {$ENDIF}
       end;
     end;
@@ -3696,11 +3728,12 @@ procedure TDMXColorBar.Detach;
 var
   T: integer;
 begin
-  inherited;
+
   for T := 0 to 7 do
   begin
     FSections[T].SafeFree;
   end;
+  inherited;
 end;
 
 function TDMXColorBar.GetSection(idx: integer): TDMXcolorBarSection;
@@ -5461,6 +5494,7 @@ begin
   end;
 
   // Debug.Log(self.ClassName+' has '+inttostr(FLights.Count));
+  UpdatePhysicsForEffect(iTriggerNumber, rTime, rAmplitude);
 
   for T := 0 to FLights.count - 1 do
   begin
@@ -5495,6 +5529,12 @@ begin
   FFirstupdateReceived := true;
   FLastTriggerNumber := iTriggerNumber;
 
+end;
+
+procedure TDMXEffect.UpdatePhysicsForEffect(iTriggerNumber: integer;
+  rTime: NativeFloat; rAmplitude: single);
+begin
+  //
 end;
 
 procedure TDMXEffect.UpdatePhysicsforlight(iGroupID, iGroupOf: integer;
@@ -8065,9 +8105,9 @@ var
 begin
   inherited;
   for Y := 0 to Dimensions.y-1 do begin
-    yy := (y - (dimensions.y/2))/4;
+    yy := (y - (dimensions.y/2))*PixelScale;
     for x := 0 to Dimensions.x-1 do begin
-      xx := (x - (dimensions.x/2))/4;
+      xx := (x - (dimensions.x/2))*PixelScale;
       self.pixels[x,y].x := self.x+xx;
       self.pixels[x,y].y := self.y+yy;
     END;
@@ -8080,6 +8120,7 @@ var
   XX, YY: ni;
 begin
   inherited;
+  FPixelScale := PIXEL_SCALE;
   DefineDimensions;
 
   FPixels := TList<TDMXPixel>.Create;
@@ -8095,6 +8136,7 @@ begin
     FPixels[T].Y := self.Y + ((YY - 20) / 10);
     FPixels[T].RelativeLumens := 1.0;
   end;
+  CoordinateUpdated;
 
 end;
 
@@ -8136,12 +8178,20 @@ begin
       result := GetPixelBase(x,y);
     end;
     lo90Left: begin
-      result := GetPixelBase((dimensions.y-1)-y,x);
+      //0,0 is at position 0,(longdim-1)
+      //1,0 is at position 1,(longdim-1)
+      //0,1 is at position 0,(longdim-2)
+      //1,1 is at position 1,(longdim-2)
+      result := GetPixelBase((FDimensionsBase.x-1)-y,x);
     end;
     lo90Right:
-      result := GetPixelBase(y,(dimensions.x-1)-x);
+      //0,0 is at position 0,3
+      //0,1 is at position 0,2
+      //1,0 is at position 1,3
+      //1,1 is at position 1,2
+      result := GetPixelBase(y,(FDimensionsBase.y-1)-x);
     lo180: begin
-      result := GetPixelBase((dimensions.x-1)-x,(dimensions.y-1)-y);
+      result := GetPixelBase((FDimensionsBase.x-1)-x,(FDimensionsBase.y-1)-y);
 
     end;
   end;
@@ -8187,6 +8237,22 @@ begin
   FOrientation := Value;
   orientationchanged;
 end;
+
+{$IFDEF PIX_OFF}
+procedure TDMXPixelWall.SetPixelOffset(const Value: TPoint);
+begin
+  FPixelOffset := Value;
+  self.X := value.x;
+  self.y := value.y;
+  CoordinateUpdated;
+end;
+procedure TDMXPixelWall.SetPixelScale(const Value: single);
+begin
+  FPixelScale := Value;
+  CoordinateUpdated;
+end;
+
+{$ENDIF}
 
 procedure TDMXPixelWall.SetStrobeEnable(const Value: boolean);
 begin

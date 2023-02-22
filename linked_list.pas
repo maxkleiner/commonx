@@ -1,4 +1,7 @@
 unit linked_list;
+{x$INLINE AUTO}
+{x$DEFINE FIRST_LAST_CHECK}
+{x$DEFINE REDUNDANT_OPS}
 
 interface
 
@@ -61,7 +64,43 @@ type
 
     procedure Clear;
     function SlowCount(): nativeint;
+    procedure ValidateFirstLast;inline;
+
+  end;
+
+  TDirectlyLinkedLinkableList = class(TBetterObject)
+  private
+    FCount: nativeint;
+    function GetItem(idx: nativeint): ILinkable;
+  protected
+    cached_index: nativeint;
+    cached_link: ILinkable;
+    procedure MoveCacheTo(idx: nativeint);
+
+    procedure ManageFirstLast(objLink: ILinkable);
+    PROCEDURE ClearCache;inline;
+
+  public
+    First: ILinkable;
+    Last: ILinkable;
+    VolatileCount: ni;
+    procedure Add(const obj: ILinkable);
+    procedure AddList(list: TDirectlyLinkedLinkableList);
+    procedure AddFirst(const obj: ILinkable);
+    procedure Remove(obj: ILinkable);
+    procedure Replace(old, new: ILinkable);
+    property Items[idx: nativeint]: ILinkable read GetItem;default;
+    procedure Delete(idx: nativeint);
+    function Has(obj: ILinkable): boolean;
+    property Count: nativeint read FCount;
+
+    function GetDebugString: string;
+
+    procedure Clear;
+    function SlowCount(): nativeint;
+{$IFDEF FIRST_LAST_CHECK}
     procedure ValidateFirstLast;
+{$ENDIF}
 
   end;
 
@@ -90,7 +129,8 @@ type
     property Items[idx: nativeint]: T_TYPE read GetItem;default;//
     procedure Delete(idx: nativeint);
     function Has(obj: T_TYPE): boolean;
-    property Count: nativeint read GetCount;
+    property CountSafe: nativeint read GetCount;
+    property CountVolatile: nativeint read FCount;
 
     function GetDebugString: string;
 
@@ -144,7 +184,7 @@ procedure TLinkedList<T>.Add(obj: T);
 var
   linkage: TLocalLinkage;
 begin
-  linkage := obj.GetLInkageFor(self);
+  linkage := obj.GetLinkageFor(self);
   if linkage <> nil then
     exit;
 
@@ -335,7 +375,9 @@ end;
 
 procedure TDirectlyLinkedList<T_TYPE>.Add(const obj: T_TYPE);
 begin
+{$IFDEF FIRST_LAST_CHECK}
   ValidateFirstLast;
+{$ENDIF}
   if First = nil then begin
     First := obj;
     LAst := obj;
@@ -358,7 +400,9 @@ begin
   VolatileCount := FCount;
 
   ClearCache;
+{$IFDEF FIRST_LAST_CHECK}
   ValidateFirstLast;
+{$ENDIF}
 
 end;
 
@@ -393,7 +437,7 @@ end;
 procedure TDirectlyLinkedList<T_TYPE>.AddList(
   list: TDirectlyLinkedList<T_TYPE>);
 var
-  mineLAst, listFirst: T_TYPE;
+  mineLAst, listFirst, listLast: T_TYPE;
 begin
   ValidateFirstLast;
   if list.first = nil then
@@ -409,9 +453,10 @@ begin
     //link first item of IN list to last item of THIS
     mineLAst := last;
     listFirst := list.First;
+    listLast := list.Last;
     mineLast.next := listFirst;
     listFirst.prev := mineLAst;
-    last := listFirst;
+    last := listLast;
     inc(FCount, list.count);
     LIST.CLEAR;
   end;
@@ -571,8 +616,10 @@ begin
       obj.prev.next := obj.next;
   end;
 
+{$IFDEF REDUNDANT_OPS}
   obj.Next := nil;
   obj.prev := nil;
+{$ENDIF}
   ClearCache;
 
   dec(FCount);
@@ -623,10 +670,12 @@ end;
 
 procedure TDirectlyLinkedList<T_TYPE>.ValidateFirstLast;
 begin
+{$IFDEF FIRST_LAST_CHECK}
   if (last <> nil) and (first = nil) then
     raise ECritical.create('last is set, but first is not');
   if (first <> nil) and (last = nil) then
     raise ECritical.create('first is set, but last is not');
+{$ENDIF}
 
 
 end;
@@ -738,7 +787,7 @@ end;
 procedure TDirectlyLinkedList_Shared<T_TYPE>.AddList(
   const list: TDirectlyLinkedList_Shared<T_TYPE>);
 var
-  mineLAst, listFirst: T_TYPE;
+  mineLAst, listFirst, listLast: T_TYPE;
 
 begin
   lock;
@@ -761,7 +810,7 @@ begin
       first := list.First;
       last := list.Last;
 
-      Fcount := list.count;
+      Fcount := list.countvolatile;
       volatilecount := FCount;
 {$IFDEF DBG}      Debug.log(self, 'resulting  count='+inttostr(self.count));{$ENDIF}
       list.clear;
@@ -770,10 +819,11 @@ begin
 {$IFDEF DBG}      Debug.log(self, 'list has items of count='+inttostr(self.count)+', adding list with count='+inttostr(list.count));{$ENDIF}
       mineLAst := last;
       listFirst := list.First;
+      listLast := list.Last;
       mineLast.next := listFirst;   //[1][2][3]-->[a][b][c]
       listFirst.prev := mineLAst;   //[1][2][3]<--[a][b][c]
-      last := list.LAst;
-      inc(FCount, list.count);
+      last := listLast;
+      inc(FCount, list.countvolatile);
       volatilecount :=FCount;
 
 {$IFDEF DBG}      Debug.log(self, 'resulting  count='+inttostr(self.count));{$ENDIF}
@@ -821,7 +871,7 @@ var
   d: string;
 begin
   result := '';
-  result := result + ' count:'+Count.tostring+' slowcount:'+slowcount.tostring;
+  result := result + ' count:'+Countsafe.tostring+' slowcount:'+slowcount.tostring;
   o := first;
   while o <> nil do begin
     d := '';
@@ -839,7 +889,13 @@ begin
   try
 
     MoveCacheTo(idx);
-    Remove(cached_link);
+    if cached_link <> nil then
+      Remove(cached_link)
+    else begin
+      debug.log('Warning, found nil object in '+classname+' when trying to delete.');
+      if countvolatile > 0 then
+        dec(Fcount);
+    end;
 
   finally
     unlock;
@@ -848,7 +904,12 @@ end;
 
 function TDirectlyLinkedList_Shared<T_TYPE>.GetCount: nativeint;
 begin
-  result := FCount;//atomic volatile, use external lock if you want integrity
+  Lock;
+  try
+    result := FCount;//atomic volatile, use external lock if you want integrity
+  finally
+    Unlock;
+  end;
 end;
 
 function TDirectlyLinkedList_Shared<T_TYPE>.GetDebugString: string;
@@ -893,7 +954,7 @@ begin
   lock;
   try
     result := false;
-    for i := 0 to count-1 do begin
+    for i := 0 to countvolatile-1 do begin
       if self.Items[i] = obj then begin
         result := true;
         break;
@@ -950,7 +1011,7 @@ begin
       inc(cached_index);
       cached_link := T_TYPE(cached_link.next);
       if cached_link = nil then
-        raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(count));
+        raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(countvolatile));
     end;
 
     while cached_index > idx do begin
@@ -959,7 +1020,7 @@ begin
       cached_link := T_TYPE(cached_link.prev);
 
       if cached_link = nil then
-        raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(count));
+        raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(countvolatile));
 
     end;
 
@@ -1153,6 +1214,340 @@ begin
   result := sPRev+ClassName+'@'+ni(pointer(self)).tostring+sNext;
 end;
 
+{ TDirectlyLinkedLinkableList }
+
+procedure TDirectlyLinkedLinkableList.Add(const obj: ILinkable);
+begin
+  if obj = nil then
+    raise ECritical.create('cannot add a nil interface to '+classname);
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+  if First = nil then begin
+    First := obj;
+    LAst := obj;
+    obj.next := nil;
+    obj.prev := nil;
+  end else begin
+    if assigned(LAst) then
+      LAst.Next := obj;
+
+//    if (first.next = nil) then
+//      first.next := obj;
+
+    obj.prev := Last;
+    LAst := obj;
+    obj.next := nil;
+  end;
+
+
+  inc(FCount);
+  VolatileCount := FCount;
+
+  ClearCache;
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+
+end;
+
+procedure TDirectlyLinkedLinkableList.AddFirst(const obj: ILinkable);
+begin
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+  if LAst = nil then begin
+    First := obj;
+    LAst := obj;
+    obj.Next := nil;
+    obj.Prev := nil;
+  end else begin
+//    Debug.ConsoleLog('List '+getdebugstring);
+    if assigned(First) then
+      First.Prev := obj;
+
+
+    obj.Next := First;
+//    Debug.ConsoleLog('List '+getdebugstring);
+    First := obj;
+//    Debug.ConsoleLog('List '+getdebugstring);
+    obj.Prev := nil;
+  end;
+
+  inc(FCount);
+  volatilecount := FCount;
+
+  ClearCache;
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+
+end;
+
+procedure TDirectlyLinkedLinkableList.AddList(
+  list: TDirectlyLinkedLinkableList);
+var
+  mineLAst, listFirst, listLast: ILinkable;
+begin
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+  if list.first = nil then
+    exit;
+  if last = nil then begin
+    if FCount > 0 then
+      raise ECritical.create('catastrophe claiming count>0 but "last" was nil');
+    first := list.First;
+    last := list.Last;
+    inc(FCount, list.count);
+    LIST.CLEAR;
+  end else begin
+    //link first item of IN list to last item of THIS
+    mineLAst := last;
+    listFirst := list.First;
+    listLast  := list.Last;
+    mineLast.next := listFirst;
+    listFirst.prev := mineLAst;
+    last := listLast;
+    inc(FCount, list.count);
+    LIST.CLEAR;
+  end;
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+end;
+
+procedure TDirectlyLinkedLinkableList.Clear;
+begin
+  First := nil;
+  Last := nil;
+  cached_link := nil;
+  cached_index := -1;
+  FCount := 0;
+  VolatileCount := 0;
+
+end;
+
+procedure TDirectlyLinkedLinkableList.ClearCache;
+begin
+  cached_index := -1;
+  cached_link := nil;
+
+end;
+
+procedure TDirectlyLinkedLinkableList.Delete(idx: nativeint);
+begin
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+  MoveCacheTo(idx);
+  Remove(cached_link);
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+
+end;
+
+function TDirectlyLinkedLinkableList.GetDebugString: string;
+{var
+  obj: T_TYPE;
+  i: ni;}
+begin
+  result := 'GetDebugString() is Not supported for interface';
+{
+  i := 0;
+  obj := first;
+  repeat
+    result := result+'['+inttohex(ni(pointer(obj)),1)+']';
+    obj := obj.next;
+    inc(i);
+    if i > 20 then break;
+
+  until obj = nil;
+ }
+end;
+
+function TDirectlyLinkedLinkableList.GetItem(idx: nativeint): ILinkable;
+begin
+  MoveCacheTo(idx);
+  result := cached_link;
+
+end;
+
+function TDirectlyLinkedLinkableList.Has(obj: ILinkable): boolean;
+var
+  i: ni;
+begin
+{$IFDEF LINKOWNERS}
+  result := obj.linkowner = self;
+{$ELSE}
+  result := false;
+  for i := 0 to count-1 do begin
+    if (self.Items[i]) = (obj) then begin
+      result := true;
+      break;
+    end;
+  end;
+{$ENDIF}
+end;
+
+procedure TDirectlyLinkedLinkableList.ManageFirstLast(objLink: ILinkable);
+begin
+  if First = nil then
+    First := objlink;
+
+  if Last = nil then
+    Last := objlink;
+
+end;
+
+procedure TDirectlyLinkedLinkableList.MoveCacheTo(idx: nativeint);
+begin
+  if (idx = 0) then begin
+    cached_index := 0;
+    cached_link := First;
+    exit;
+  end;
+
+  if (idx = (FCount-1)) then begin
+    cached_index := FCount-1;
+    cached_link := last;
+    exit;
+  end;
+
+  if cached_link = nil then
+    cached_index := -1;
+
+  if cached_index < 0 then begin
+    cached_link := first;
+    cached_index := 0;
+  end;
+  while cached_index < idx do begin
+//    Debug.Log(inttostr(cached_index));
+    inc(cached_index);
+    cached_link := cached_link.next;
+    if cached_link = nil then
+      raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(count));
+  end;
+
+  while cached_index > idx do begin
+//    Debug.Log(inttostr(cached_index));
+    dec(cached_index);
+    cached_link := cached_link.prev;
+
+    if cached_link = nil then
+      raise ECritical.create('seek past end of linked list @'+inttostr(cached_index)+' count='+inttostr(count));
+
+  end;
+end;
+
+procedure TDirectlyLinkedLinkableList.Remove(obj: ILinkable);
+begin
+  if obj = nil then
+    raise ECritical.Create('you are trying to remove a nil interface');
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+{$IFDEF HAS_CHECKS}
+  if not HAs(obj) then
+    raise ECRitical.create('removing an item that was already removed will cause counting problems!');
+{$ENDIF}
+  if obj = last then begin
+    if last.prev <> nil then begin
+      last := last.prev;
+      last.next := nil;
+    end
+    else begin
+      last := nil;
+//      if first = obj then begin
+        first := nil;
+//      end;
+    end;
+  end else
+  if obj = first then begin
+    if first.next <> nil then begin
+      first := first.next;
+      first.Prev := nil;
+    end
+    else begin
+      last := nil;
+      first := nil;
+    end;
+  end else begin
+    if obj.next<>nil then
+      obj.next.prev := obj.prev;
+    if obj.prev<>nil then
+      obj.prev.next := obj.next;
+  end;
+
+  obj.Next := nil;
+  obj.prev := nil;
+  ClearCache;
+
+  dec(FCount);
+  volatilecount := FCount;
+  if FCount < 0 then FCount := 0;
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+
+end;
+
+procedure TDirectlyLinkedLinkableList.Replace(old, new: ILinkable);
+begin
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+  if cached_link = old then
+    cached_link := new;
+  new.Prev := old.Prev;
+  new.next := old.next;
+  if new.next <> nil then
+    new.next.prev := new;
+
+  if new.prev <> nil then
+    new.Prev.Next := new;
+
+  if old = first then
+    first := new;
+  if old = last then
+    last := new;
+
+  if old <> nil then begin
+    old.next := nil;
+    old.Prev := nil;
+  end;
+{$IFDEF FIRST_LAST_CHECK}
+  ValidateFirstLast;
+{$ENDIF}
+
+end;
+
+function TDirectlyLinkedLinkableList.SlowCount: nativeint;
+var
+  o: ILinkable;
+begin
+  result := 0;
+  o := First;
+  while o <> nil do begin
+    inc(result);
+    o := o.next;
+  end;
+
+end;
+
+{$IFDEF FIRST_LAST_CHECK}
+procedure TDirectlyLinkedLinkableList.ValidateFirstLast;
+begin
+
+  if (last <> nil) and (first = nil) then
+    raise ECritical.create('last is set, but first is not');
+  if (first <> nil) and (last = nil) then
+    raise ECritical.create('first is set, but last is not');
+
+end;
+{$ENDIF}
 initialization
 
 end.
+

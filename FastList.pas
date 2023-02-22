@@ -35,6 +35,7 @@ type
     function IndexOf(o: TYP): ni;
     function Has(o: TYP): boolean;
     procedure Clear;
+    property Capacity: ni read FCapacity write SetCapacity;
 
   end;
 

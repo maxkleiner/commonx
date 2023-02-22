@@ -1,9 +1,11 @@
 unit ArcLogShipper;
 {x$DEFINE DISABLE_SHIPPER}
 {x$DEFINE USE_TCP}
+{x$DEFINE CONNECTIONLESS_ROLLBACK}
+{$DEFINE SINGLE_SHIPPER}
 
 interface
-
+{$DEFINE LAME_POOL}
 {x$DEFINE LOCAL_TEMP}
 {$DEFINE SUCCESS_HOOK}
 {$DEFINE COMBINE_RING_LOGS}
@@ -368,13 +370,18 @@ type
     arcmap_validated: boolean;
     FBackgroundCommands: TSimpleQueue;
     tmLastDiskBusyTime: ticker;
+    ArcTargetSafePin: TDateTime;
     csPrep, csClient, csQuickClient: TCLXCriticalSection;
 {$IFNDEF DYNAMIC_VALBATCH}
     valbatchcount: ni;
 {$ENDIF}
     valbatch: array[0..1023] of TArcTransactionalCommand;
     newbatch: array[0..1023] of TTrans_LogThis;
+{$IFDEF LAME_POOL}
     unique: array[0..1023] of TRDTPArchiveClient;
+{$ELSE}
+    unique: array[0..1023] of int64;
+{$ENDIF}
 //    scratchpad: array [0.._BIG_BLOCK_SIZE_IN_BLOCKS div ARC_ZONE_SIZE_IN_BLOCKS] of int64;
     function HasRemoveRevCached(idx: int64): boolean;
     procedure Detach;override;
@@ -420,7 +427,9 @@ type
     procedure LogSuccessX(const zoneidx, logid: int64);
     procedure FInishBackGroundCommand;
     function LogThis_Best(logid, startblock, blocklength: int64; data: TDynByteArray): boolean;
+
     function CountUniqueClients(bOnlyValRefresh: boolean): ni;
+
     property DiskSize: int64 read GetdiskSize;
     property ArcZonesInDisk: int64 read GetArcZonesInDisk;
     function Defined: boolean;
@@ -428,10 +437,25 @@ type
 
 
   TArcTransactionalCommand = class(TTransactionalCommand)
+  strict
+  private
+    function GetClient: TRDTPARchiveClient;
+  protected
+    procedure ExceptionRecover; override;
+{$IFNDEF LAME_POOL}
+    Fclient: TRDTPArchiveClient;
+    property xclient: TRDTPARchiveClient read GetClient;
+{$ENDIF}
+
   public
+{$IFDEF LAME_POOL}
+    xclient: TRDTPArchiveClient;
+{$ENDIF}
     zidx: int64;
-    client: TRDTPArchiveClient;
     shipper: TArcLogShipper;
+    procedure Detach; override;
+    procedure tallyerror;
+
   end;
 
   Ttrans_LogThis = class(TArcTransactionalCommand)
@@ -468,7 +492,7 @@ type
     original_local, fromid, this_logid: int64;
     entryvalidate: TArcMapEntry;
 {$IFNDEF LOCAL_TEMP}
-    temp: TDYnByteArray;
+    temp: TDynByteArray;
 {$ENDIF}
     pass: boolean;
     checksumpass: boolean;
@@ -489,6 +513,8 @@ type
 
   end;
 
+var
+  rebuildbootcount: int64 = 0;
 
 implementation
 
@@ -654,6 +680,7 @@ end;
 
 
 function TArcLogShipper.CountUniqueClients(bOnlyValRefresh: boolean): ni;
+{$IFDEF LAME_POOL}
 var
   t: ni;
   uidx: ni;
@@ -671,8 +698,8 @@ begin
   uidx := 0;
   for t:= 0 to high(valbatch) do begin
     if valbatch[t] <> nil then begin
-      if not has(valbatch[t].client) then begin
-        unique[uidx] := valbatch[t].client;
+      if not has(valbatch[t].xclient) then begin
+        unique[uidx] := valbatch[t].xclient;
         if (not bOnlyValRefresh) or (valbatch[t] is Tcmd_ContinueValidateLogRefresh) then
           inc(uidx);
       end;
@@ -680,6 +707,35 @@ begin
   end;
   exit(uidx);
 end;
+{$ELSE}
+var
+  t: ni;
+  uidx: ni;
+  function Has(zidx: int64): boolean;
+  var
+    t: ni;
+  begin
+    for t:= 0 to uidx-1 do begin
+      if unique[t]=zidx then
+        exit(true);
+    end;
+    exit(false);
+  end;
+begin
+  uidx := 0;
+  for t:= 0 to high(valbatch) do begin
+    if valbatch[t] <> nil then begin
+      if not has(valbatch[t].zidx) then begin
+        unique[uidx] := valbatch[t].zidx;
+        if (not bOnlyValRefresh) or (valbatch[t] is Tcmd_ContinueValidateLogRefresh) then
+          inc(uidx);
+      end;
+    end;
+  end;
+  exit(uidx);
+end;
+{$ENDIF}
+
 
 procedure TArcLogShipper.FinishValBatches(bAll: boolean; bCancel: boolean = false);
 var
@@ -696,12 +752,15 @@ begin
           cmd.Cancel;
           cmd.WaitFor;
         except
+          cmd.tallyerror;
         end;
         valbatch[t] := nil;
         dec(valbatchcount);
 
-        if NoneUsingClient(cmd.client) then
-          NoNeedClient(cmd.client);
+{$IFDEF LAME_POOL}
+        if NoneUsingClient(cmd.xclient) then
+          NoNeedClient(cmd.xclient);
+{$EndIF}
         cmd.SelfDestruct(2000);
 //        cmd.free;
         cmd := nil;
@@ -715,10 +774,13 @@ begin
         try
           cmd.WaitFor;
         except
+          cmd.tallyerror;
         end;
         valbatch[t] := nil;
-        if NoneUsingClient(cmd.client) then
-          NoNeedClient(cmd.client);
+{$IFDEF LAME_POOL}
+        if NoneUsingClient(cmd.xclient) then
+          NoNeedClient(cmd.xclient);
+{$ENDIF}
 
         cmd.SelfDestruct(2000);
 //        cmd.free;
@@ -765,6 +827,7 @@ begin
   bRestart := false;
 
   //exit if we have too many clients opened for validate/refresh
+
   if CountUniqueClients(true) >= RESERVE_UNIQUE_CLIENTS then
      exit;
 
@@ -802,9 +865,13 @@ begin
               lastc := SearchValBatchForZone(vidx, false);
               if lastc <> nil then begin
                 cmd.AddDependency(lastc);
-                cmd.client := lastc.client;
+{$IFDEF LAME_POOL}
+                cmd.xclient := lastc.xclient;
+{$ENDIF}
               end else begin
-                cmd.client := NeedClient;
+{$IFDEF LAME_POOL}
+                cmd.xclient := NeedClient;
+{$ENDIF}
               end;
               cmd.Start;
               valbatch[t] := cmd;
@@ -880,9 +947,9 @@ begin
 
   setlength(temp, ARC_ZONE_SIZE_IN_BYTES);
   remote_block_start := -1;
-  ICS(csClient);
-  ICS(csPrep);
-  ICS(csQuickClient);
+  ICS(csClient, 'shipperClient');
+  ICS(csPrep,'shipperPrep');
+  ICS(csQuickClient, 'shipperQuickClient');
   FBackgroundCommands := tpm.Needthread<TSimpleQueue>(nil);
   FBackGRoundCommands.start;
 
@@ -945,13 +1012,14 @@ procedure TArcLogShipper.Detach;
 begin
   if detached then
     exit;
-  inherited;
+
   CAncelValBatches;
   StopThread;
   FinishValBAtches(true, true);
   SaveARcmapChecksum;
   //TPM.NoNeedthread(FThr);already taken care of in stopthread
   DestroyClientPool;
+  inherited;
 
 
 end;
@@ -1000,7 +1068,7 @@ begin
         try
           QuickClient.timeout := 60000;
           try
-            iGot := QuickClient.GetLog(Archive, -1, blockstart, blocklength, {out} dba);
+            iGot := QuickClient.GetLog(Archive, ArcTargetSafePin, blockstart, blocklength, {out} dba);
           except
             FQuickClient.free;
             FQuickClient := nil;
@@ -1512,10 +1580,10 @@ begin
   try
     fromid := GetREmoteLogRev(startblock shr ARC_ZONE_BLOCK_SHIFT);
     //fromid := FClient.//FClient.GetNextLogID(archive, startblock shr ARC_ZONE_BLOCK_SHIFT)-1;
-    FClient.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
+    FClient.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT, 0.0);
     result := FCLient.LogThis(archive, fromid, fromid+1, startblock, blocklength, data);
     SetRemoteLogRevCache(validateidx, fromid+1);
-    FClient.NextZoneHint(archive, (startblock shr ARC_ZONE_BLOCK_SHIFT)+1);
+    FClient.NextZoneHint(archive, (startblock shr ARC_ZONE_BLOCK_SHIFT)+1,0.0);
 {$IFDEF VERIFY}
     Debug.Log(FClient.GetZoneStackReport(Archive, startblock shr ARC_ZONE_BLOCK_SHIFT));
     FClient.GetLog(archive, -1, 0, 1, data2);//force back to zero to flush
@@ -1576,15 +1644,15 @@ begin
 end;
 
 function TArcLogShipper.NoneUsingClient(cli: TRDTPArchiveClient): boolean;
-var
-  t: ni;
 begin
-  for t:= 0 to high(valbatch) do begin
+{$IFDEF LAME_POOL}
+  for var t:= 0 to high(valbatch) do begin
     if valbatch[t] <> nil then begin
-      if valbatch[t].client = cli then
+      if valbatch[t].xclient = cli then
         exit(false);
     end;
   end;
+{$ENDIF}
   exit(true);
 
 end;
@@ -1860,12 +1928,16 @@ begin
 
               if lastc <> nil then begin
                 c.AddDependency(lastc);
-                c.client := lastc.client;
+{$IFDEF LAME_POOL}
+                c.xclient := lastc.xclient;
+{$ENDIF}
                 c.known_fromid_at_creation := h.logid - 1;
                 AddVAlBatch(c);//put in val batch.. will be started later
               end else begin
                 c.known_fromid_at_creation := h.logid - 1;
-                c.Client := NEedClient;
+{$IFDEF LAME_POOL}
+                c.xClient := NEedClient;
+{$ENDIF}
                 AddVAlBatch(c);//put in val batch.. will be started later
                 if CountUniqueClients(false) >= MAX_UNIQUE_CLIENTS then
                   break;
@@ -1889,9 +1961,11 @@ begin
       finally
         //start the new stuff
         for idx2 := 0 to muffidx-1 do begin
-          if newbatch[idx2].client = nil then begin
-            newbatch[idx2].client := NeedClient;
+{$IFDEF LAME_POOL}
+          if newbatch[idx2].xclient = nil then begin
+            newbatch[idx2].xclient := NeedClient;
           end;
+{$ENDIF}
           newbatch[idx2].start;
         end;
       end;
@@ -1991,8 +2065,9 @@ end;
 procedure TArcLogShipper.StopThread;
 begin
   if assigned(FThr) then begin
-    Fthr.Stop;
+
     CancelValBatches;
+    Fthr.Stop;
     FThr.WaitForFinish;
     TPM.NoNeedThread(FThr);
   end;
@@ -2027,6 +2102,9 @@ end;
 procedure TArcLogShippingthread.DoExecute;
 begin
   inherited;
+
+  if (rebuildbootcount > 0) then
+    exit;
   {$IFDEF DISABLE_SHIPPER}
   runhot := false;
   exit;
@@ -2127,7 +2205,7 @@ begin
   //make sure the local logid matches the remote one
   zidx := startblock shr ARC_ZONE_BLOCK_SHIFT;
   //make sure the local cache matches remote
-  fromid := client.GetLogRev(archive, zidx);
+  fromid := xclient.GetLogRev(archive, zidx);
   shipper.PutRemoteLogRevInCache(zidx, fromid);
 end;
 
@@ -2157,6 +2235,9 @@ procedure Ttrans_LogThis.InitExpense;
 begin
   inherited;
   CPUExpense := 0;
+{$IFDEF SINGLE_SHIPPER}
+  NetworkExpense := 1.0;
+{$ENDIF}
 end;
 
 function Ttrans_LogThis.LockState: Boolean;
@@ -2182,11 +2263,11 @@ begin
       exit;
     end;
 
-    client.NExtZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
+    xclient.NExtZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT,0.0);
     Step := 2;
-    client.LogThis_Async(archive, fromid, this_logid, startblock, blocklength, data);
+    xclient.LogThis_Async(archive, fromid, this_logid, startblock, blocklength, data);
     Step := 3;
-    success := client.LogThis_Response;
+    success := xclient.LogThis_Response;
     shipper.phNet.node.incw(self.blocklength shl BLOCKSHIFT);
 
     Step := 4;
@@ -2260,8 +2341,15 @@ procedure Tcmd_ContinueVAlidateLogRefresh.DoRollback;
 begin
   inherited;
   //make sure the local cache matches remote
-  fromid := client.GetLogRev(archive, zidx);
+
+
+{$IFDEF CONNECTIONLESS_ROLLBACK}
+//  fromid := xclient.GetLogRev(archive, zidx);
+  shipper.PutRemoteLogRevInCache(zidx, this_logid-1);
+{$ELSE}
+  fromid := xclient.GetLogRev(archive, zidx);
   shipper.PutRemoteLogRevInCache(zidx, fromid);
+{$ENDIF}
 
 end;
 
@@ -2283,7 +2371,11 @@ procedure Tcmd_ContinueVAlidateLogRefresh.InitExpense;
 begin
   inherited;
   CPUExpense := 1;
+{$IFDEF SINGLE_SHIPPER}
+  NetworkExpense := 1;
+{$ELSE}
   NetworkExpense := 1/32;
+{$ENDIF}
 end;
 
 function Tcmd_ContinueVAlidateLogRefresh.LockState: Boolean;
@@ -2305,6 +2397,7 @@ var
 
   bPostSuccess: boolean;
   iSum1,iSum2,iXor1,iXor2: int64;
+  cs: TChecksumResult;
   bExitCS: boolean;
   s: string;
 {$IFDEF LOCAL_TEMP}
@@ -2386,28 +2479,32 @@ begin
         //log the data
         {ts}Step := 5;
         Debug.Log(self, 'Requesting Checksum');
-        client.GetZoneChecksum_Async(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
+        xclient.GetZoneChecksum_Async(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
         Debug.Log(self, 'Calculating local checksum');
-        CalculateChecksum(@temp[0], ARC_ZONE_SIZE_IN_BYTES, iSum2, iXor2);
+        cs := CalculateChecksum2020(@temp[0], ARC_ZONE_SIZE_IN_BYTES);
+        iSum2 := cs.cs1;
+        iXor2 := cs.cs2;
+
         Step := 6;
         Debug.Log(self, 'Waiting for Remote Checksum');
-        client.GetZoneChecksum_Response(iSum1, iXor1);
+        xclient.GetZoneChecksum_Response(iSum1, iXor1);
         Step := 7;
 
         if (iSum1=iSum2) and (iXor1=iXor2) then begin
           Debug.Log(self, 'Pushing checksum pass');
 
           //give the back-end a little warning so it can prepare buffers while the data is uploading
-          client.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
+          xclient.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT, 0.0);
           //just update the ID by sending a 0-length revision
           status := 'Checksum Pass ' +zidx.tohexstring;
           {$IFDEF DONT_COMMIT_CHECKSUM_PASSES}
           if FromID = 0 then begin
           {$ENDIF}
-            client.Logthis_Async(archive, fromid, this_logid, startblock, 0, nil);
-            shipper.phNET.node.incw(ARC_ZONE_SIZE_IN_BYTES);
+            xclient.Logthis_Async(archive, fromid, this_logid, startblock, 0, nil);
+            shipper.phNET.node.incr(ARC_ZONE_SIZE_IN_BYTES);
+            shipper.phIO.node.incr(ARC_ZONE_SIZE_IN_BYTES);
             STep := 8;
-            success := client.LogThis_Response;
+            success := xclient.LogThis_Response;
           {$IFDEF DONT_COMMIT_CHECKSUM_PASSES}
           end else begin
             STep := 8;
@@ -2418,13 +2515,15 @@ begin
         end else begin
           Debug.Log(self, 'Checksums differ');
           //give the back-end a little warning so it can prepare buffers while the data is uploading
-          client.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT);
+          xclient.NextZoneHint(archive, startblock shr ARC_ZONE_BLOCK_SHIFT,0.0);
           //send revised data along with original logid
           status := 'PUSH  ' +zidx.tohexstring+' '+fromid.tostring+'->'+this_logid.tostring;
           Debug.Log(status);
-          client.LogThis_ASync(archive, fromid, this_logid, startblock, ARC_ZONE_SIZE_IN_BLOCKS, temp);
+          xclient.LogThis_ASync(archive, fromid, this_logid, startblock, ARC_ZONE_SIZE_IN_BLOCKS, temp);
+          shipper.phNet.node.incw(ARC_ZONE_SIZE_IN_BYTES);
+          shipper.phIO.node.incw(ARC_ZONE_SIZE_IN_BYTES);
           Step := 8;
-          success := client.LogThis_Response;
+          success := xclient.LogThis_Response;
         end;
 
         //if either path above sucessful then the operation was successful
@@ -2483,6 +2582,56 @@ procedure Tcmd_ContinueVAlidateLogRefresh.UnlockState;
 begin
   inherited;
   Lcs(shipper.csPrep);
+end;
+
+{ TArcTransactionalCommand }
+
+procedure TArcTransactionalCommand.Detach;
+begin
+{$IFNDEF LAME_POOL}
+  if detached then
+    exit;
+
+  if FClient <> nil then
+    shipper.NoNeedClient(Fclient);
+  FClient := nil;
+{$ENDIF}
+  inherited;
+
+end;
+
+procedure TArcTransactionalCommand.ExceptionRecover;
+begin
+  inherited;
+  try
+    debug.log(classname + ' recovery attempt... ');
+    xClient.disconnect;
+  except
+    on E:Exception do begin
+      debug.log(classname + ' Failed to recover... '+e.message);
+    end;
+  end;
+end;
+
+function TArcTransactionalCommand.GetClient: TRDTPARchiveClient;
+begin
+{$IFNDEF LAME_POOL}
+  if FClient = nil then
+    FClient := shipper.NeedClient;
+
+  exit(FClient);
+{$ELSE}
+  result := nil;
+{$ENDIF}
+
+
+
+end;
+
+procedure TArcTransactionalCommand.tallyerror;
+begin
+  inc(xclient.errors);
+  xclient.Disconnect;
 end;
 
 end.

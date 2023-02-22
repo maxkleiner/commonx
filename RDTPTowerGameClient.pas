@@ -10,7 +10,7 @@ interface
 
 
 uses
-  GameList, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  GameList, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -84,7 +84,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.Login(UserName:string; Password:string):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -113,7 +113,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.Login_Async(UserName:string; Password:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -135,7 +135,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.Login_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -151,7 +151,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.Logout(SessionID:int64);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -176,7 +176,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.Logout_Async(SessionID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -197,7 +197,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.JoinBestGame(SessionID:int64; out iGameID:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -226,7 +226,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.JoinBestGame_Async(SessionID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -247,7 +247,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.JoinBestGame_Response(out iGameID:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -264,7 +264,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetGameStatus(iGameID:int64; out status:string; out PLayerCount:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -294,7 +294,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.GetGameStatus_Async(iGameID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -315,7 +315,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetGameStatus_Response(out status:string; out PLayerCount:integer):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -333,7 +333,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetUserIDForSession(SessionID:int64):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -361,7 +361,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.GetUserIDForSession_Async(SessionID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -382,7 +382,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetUserIDForSession_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -398,7 +398,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.CrossStreams(iGameID:int64; iSessionID:int64; InStream:TGameStream; TotalEventsPreviouslyReceived:int64; out OutStream:TGameStream; out TotalEventsReceivedFromClient:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -431,7 +431,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.CrossStreams_Async(iGameID:int64; iSessionID:int64; InStream:TGameStream; TotalEventsPreviouslyReceived:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -455,7 +455,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.CrossStreams_Response(out OutStream:TGameStream; out TotalEventsReceivedFromClient:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -473,7 +473,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.ShareClientDetails(iGameID:int64; iSessionID:int64; LocalGameTime:double):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -503,7 +503,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.ShareClientDetails_Async(iGameID:int64; iSessionID:int64; LocalGameTime:double);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -526,7 +526,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.ShareClientDetails_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -542,7 +542,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetSimplePlayerList(iGameID:int64):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -570,7 +570,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.GetSimplePlayerList_Async(iGameID:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -591,7 +591,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.GetSimplePlayerList_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -607,7 +607,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.StorePerformanceMetrics(sUserName:string; sData:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -636,7 +636,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.StorePerformanceMetrics_Async(sUserName:string; sData:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -658,7 +658,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.StorePerformanceMetrics_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -674,7 +674,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.TransportLayerTest(sSomethingToConvertToLowercase:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -702,7 +702,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTowerGameClient.TransportLayerTest_Async(sSomethingToConvertToLowercase:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -723,7 +723,7 @@ end;
 //------------------------------------------------------------------------------
 function TTowerGameClient.TransportLayerTest_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

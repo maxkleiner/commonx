@@ -11,7 +11,6 @@ type
   TSoundDevice_PortAudio = class(TAbstractSoundDevice, ISoundOscillatorRenderer)
   private
     DevicesScanned: boolean;
-    shuttingdown: boolean;
     FSampleRate: ni;
     function GetPADeviceCount: ni;
     function GetPADevice(idx: ni): PPaDeviceInfo;
@@ -173,6 +172,7 @@ function TSoundDevice_PortAudio.PAAudioFill(const inputbuffer,
   const timeinfo: TPaStreamCallbackTimeInfo;
   statusFlags: TPaStreamCallbackFlags): integer;
 var
+
   ss: TStereoSoundSample;
   rCurrent, rTemp: TStereoSoundSample;
   tm, targetTm, filled, tmEndWall: int64;
@@ -192,6 +192,9 @@ const
 
 begin
   inherited;
+  if framesperbuffer > MAX_STREAM_BUFFER_SIZE then
+    raise ECritical.create('cannot fulfil '+inttostr(framesperbuffer)+' audio frames when max buffer size is '+inttostr(MAX_STREAM_BUFFER_SIZE));
+//  debug.log('audio fill '+inttostr(getticker));
   if 0<>(statusFlags and paPrimingOutput) then
     exit(0);
 
@@ -216,6 +219,7 @@ begin
             end;
 
             outt := PSingle(outputbuffer);
+            fillptr := 0;
             for s := 0 to framesperbuffer-1 do
             begin
               thissample := sampletime+s;
@@ -257,24 +261,21 @@ begin
               outt^ := rCurrent.Right;
               inc(outt);
 
-
+              if fillptr >= MAX_STREAM_BUFFER_SIZE then
+                raise ECritical.create('cannot fulfil '+inttostr(fillptr)+' audio frames when max buffer size is '+inttostr(MAX_STREAM_BUFFER_SIZE)+' and framesperbuffer is '+IntToStr(framesperbuffer));
               FBuf[fillptr].ch[0] := trunc(rCurrent.Left * 32767);
               FBuf[fillptr].ch[1] := trunc(rCurrent.Right * 32767);
               inc(fillptr);
               if fillptr > Length(FBuf) then
                 fillptr := 0;
+
               inc(lastsamplenumber);
             end;
 
-
-
             //inc(iFillcount);
-
             for t := 0 to OscillatorCount - 1 do begin
               Oscillators[t].Fill(fillptr, mtEndWindow, ss, 0);
             end;
-
-
 
           finally
             Unlock;
@@ -315,7 +316,7 @@ var
   err: TPaError;
 begin
   inherited;
-  SampleRate := 192000;
+  SampleRate := 44100;
   shuttingdown := false;
   //Pa_Initialize;
   Debug.Log(self, 'Setup '+DeviceName);

@@ -10,7 +10,7 @@ interface
 
 
 uses
-  classes, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  classes, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -74,7 +74,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.ListFiles(filespec:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -102,7 +102,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.ListFiles_Async(filespec:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -123,7 +123,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.ListFiles_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -139,7 +139,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetFile(filename:string):TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -167,7 +167,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.GetFile_Async(filename:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -188,7 +188,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetFile_Response():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -204,7 +204,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.PutFile(filename:string; bytes:TStream):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -233,7 +233,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.PutFile_Async(filename:string; bytes:TStream);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -255,7 +255,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.PutFile_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -271,7 +271,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.PutSpriteSheet(filename:string; bytes0:TStream; bytes1:TStream; bytes2:TStream);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -299,7 +299,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.PutSpriteSheet_Async(filename:string; bytes0:TStream; bytes1:TStream; bytes2:TStream);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -323,7 +323,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetSpriteSheet(filename:string; out bytes0:TStream; out bytes1:TStream; out bytes2:TStream):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -354,7 +354,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.GetSpriteSheet_Async(filename:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -375,7 +375,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetSpriteSheet_Response(out bytes0:TStream; out bytes1:TStream; out bytes2:TStream):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -394,7 +394,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.PutSpriteSheet2(filename:string; bytes0:TStream; bytes1:TStream; bytes2:TStream; refmap:TStream);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -423,7 +423,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.PutSpriteSheet2_Async(filename:string; bytes0:TStream; bytes1:TStream; bytes2:TStream; refmap:TStream);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -448,7 +448,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetSpriteSheet2(filename:string; out bytes0:TStream; out bytes1:TStream; out bytes2:TStream; out refmap:TStream):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -480,7 +480,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPBernBabyBernClient.GetSpriteSheet2_Async(filename:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -501,7 +501,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPBernBabyBernClient.GetSpriteSheet2_Response(out bytes0:TStream; out bytes1:TStream; out bytes2:TStream; out refmap:TStream):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

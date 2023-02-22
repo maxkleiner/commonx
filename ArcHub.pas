@@ -4,7 +4,7 @@ interface
 
 
 uses
-  archiver, orderlyinit, lockqueue, generics.collections.fixed, typex, sysutils, applicationparams;
+  archiver, orderlyinit, lockqueue, generics.collections.fixed, typex, sysutils, applicationparams, debug;
 
 type
   TArcHub = class(TLockQueue)
@@ -29,7 +29,7 @@ type
 
 
 var
-  garchub: TArchub;
+  garchub: TArchub = nil;
 
 
 implementation
@@ -142,6 +142,8 @@ var
   sName, sPath: string;
   a: TArchiver;
 begin
+  Debug.Log('Load ArcHub');
+
   ap := NeedAppParams;
   try
     idx := 0;
@@ -152,12 +154,15 @@ begin
       if sPath = '' then break;
 //      if (sPath) then begin
       a := TARchiver.Create;
+      Debug.Log('Loading Archive'+inttostr(idx));
       a.LoadConfig('Archive'+inttostr(idx));
       inc(idx);
       FArcs.add(a);
 
 //      end;
     end;
+
+    Debug.Log('Finished Loading ArcHub');
   finally
     noneedappparams(ap);
   end;

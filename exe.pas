@@ -33,11 +33,12 @@ uses
   managedthread, classes, rtti_helpers, ShellAPI, dirfile,
   commandprocessor, backgroundthreads, commandicons, tickcount,
 {$ENDIF}
-  orderlyinit;
+  dir, orderlyinit;
 
 {$IFDEF MSWINDOWS}
 const
   NO_RETURN_HANDLE = DWORD(-2);
+  DEFAULT_PRIORITY_CLASS = NORMAL_PRIORITY_CLASS;
 
 type
   TQueryFullProcessImageNameW = function(AProcess: THANDLE; AFlags: DWORD;
@@ -55,16 +56,17 @@ type
     function handlecount: ni;
     function FullPath: string;
     procedure Init;
-
   end;
   TRunningTask = record
   private
-  public
+   public
     exeName: string;
-    ExePath: string;
+    FullExeName: string;
     Parameters: string;
     processid: int64;
+    function fileDate: TDateTime;
     procedure Init;
+    function HandleCount: ni;
     class operator notequal(a,b: TRunningTask): boolean;
   end;
   TConsoleHandles = record
@@ -86,22 +88,25 @@ type
     sBufferData: string) of object;
 
 function RunProgramAndWait(const sProg, sParams, sWorkDir: string;
-  bHide: boolean = false; batchwrap: boolean = false; bElevate: boolean = false): boolean;
+  bHide: boolean = false; batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): boolean;
+function StartCMDfromCMD(sProg, sParams, sWkDir: string; bHide: boolean = false;
+  batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): TBetterProcessInformation;
 function RunProgram(sProg, sParams, sWkDir: string; bHide: boolean = false;
   batchwrap: boolean = false; bElevate: boolean = false): TBetterProcessInformation; overload;
+procedure CleanDynamicFolder;
 function RunProgram(var hands: TConsoleHandles;
   sProg, sParams, sWkDir: string; bHide: boolean = false;
-  batchwrap: boolean = false; bElevate: boolean = false): TBetterProcessInformation; overload;
+  batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): TBetterProcessInformation; overload;
 
 procedure WaitForEXE(var hProcessInfo: TBetterProcessInformation; bCloseHandle: boolean = true);
 function TryWaitForEXE(var hProcessInfo: TBetterProcessInformation): boolean;
 procedure ForgetExe(var hProcessInformation: TBetterProcessInformation);
-procedure RunAndCapture(DosApp: string; wkdir: string; cc: TConsoleCaptureHook; Timeout: ticker);
+procedure RunAndCapture(DosApp: string; wkdir: string; cc: TConsoleCaptureHook; Timeout: ticker; priorityclass: integer = DEFAULT_PRIORITY_CLASS);
 function RunExeAndCapture(app: string; params: string = ''; wkdir: string = ''): string;
 function ServiceGetStatus(sMachine, sService: PChar): DWORD;
 function GetFullPathFromPID(PID: DWORD): string;
 function GetFileNameByProcessID(AProcessID: DWORD): UnicodeString;
-function GetProcessList(exeFileName: string; iForceCount: ni = 0): Tarray<TProcessInfo>;
+function GetProcessList(exeNameORFullPathNameIfYouWantToCheckSpecificPath: string; iForceCount: ni = 0): Tarray<TProcessInfo>;
 function GetHandleCountFromPID(pid: int64): ni;
 
 type
@@ -155,6 +160,7 @@ type
     FIsWindowed: boolean;
     FConsoleDrain: string;
     FGPUParams: string;
+    FPriorityClass: integer;
     function GetConsoleOutput: string;
     procedure SetIswindowed(const Value: boolean);
     procedure SetProg(const Value: string);
@@ -190,7 +196,8 @@ type
     property CaptureConsoleoutput: boolean read FConsoleRedirect write FConsoleRedirect;
     property ConsoleOutput: string read GetConsoleOutput;
     property IsWindowed: boolean read FIsWindowed write SetIswindowed;
-
+    property PriorityClass: integer read FPriorityClass write FPriorityClass;
+    procedure Terminate;
 
 
   end;
@@ -205,12 +212,17 @@ function IsServiceRunning(sDisplayName: string): boolean;
 
 function IsTaskRunning_old(sImageName: string): boolean;
 function IsTaskRunning(sImageName: string): boolean;
+function IsTaskRunningInPath(sImageName: string; sPath: string): boolean;
 
 
 function NumberOfTasksRunning(sImageName: string): nativeint;
-function KillTaskByNameWithTimeoutForce(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
+function NumberOfTasksRunningInPath(sFullEXEName: string): nativeint;
+function NumberOfTasksRunningFlex(sFullEXEName: string): nativeint;
+function KillTasksByNameWithTimeoutForce(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
+function KillTasksInFolderByNameWithTimeoutForce(sFullPathToEXE: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
 function KillTaskByName(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; bForce: boolean = true): boolean;
 function TryKillTaskByName(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; bForce: boolean = true): boolean;
+function TryKillTaskInFolderByName(sImageNameWithPathOptional: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; bForce: boolean = true): boolean;
 procedure KillTaskByID(pid: ni; bForce: boolean = true);
 function processExists(exeFileName: string): Boolean;
 function GetProcessInfo(exeFileName: string): TProcessInfo;
@@ -221,10 +233,11 @@ function StopService(sServiceName: string): boolean;
 function GetTaskListEx(): IHolder<TStringList>;
 function GetTaskListExArray(): TArray<TRunningTask>;overload;
 function GetTaskListExArray(exefilter: string; paramfilter: string = ''): TArray<TRunningTask>;overload;
+function GetTaskListExArrayInFolder(exefilter, folder: string; paramfilter: string = ''): TArray<TRunningTask>;overload;
 
 
 var
-  ExeCommands: TCommandProcessor;
+  ExeCommands: TCommandProcessor =nil;
   PsapiLib: HMODULE = 0;
   GetModuleFileNameExW: TGetModuleFileNameExW;
 
@@ -235,9 +248,11 @@ procedure CreateElevateScripts(sDir: string);
 
 implementation
 
-{$IFDEF MSWINDOWS}
 uses
   stringx, systemx;
+
+{$IFDEF MSWINDOWS}
+
 
 
 function GetHandleCountFromPID(pid: int64): ni;
@@ -256,6 +271,7 @@ function GetTaskListExArraySub(): TArray<TRunningTask>;
 var
   current: TRunningTask;
 begin
+  Debug.Log('GetTaskListExArraySub()');
   var sl := GetTasklistEx();
   setlength(result, 0);
   for var t := 0 to sl.o.count-1 do begin
@@ -268,7 +284,7 @@ begin
         current.Parameters := r;
       end;
       if lowercase(l) = 'executablepath' then begin
-        current.ExePath := r;
+        current.FullExeName:= r;
       end;
       if lowercase(l) = 'name' then begin
         current.exename := r;
@@ -325,9 +341,10 @@ begin
   tl := GetTaskListExArray();
 //  result := tl;
 //  exit;
-
+  Debug.Log('Filtering task list containing '+length(tl).tostring+' entries.');
   var count := 0;
   for var t := 0 to high(tl) do begin
+//    DEbug.Log('unfiltered : '+tl[t].exeName);
     if (exefilter = '')  or (lowercase(tl[t].exeName) = lowercase(exefilter)) then begin
       if (paramfilter = '')
       or (zpos(lowercase(paramfilter),lowercase(tl[t].Parameters)) >=0)
@@ -337,22 +354,48 @@ begin
     end;
   end;
 
+  Debug.Log('Found '+count.tostring+' instances of '+exefilter);
   setlength(result, count);
   if count = 0 then
     exit;
 
   var idx: ni := 0;
+  Debug.Log('Rescanning task list');
   for var t := 0 to high(tl) do begin
     if (exefilter = '') or (lowercase(tl[t].exeName) = lowercase(exefilter)) then begin
       if (paramfilter = '')
       or (zpos(lowercase(paramfilter),lowercase(tl[t].Parameters)) >=0)
       then begin
+        Debug.Log('Adding to result idx '+idx.tostring);
         result[idx]:= tl[t];
         inc(idx);
       end;
     end;
   end;
-  setlength(result, count);
+  setlength(result, count);//truncate
+  Debug.Log('Finished with GetTaskListExArray()');
+
+end;
+
+function GetTaskListExArrayInFolder(exefilter, folder: string; paramfilter: string = ''): TArray<TRunningTask>;overload;
+var
+  ar: TArray<TRunningTask>;
+begin
+  if folder = '' then
+    exit(GetTaskListExArray(exefilter, paramfilter));
+
+  ar := GEtTaskListExArray(exeFilter, paramfilter);
+  setlength(ar, length(ar));
+  setlength(result, length(ar));
+  var idx := 0;
+  for var t:= 0 to high(ar) do begin
+    if comparetext(ar[t].FullExeName, slash(folder)+exefilter)=0 then begin
+      result[idx] := ar[t];
+      inc(idx);
+    end;
+  end;
+  setlength(result, idx);
+
 
 end;
 
@@ -489,6 +532,27 @@ begin
 
 end;
 
+function NumberOfTasksRunningInPath(sFullEXEName: string): nativeint;
+var
+  ar: tArray<TRunningTask>;
+begin
+  var image := extractfilename(sFullEXEName);
+  var path := extractfilepath(sFullEXEName);
+  if path = '' then
+    ar := GetTaskListExArray(image)
+  else
+    ar := GetTaskListExArrayInFolder(image, path);
+
+  result := length(ar);
+
+end;
+
+function NumberOfTasksRunningFlex(sFullEXEName: string): nativeint;
+begin
+  result := NumberOfTasksRunningInPath(sFullEXEName);
+end;
+
+
 
 
 
@@ -509,15 +573,30 @@ begin
 //    Debug.Log(sLine);
 //    if zcopy(sLine, 0,4) = 'nice' then
 //      Debug.Log('here');
-    if StartsWith(sLine, sImageName) then
+    if StartsWithNoCase(sLine, sImageName) then
       exit(true);
   end;
 
 end;
 
-function IsTaskRunning(sImageName: string): boolean;
+
+function IsTaskRunningInPath(sImageName: string; sPath: string): boolean;
+var
+  ar: TArray<TRunningTask>;
 begin
-  var ar := GetTaskListExArray(sImageName);
+  ar := GetTaskListExArray(sImageName);
+  result := false;
+  for var t := 0 to high(ar) do begin
+    if comparetext(ar[t].FullExeName, slash(sPath)+sImageName)=0 then
+      exit(true);
+  end;
+end;
+
+function IsTaskRunning(sImageName: string): boolean;
+var
+  ar: TArray<TRunningTask>;
+begin
+  ar := GetTaskListExArray(sImageName);
   result := length(ar) > 0;
 end;
 function IsTaskRunning_old(sImageName: string): boolean;
@@ -555,7 +634,7 @@ begin
   end;
 end;
 
-function KillTaskByNameWithTimeoutForce(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
+function KillTasksByNameWithTimeoutForce(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
 var
   sTasks: string;
   tflag: string;
@@ -584,6 +663,49 @@ begin
   end;
 end;
 
+
+function KillTasksInFolderByNameWithTimeoutForce(sFullPathToExe: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; iTimeout: nativeint = 60000): boolean;
+var
+  sTasks: string;
+  tflag: string;
+  fflag: string;
+  ar: TArray<TRunningTask>;
+begin
+  var sImageName := extractfilename(sFullPathToExe);
+  var sPath := extractfilepath(sFullPathToExe);
+  var tmStart := GetTicker;
+  var bForce := false;
+  tflag := '';
+  fflag := '';
+  if bKillchildTasks then
+    tflag := ' /T';
+  if bForce then
+    fflag := ' /F';
+  result := false;
+  ar := GetTaskListExArrayInFolder(sImageName, sPath);
+  FOR VAR T:= 0 to high(ar) do begin
+    exe.RunProgramAndWait(getsystemdir+'taskkill.exe', '/PID '+ar[t].processid.tostring+' '+tflag+fflag, DLLPath, true, false);
+  end;
+
+  while IsTaskRunninginPath(sImageName, sPAth) do begin
+    bForce := getTimeSince(tmStart) > iTimeout;
+    if bForce then
+      fflag := ' /F';
+    Debug.Log('Task '+sImageName+' is still running, retry terminate.');
+
+
+    ar := GetTaskListExArrayInFolder(sImageName, sPath);
+    FOR VAR T:= 0 to high(ar) do begin
+      exe.RunProgramAndWait(getsystemdir+'taskkill.exe', '/PID '+ar[t].processid.tostring+' '+tflag+fflag, DLLPath, true, false);
+    end;
+
+    sleep(2000);
+    result := true;
+    if not bKillall then
+      exit;
+  end;
+end;
+
 function TryKillTaskByName(sImageName: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; bForce: boolean = true): boolean;
 var
   sTasks: string;
@@ -604,6 +726,41 @@ begin
   end;
   result := not IsTaskRunning(sImageName);
 
+
+end;
+
+
+function TryKillTaskInFolderByName(sImageNameWithPathOptional: string; bKillAll: boolean = true; bKillchildTasks: boolean = false; bForce: boolean = true): boolean;
+var
+  sTasks: string;
+  tflag: string;
+  fflag: string;
+  ar: TArray<TRunningTask>;
+begin
+  var sPath := extractfilepath(sImagenamewithpathoptional);
+  var sImage := extractfilename(sImageNameWithPathOptional);
+  tflag := '';
+  fflag := '';
+  if bKillchildTasks then
+    tflag := ' /T';
+  if bForce then
+    fflag := ' /F';
+  result := false;
+
+  if sPath = '' then
+    ar := GetTaskListExArray(sImage)
+  else
+    ar := GetTaskListExArrayInFolder(sImage, sPath);
+
+  FOR VAR T:= 0 to high(ar) do begin
+    exe.RunProgramAndWait(getsystemdir+'taskkill.exe', '/PID '+ar[t].processid.tostring+' '+tflag+fflag, DLLPath, true, false);
+  end;
+
+
+  if sPath = '' then
+    result := not IsTaskRunning(sImage)
+  else
+    result := not IsTaskRunningInPath(sImage, sPath);
 
 end;
 
@@ -733,7 +890,7 @@ end;
 
 // ------------------------------------------------------------------------------
 function RunProgramAndWait(const sProg, sParams, sWorkDir: string;
-  bHide: boolean = false; batchwrap: boolean = false; bElevate: boolean = false): boolean;
+  bHide: boolean = false; batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): boolean;
 // Runs an Executable program, and waits for the program to complete.
 var
   hTemp: TBetterProcessInformation;
@@ -751,6 +908,28 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
+function StartCMDfromCMD(sProg, sParams, sWkDir: string; bHide: boolean = false;
+  batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): TBetterProcessInformation;
+begin
+  var progpath := extractfilePath(sProg);
+  if progpath = '' then
+    progpath := dllpath
+  else begin
+    if sWkDir <> progpath then begin
+      Debug.Log('WARNING! WorkDir will be substituted with EXE path, a limitation of StartCMDfromCMD() due to the use of the windows "start" command');
+      Debug.Log('Using '+progpath+' instead of '+sWkDir);
+    end;
+    sProg := extractfilename(sProg);
+  end;
+
+
+
+                              //vv don't quote this apparently
+  result := RunProgram('start', sProg+' '+sParams, progpath, bHide, true, bElevate);
+  CleanDynamicFolder;
+
+end;
+
 function RunProgram(sProg, sParams, sWkDir: string; bHide: boolean = false;
   batchwrap: boolean = false; bElevate: boolean = false): TBetterProcessInformation;
 var
@@ -767,7 +946,7 @@ end;
 function RunProgram(
   var hands: TConsoleHandles;
   sProg, sParams, sWkDir: string; bHide: boolean = false;
-  batchwrap: boolean = false; bElevate: boolean = false): TBetterProcessInformation;
+  batchwrap: boolean = false; bElevate: boolean = false; priorityclass: integer = DEFAULT_PRIORITY_CLASS): TBetterProcessInformation;
 // p: sProg: Program Name, include full path
 // p: sParams: commandline parameters for the program... basically just concatinates.
 // p: sWkDir: change to this directory before executing
@@ -839,10 +1018,14 @@ begin
     hands.init;
   end;
 
-  if sParams = '' then
-    sCommandLine := Quote(sProg)
-  else begin
-    sCommandLine := Quote(sProg) + ' ' + sParams;
+  if lowercase(sprog)='start' then begin
+    sCommandLine := 'start '+sParams;
+  end else begin
+    if sParams = '' then
+      sCommandLine := Quote(sProg)
+    else begin
+      sCommandLine := Quote(sProg) + ' ' + sParams;
+    end;
   end;
 
   if batchwrap then begin
@@ -858,10 +1041,11 @@ begin
 
 
     sBat := sBat + sCommandLine +#13#10;
+    Debug.Log('created batch file:'#13#10+sBat);
     //sBat := sBat + 'pause'#13#10;
     // sBat := sBat+'pause'#13#10;
 
-    sDynamicFile := slash(systemx.GetTempPath) + 'dynamic_' + inttostr(GetCurrentThreadID()) + '.bat';
+    sDynamicFile := slash(systemx.GetTempPath) + 'dynamic_' + inttostr(GetCurrentThreadID())+'_'+random(65536).tostring+'_'+GetHighResTicker.tostring+ '.bat';
 
 
 
@@ -971,7 +1155,7 @@ begin
 {$IFDEF USE_SW_SHOWNA}
         8 or
 {$ENDIF}
-        IDLE_PRIORITY_CLASS or fCreateNoWindow, nil, nil, rstartup, rProcess.pi)
+        priorityclass or fCreateNoWindow, nil, nil, rstartup, rProcess.pi)
         then // PAnsiChar(sWorkingdir)
           result := rProcess;
 
@@ -990,7 +1174,7 @@ begin
       if not bhide then
         fCreateNoWindow := 0;
       if CreateprocessW(nil, cl2, @Security, @Security, false,
-        IDLE_PRIORITY_CLASS or fCreateNoWindow, nil, nil, rStartup, rProcess.pi)
+        priorityclass or fCreateNoWindow, nil, nil, rStartup, rProcess.pi)
         then // PAnsiChar(sWorkingdir)
         result := rProcess;
         if integer(result.pi.hProcess) <= 0 then
@@ -1164,8 +1348,10 @@ begin
     FconsoleOutput := '';
     FconsoleTemp := '';
   end;
+{$IFDEF DEBUG_EXE_OUTPUT}
   if sData <> '' then
     Debug.Log(sData);
+{$ENDIF}
   Status := sData;
 
   Lock;
@@ -1268,7 +1454,7 @@ begin
 
     hung := false;
     hProcessInfo := RunProgram( hands, Prog, Params,
-                                  WorkingDir, Hide, batchwrap, Elevate);
+                                  WorkingDir, Hide, batchwrap, Elevate, PriorityClass);
 
 
     Status := 'Exe Started';
@@ -1307,7 +1493,9 @@ begin
             ReadFile(hands.stdOUTRead, buffer[0], BytesRead, BytesRead, nil);
             setlength(consolestring, BytesRead);
             movemem32(@consolestring[strz], buffer, bytesread);
-            consolestring[bytesread] := #0;
+//            consolestring[bytesread] := #0;
+//            if zcopy(consolestring, length(consolestring)-2,2) = '#0' then
+//              debug.log('here');
             cc(ccProgress, consolestring);
             tmLAstAct := getticker;
             waittime := 1;
@@ -1321,7 +1509,9 @@ begin
             ReadFile(hands.stdERRRead, buffer[0], BytesRead, BytesRead, nil);
             setlength(consolestring, BytesRead);
             movemem32(@consolestring[strz], buffer, bytesread);
-            consolestring[bytesread] := #0;
+//            if zcopy(consolestring, length(consolestring)-2,2) = '#0' then
+//              debug.log('here');
+//            consolestring[bytesread] := #0;
             cc(ccProgress, consolestring);
             tmLAstAct := getticker;
             waittime := 1;
@@ -1435,7 +1625,7 @@ end;
 procedure Tcmd_RunExe.Init;
 begin
   inherited;
-
+  PriorityClass := DEFAULT_PRIORITY_CLASS;
   Icon := @CMD_ICON_EXE;
 
 end;
@@ -1460,13 +1650,18 @@ begin
   Name := ExtractFileName(FProg+' '+FParams);
 end;
 
+procedure Tcmd_RunExe.Terminate;
+begin
+  TerminateProcess(self.FExehandle,69);
+end;
+
 procedure Tcmd_RunExe.UseConsoleRedirExecutionPath;
 begin
   RunAndCapture(self.FProg+' '+self.FParams, self.WorkingDir, cc, Timeout);
 end;
 
 
-procedure RunAndCapture(DosApp: string; wkdir: string; cc: TConsoleCaptureHook; Timeout: ticker);
+procedure RunAndCapture(DosApp: string; wkdir: string; cc: TConsoleCaptureHook; Timeout: ticker; priorityclass: integer = DEFAULT_PRIORITY_CLASS);
 // todo merge these capabilities into the other EXE thing
 const
   ReadBufferSize = 1048576; // 1 MB Buffer
@@ -1534,7 +1729,7 @@ begin
 {$IFDEF USE_SW_SHOWNA}
       8 or
 {$ENDIF}
-      IDLE_PRIORITY_CLASS or fCreatenoWindow, nil, pc, start, ProcessInfo.pi) then begin
+      priorityclass or fCreatenoWindow, nil, pc, start, ProcessInfo.pi) then begin
       TotalBytesRead := 0;
       cc(ccStart, '');
       waittime := 1;
@@ -1563,8 +1758,8 @@ begin
             ReadFile(STdoutRead, buffer[0], BytesRead, BytesRead, nil);
             setlength(consolestring, BytesRead);
             movemem32(@consolestring[strz], buffer, bytesread);
-            consolestring[bytesread] := #0;
-            cc(ccProgress, consolestring);
+//            consolestring[bytesread] := #0;
+            cc(ccProgress, string(consolestring));
             tmLastAct := getticker;
             waittime := 1;
           end;
@@ -1580,8 +1775,8 @@ begin
             ReadFile(ErRead, buffer[0], BytesRead, BytesRead, nil);
             setlength(consolestring, BytesRead);
             movemem32(@consolestring[strz], buffer, bytesread);
-            consolestring[bytesread] := #0;
-            cc(ccProgress, consolestring);
+//            consolestring[bytesread] := #0;
+            cc(ccProgress, string(consolestring));
             tmLastAct := getticker;
             waittime := 1;
           end;
@@ -1622,6 +1817,8 @@ begin
     if ErWrite <> INVALID_HANDLE_VALUE then
       CloseHandle(ErWrite);
   end;
+
+  Debug.Log('Done processing EXE output');
 end;
 
 { TBetterProcessInformation }
@@ -1669,13 +1866,15 @@ begin
 
 end;
 
-function GetProcessList(exeFileName: string; iForceCount: ni = 0): Tarray<TProcessInfo>;
+function GetProcessList(exeNameORFullPathNameIfYouWantToCheckSpecificPath: string; iForceCount: ni = 0): Tarray<TProcessInfo>;
 var
   ContinueLoop: BOOL;
   FSnapshotHandle: THandle;
   FProcessEntry32: TProcessEntry32;
   proc: TProcessInfo;
 begin
+  var exepath := extractfilepath(exeNameORFullPathNameIfYouWantToCheckSpecificPath);
+  var exeName := extractfilename(exeNameORFullPathNameIfYouWantToCheckSpecificPath);
   setlength(result,0);
   FSnapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   try
@@ -1684,24 +1883,27 @@ begin
     while Integer(ContinueLoop) <> 0 do
     begin
       proc.init;
-      proc.ExeName := exeFileName;
+      proc.ExeName := exeName;
 
-      if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) =
-        UpperCase(ExeFileName)) or (UpperCase(FProcessEntry32.szExeFile) =
-        UpperCase(ExeFileName))) then
+      if 0=comparetext(ExtractFileName(FProcessEntry32.szExeFile),exeName)
+      then
       begin
-        //WriteLog(exeFileName + ' is running');
-        proc.running := True;
         proc.pid := FProcessEntry32.th32ProcessID;
-        try
-          proc.fileDate := GetfileDate(proc.FullPath);
-        except
-          proc.filedate := 0.0;
-        end;
-        inc(proc.runningCount);
-        setlength(result, length(result)+1);
-        result[high(result)] := proc;
+        var fullpath := proc.fullpath;
+        if (exePath = '') //<<---- no path specified, returns ALL instances regardless of path
+        or (UpperCase(ExtractFilePath(fullpath)) = UpperCase(exePath)) then begin
+          proc.running := True;
+          Debug.Log(exeName + ' is running @'+FullPath);
 
+          try
+            proc.fileDate := GetfileDate(FullPath);
+          except
+            proc.filedate := 0.0;
+          end;
+          inc(proc.runningCount);
+          setlength(result, length(result)+1);
+          result[high(result)] := proc;
+        end;
       end;
       ContinueLoop := Process32Next(FSnapshotHandle, FProcessEntry32);
     end;
@@ -1713,7 +1915,7 @@ begin
     setlength(result, iForcecount);
     for var t := x to high(result) do begin
       result[t].Init;
-      result[t].ExeName := exefileName;
+      result[t].ExeName := exeNAme;
     end;
   end;
 end;
@@ -1844,24 +2046,36 @@ end;*)
 
 function TProcessInfo.FullPath: string;
 begin
-  result := GEtFullPathFromPID(self.pid);
+  try
+    result := GEtFullPathFromPID(self.pid);
+  except
+    on E: Exception do begin
+      result := '*'+e.message;
+    end;
+  end;
 end;
 
 function TProcessInfo.handlecount: ni;
 var
   handles: cardinal;
 begin
-  result := 0;
-  var HProcess := INVALID_HANDLE_VALUE;
-  HProcess := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ, False, pid);
   try
-    if GetProcessHandleCount(HProcess, handles) then
-      result := handles
-    else
-      raise ECritical.create(SysErrorMessage(GetLastError));
-  finally
-    if hProcess <> INVALID_HANDLE_VALUE then
-      CloseHandle(hProcess);
+    result := 0;
+    var HProcess := INVALID_HANDLE_VALUE;
+    HProcess := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ, False, pid);
+    try
+      if GetProcessHandleCount(HProcess, handles) then
+        result := handles
+      else
+        raise ECritical.create(SysErrorMessage(GetLastError));
+    finally
+      if hProcess <> INVALID_HANDLE_VALUE then
+        CloseHandle(hProcess);
+    end;
+  except
+    on E: Exception do begin
+      result := 0;
+    end;
   end;
 end;
 
@@ -1967,7 +2181,7 @@ end;
 
 {$ENDIF}
 
-
+{$IFDEF MSWINDOWS}
 function GetAllServices: TArray<TServiceInfo>;
 var
   l,r: string;
@@ -2038,6 +2252,7 @@ DISPLAY_NAME: Application Information
   result := res;
 
 end;
+{$ENDIF}
 
 procedure oinit;
 begin
@@ -2060,6 +2275,34 @@ end;
 
 { TRunningTask }
 {$IFDEF MSWINDOWS}
+function TRunningTask.fileDate: TDateTime;
+begin
+  result := 0.0;
+  try
+    result := GetfileDate(self.FullExeName);
+  except
+  end;
+end;
+
+function TRunningTask.HandleCount: ni;
+var
+  handles: cardinal;
+begin
+  result := 0;
+  var HProcess := INVALID_HANDLE_VALUE;
+  HProcess := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ, False, processid);
+  try
+    if GetProcessHandleCount(HProcess, handles) then
+      result := handles
+    else
+      raise ECritical.create(SysErrorMessage(GetLastError));
+  finally
+    if hProcess <> INVALID_HANDLE_VALUE then
+      CloseHandle(hProcess);
+  end;
+end;
+
+
 procedure TRunningTask.Init;
 begin
   exeName := 'Unknown';
@@ -2070,7 +2313,7 @@ end;
 class operator TRunningTask.notequal(a,b: TRunningTask): boolean;
 begin
   if a.exeName <> b.exeName then exit(false);
-  if a.ExePath <> b.ExePath then exit(false);
+  if a.FullExeName <> b.FullExeName then exit(false);
   if a.Parameters <> b.Parameters then exit(false);
   if a.processid <> b.processid then exit(false);
   exit(true);
@@ -2080,6 +2323,7 @@ end;
 
 { TServiceInfo }
 
+{$IFDEF MSWINDOWS}
 function TServiceInfo.filled: boolean;
 begin
   result := state <> '';
@@ -2091,7 +2335,9 @@ begin
   Name := '';
   State := '';
 end;
+{$ENDIF}
 
+{$IFDEF MSWINDOWS}
 function GetServicesNamed(sName: string): TArray<TServiceInfo>;
 var
   a: TArray<TServiceInfo>;
@@ -2107,12 +2353,42 @@ begin
   end;
 end;
 
+
 function IsServiceInstalled(sName: string): boolean;
 begin
   result := length(GetServicesNamed(sNAme)) > 0;
 
 end;
+{$ENDIF}
 
+
+procedure CleanDynamicFolder;
+{$IFDEF MSWINDOWS}
+var
+  fil: TFileInformation;
+begin
+  try
+    var dir := TDirectory.create(slash(systemx.GetTempPath), 'dynamic_*.bat', 0,0, true, false);
+    try
+      while dir.getnextfile(fil) do begin
+        if fil.Date < (now()-1.0) then begin
+          try
+            deletefile(pchar(fil.FullName));
+          except
+          end;
+        end;
+      end;
+    finally
+    end;
+  except
+  end;
+end;
+{$ELSE}
+begin
+//  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+{$ENDIF}
 
 
 initialization

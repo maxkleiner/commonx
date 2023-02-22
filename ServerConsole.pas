@@ -8,6 +8,9 @@ uses
   Vcl.Menus, System.Actions, Vcl.ActnList, Vcl.Imaging.jpeg, VCLTee.Series,
   VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.Chart, systemx, backgroundThreads, managedthread,
   requestManager, better_Sockets, webprocessor,
+{$IFDEF DO_MEM_CHART}
+//  brainscanultra,
+{$ENDIF}
   newserversocketthread, advancedgraphics, easyimage, pngimage, formbase,
   consolelock, System.ImageList, colorblending, FrameHostPanel, FormBGThreadWatcher;
 
@@ -22,26 +25,18 @@ type
     lblBackgroundThreads: TLabel;
     ImageList2: TImageList;
     Panel1: TPanel;
-    Button1: TButton;
-    Button2: TButton;
-    brnKill: TButton;
     Splitter2: TSplitter;
     Label1: TLabel;
     lblDOs2: TLabel;
     lblRQs: TLabel;
     lblDOs: TLabel;
-    cbNoDetails: TCheckBox;
     lblLWP: TLabel;
     Timer2: TTimer;
     Timer3: TTimer;
     lblThreadpool: TLabel;
     ActionList1: TActionList;
-    CheckBox1: TCheckBox;
     Panel2: TPanel;
-    Edit1: TEdit;
-    Button5: TButton;
     Label2: TLabel;
-    btnResetHits: TButton;
     lblAccepts: TLabel;
     Label4: TLabel;
     Panel3: TPanel;
@@ -51,19 +46,6 @@ type
     TabSheet2: TTabSheet;
     Chart1: TChart;
     Series1: TPieSeries;
-    TabSheet3: TTabSheet;
-    Splitter3: TSplitter;
-    Chart2: TChart;
-    PieSeries1: TPieSeries;
-    lvAgents: TListView;
-    TabSheet4: TTabSheet;
-    lbRQs: TListBox;
-    Button3: TButton;
-    TabSheet5: TTabSheet;
-    memMarsh: TMemo;
-    Button4: TButton;
-    TabSheet6: TTabSheet;
-    memMem: TMemo;
     TabSheet8: TTabSheet;
     FrameHostBackground: TFrameHostPanel;
     Splitter1: TSplitter;
@@ -76,7 +58,6 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure RefreshHitsMessage(var Msg: TMessage); message WM_USER+1;
-    procedure MarshallDebug(var Msg: TMessage); message WM_USER+5;
 
     procedure Button2Click(Sender: TObject);
     procedure ServerSocket1ThreadEnd(Sender: TObject;
@@ -93,7 +74,6 @@ type
     procedure ServerSocket1ClientConnect(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure Button4Click(Sender: TObject);
-    procedure Button5Click(Sender: TObject);
     procedure tcpAccept(Sender: TObject; ClientSocket: TBetterCustomIpClient);
     procedure tcpListening(Sender: TObject);
     procedure Timer2Timer(Sender: TObject);
@@ -152,7 +132,7 @@ var
   h: THandle;
   t: integer;
 begin
-  inherited FormCReate(sender);
+  inherited FrmBaseCreate(sender);
   EnableGlass;
 
   bRefreshing := false;
@@ -178,7 +158,6 @@ begin
   h := CreateEvent(nil, true, false, 'Farty');
   CloseHandle(h);
 
-  debug.debuglog.filter := edit1.Text;
 
 
 end;
@@ -192,7 +171,7 @@ begin
 
 
 {$IFDEF DO_MEM_CHART}
-  MemChart(cMemory);
+//  brainscanultra.MemChart(cMemory);
 {$ENDIF}
 
   if not (WebServer.State = wssRunning) then
@@ -245,7 +224,8 @@ end;
 //------------------------------------------------------------------------------
 procedure TfrmWebConsole.Button3Click(Sender: TObject);
 begin
-  lbRQs.items.clear;
+//  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
 end;
 //------------------------------------------------------------------------------
 procedure TfrmWebConsole.FirstActivation;
@@ -443,31 +423,7 @@ end;
 
 procedure TfrmWebConsole.Button4Click(Sender: TObject);
 begin
-  memMarsh.clear;
   //postmessage(self.handle, WM_USER+5, 0,0);
-end;
-
-procedure TfrmWebConsole.MarshallDebug(var Msg: TMessage);
-begin
-  LockConsole;
-  try
-    if FMArshallDebug.text <> '' then begin
-//      windows.beep(100,10);
-      memMarsh.lines.add(FMArshallDebug.text);
-      FMarshallDebug.clear;
-    end;
-  finally
-    UnlockConsole;
-  end;
-
-end;
-
-
-procedure TfrmWebConsole.Button5Click(Sender: TObject);
-var
-  t: integer;
-begin
-  debug.debuglog.filter := edit1.Text;
 end;
 
 procedure TfrmWebConsole.tcpAccept(Sender: TObject;

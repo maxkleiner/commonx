@@ -49,6 +49,9 @@ begin
   var fullexepath := dllpath+extractfilename(exe_no_path);
   var fullinputfile := temppath+extractfilename(backinputfile);
   var fulloutputfile := temppath+extractfilename(backoutputfile);
+  var errorfile := changefileext(backoutputfile, '.error');
+  if fileexists(errorfile) then
+    deletefile(errorfile);
 
   //save input file in working directory
   SaveStringAsFile(fullinputfile, backinputstringcontent);
@@ -72,7 +75,7 @@ begin
     result := TfileStream.create(backoutputfile, fmOpenRead+fmShareDenyNone);
     Debug.Log('attaching stream to '+backoutputfile+' that is '+result.size.tostring+' bytes');
   end else begin
-    var errorfile := changefileext(backoutputfile, '.error');
+
     if fileexists(errorfile) then
       raise ECritical.Create('back process returned error: '+loadfileasstring(errorfile));
     raise Ecritical.create('exe did not generate expected output');

@@ -1,13 +1,13 @@
 unit RemoteDesktopSession;
-{$DEFINE OLD_PERFORMANCE}
+{x$DEFINE OLD_PERFORMANCE}
 {$DEFINE VISTA}
 interface
 
-uses ping, comctrls,graphics, numbers, dialogs, windows, sysutils, stringx, velocitypanel, systemx, stdctrls, controls, glasscontrols, extctrls, betterobject, classes, generics.collections.fixed, MSTSCLib_TLB;
+uses debug, ping, comctrls,graphics, numbers, dialogs, windows, sysutils, stringx, velocitypanel, systemx, stdctrls, controls, glasscontrols, extctrls, betterobject, classes, generics.collections.fixed, MSTSCLib_TLB;
 
 const
-  BARSIZE = 15;
-  THuMBHEIGHT = 120;
+  BARSIZE = 35;
+  THuMBHEIGHT = 145;
   TS_PERF_DISABLE_NOTHING = $00000000;
   TS_PERF_DISABLE_WALLPAPER = $00000001;
   TS_PERF_DISABLE_FULLWINDOWDRAG = $00000002;
@@ -42,10 +42,12 @@ type
     FBandwidth: TREmoteBandwidth;
     FThumbnailmode: boolean;
     FTitle: TLabel;
+    FTransparent: TPaintBox;
     FAdmin: boolean;
     FPingable: boolean;
     FDoNotPing: boolean;
     FServer: string;
+    FCredSSP: boolean;
 
     function GetConnected: boolean;
     function GetServer: string;
@@ -66,6 +68,7 @@ type
     procedure SEtClientBandwidthParams;
 
     procedure CreateNativeClient;
+    procedure NativeClientOnFatalError(ASender: TObject; errorCode: Integer);
   public
     NeedScaleSet: boolean;
     property Client: TNativeclient read FClientImmediate;
@@ -84,6 +87,7 @@ type
     property User: string read GetUser write SetUser;
     property Password: string read GEtPassword write SetPassword;
     property Note: string read Fnote write FNote;
+    property CredSSP: boolean read FCredSSP write FCredSSP;
 
 
     procedure SaveToFile(sfile: string);
@@ -102,6 +106,7 @@ type
     property followUp: boolean read FBoolean write Fboolean;
     property FollowupProgression: real read getFollowupProgression;
     procedure WakeUp;
+    procedure GotoSleep;
 
     procedure AskNote;
     procedure Resize;override;
@@ -170,7 +175,7 @@ begin
 
   //FClient.AdvancedSettings8.
 {$ELSE}
-  FClientImmediate.AdvancedSettings2.ConnectToServerConsole := ADmin;
+  FClientImmediate.AdvancedSettings2.ConnectToServerConsole := Admin;
 {$ENDIF}
 
   Fclientimmediate.AdvancedSettings9.NegotiateSecurityLayer := true;
@@ -198,8 +203,14 @@ begin
   Ftitle := TLabel.create(self);
   Ftitle.parent := self;
   Ftitle.visible := false;
-
-
+  Ftitle.height := 24;
+  Ftitle.font.Size := 12;
+  Ftitle.align := alTop;
+  FTransparent := TPaintBox.create(self);
+  FTransparent.parent := self;
+//  FTransparent.transparent := true;
+  FTransparent.onclick := Self.OnClick;
+  FTransparent.align := alClient;
 end;
 
 procedure TRemoteDesktopSession.CreateNativeClient;
@@ -214,11 +225,14 @@ begin
   FClientImmediate.parent := self;
   FClientImmediate.width := self.width;
   FClientImmediate.height := self.height;
-  FClientimmediate.AdvancedSettings7.EnableCredSspSupport := true;
+  FClientimmediate.AdvancedSettings7.EnableCredSspSupport := CredSSP;
 //  FClientImmediate.AdvancedSettings2..RedirectDirectX := false;
 //  FClientImmediate.AdvancedSettings8.Compress := 0;
 //  FClientImmediate.AdvancedSettings9.
   FclientImmediate.AdvancedSettings8.NegotiateSecurityLayer := true;
+  FClientimmediate.OnFatalError := self.NativeClientOnFatalError;
+
+  FTransparent.bringtofront;
 end;
 
 destructor TRemoteDesktopSession.Destroy;
@@ -357,6 +371,12 @@ begin
   result := FUser;
 end;
 
+procedure TRemoteDesktopSession.GotoSleep;
+begin
+  FTransparent.bringtofront;
+  FTransparent.visible := true;
+end;
+
 procedure TRemoteDesktopSession.HideClient;
 begin
   if assigned(FClientImmediate) then begin
@@ -397,10 +417,21 @@ begin
     end else begin
       DoNotPing := false;
     end;
+    if sl.count > 11 then begin
+      CredSSP := strtobool(sl[11]);
+    end else begin
+      CredSSP := true;
+    end;
   finally
     sl.free;
   end;
 
+end;
+
+procedure TRemoteDesktopSession.NativeClientOnFatalError(ASender: TObject;
+  errorCode: Integer);
+begin
+  Debug.Log('RDP Error Code: '+inttostr(errorCode));
 end;
 
 procedure TRemoteDesktopSession.Ping_Async;
@@ -482,6 +513,7 @@ begin
     sl.add(self.Note);
     sl.add(booltostr(admin));
     sl.Add(booltostr(donotping));
+    sl.Add(booltostr(CredSSP));
     sl.Savetofile(sfile);
 
   finally
@@ -522,6 +554,7 @@ begin
   TS_PERF_DEFAULT_NONPERFCLIENT_SETTING = $40000000;
   TS_PERF_RESERVED1 = $80000000;
 }
+  Bandwidth := bwUltraHigh;
   case Bandwidth of
     bwMedium:
 
@@ -571,8 +604,9 @@ begin
       FClientImmediate.ColorDepth := 32;
       FClientImmediate.AdvancedSettings2.PerformanceFlags :=
         TS_PERF_ENABLE_ENHANCED_GRAPHICS or
-        TS_PERF_ENABLE_FONT_SMOOTHING //or
-(*        TS_PERF_ENABLE_DESKTOP_COMPOSITION*);
+        TS_PERF_ENABLE_FONT_SMOOTHING or
+        TS_PERF_DISABLE_NOTHING or
+        TS_PERF_ENABLE_DESKTOP_COMPOSITION;
 
     end;
   end;
@@ -612,6 +646,9 @@ end;
 
 procedure TRemoteDesktopSession.SetThumbnailMode(const Value: boolean);
 begin
+  if FThumbnailmode = value then
+    exit;
+
   FThumbnailmode := Value;
   if FThumbnailMode then begin
     client.top := BARSIZE;
@@ -680,15 +717,19 @@ end;
 
 procedure TRemoteDesktopSession.UpdateStatus;
 begin
-  FTitle.caption := self.name+' - '+self.note;
-  //transparent := false;
-  Ftitle.transparent := false;
+  var newcap := self.name+' - '+self.note;
+  var newtrans := false;
+
+  if Ftitle.transparent then
+    Ftitle.transparent := false;
   if FollowUp and (FollowupProgression=1) then begin
     Ftitle.color := clYellow;
-    FTitle.caption := self.name+' - '+self.note;
+    FTitle.caption := newcap;
   end else begin
-    Ftitle.color := clWhite;
-    FTitle.caption := self.name;
+    if FTitle.color <> clWhite then
+      Ftitle.color := clWhite;
+    if Ftitle.caption <> self.name then
+      FTitle.caption := self.name;
   end;
 
 end;
@@ -703,6 +744,9 @@ begin
 
   FClientImmediate.bringtofront;
   FClientImmediate.AdvancedSettings2.enablemouse := 1;
+  FTransparent.sendToBack;
+  FTransparent.visible := false;
+
 
 //  SendMessage(FClient.handle, WM_USER, 0, 0);
 end;

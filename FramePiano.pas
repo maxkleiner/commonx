@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, ColorBlending,
-  Dialogs, FrameBase, ExtCtrls, musictheory, beeper, advancedgraphics, easyimage;
+  Dialogs, ExtCtrls, musictheory, beeper, advancedgraphics, easyimage;
 
 type
   TfrmPiano = class(TfrmFrameBase)

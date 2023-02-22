@@ -106,7 +106,7 @@ end;
 function TDevCon.GetDriverList(sMatch: string = DEFAULT_DEVICE_SEARCH): string;
 begin
   capturedData := '';
-  runandcapture(FindTool('devcon.exe')+' findall '+sMatch, capturehook);
+  runandcapture(FindTool('devcon.exe')+' findall '+sMatch, dllpath, capturehook,300000);
   result := capturedData;
 
 end;

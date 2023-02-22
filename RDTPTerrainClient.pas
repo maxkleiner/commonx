@@ -10,7 +10,7 @@ interface
 
 
 uses
-  PacketHelpers_TerrainData, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  PacketHelpers_TerrainData, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -61,7 +61,7 @@ end;
 //------------------------------------------------------------------------------
 function TTerrainClient.Test():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -88,7 +88,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTerrainClient.Test_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -108,7 +108,7 @@ end;
 //------------------------------------------------------------------------------
 function TTerrainClient.Test_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -124,7 +124,7 @@ end;
 //------------------------------------------------------------------------------
 function TTerrainClient.GetSingleTileData(Long:double; Lat:double):TTileData;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -153,7 +153,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TTerrainClient.GetSingleTileData_Async(Long:double; Lat:double);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -175,7 +175,7 @@ end;
 //------------------------------------------------------------------------------
 function TTerrainClient.GetSingleTileData_Response():TTileData;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

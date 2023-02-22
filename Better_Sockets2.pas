@@ -855,7 +855,7 @@ var
 begin
   Result := '';
   addr.sin_addr.s_addr := inet_addr(PAnsiChar(ipaddr));
-  if addr.sin_addr.s_addr <> INADDR_NONE then
+  if int64(addr.sin_addr.s_addr) <> int64(INADDR_NONE) then
   begin
     h := gethostbyaddr(@addr.sin_addr.s_addr, sizeof(addr), AF_INET);
     if h <> nil then
@@ -872,7 +872,7 @@ begin
   begin
     if hn[1] in ['0'..'9'] then
     begin
-      if inet_addr(PAnsiChar(hn)) <> INADDR_NONE then
+      if int64(inet_addr(PAnsiChar(hn))) <> int64(INADDR_NONE) then
         Result := hn;
     end
     else

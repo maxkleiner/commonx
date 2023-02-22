@@ -98,7 +98,7 @@ begin
   //normalize before FFT
   cx := itemCount_TimeDomain div 2;
   while cx > 0 do begin
-    output^.i := output^.i / (0-(itemCount_TimeDomain/2));
+    output^.im := output^.im / (0-(itemCount_TimeDomain/2));
     inc(output);
     dec(cx);
   end;
@@ -128,7 +128,7 @@ begin
   //denormalize before FFT
   cx := itemCount_TimeDomain;
   while cx > 0 do begin
-    pc^.i := pc^.i * (0-(itemCount_TimeDomain/2));
+    pc^.im := pc^.im * (0-(itemCount_TimeDomain/2));
     inc(pc);
     dec(cx);
   end;
@@ -166,7 +166,7 @@ begin
   cx := itemCount_TimeDomain;
   pc := scratchSpace;
   while cx > 0 do begin
-    pc^.i := pc^.i * (0-(outitemCount_TimeDomain/2));
+    pc^.im := pc^.im * (0-(outitemCount_TimeDomain/2));
     inc(pc);
     dec(cx);
   end;
@@ -183,16 +183,16 @@ begin
 
     dec(pc);
 //2
-    i1 := pc^.i ;
-    r1 := pc^.r ;
+    i1 := pc^.im ;
+    r1 := pc^.re ;
 //1
     dec(pc2);
-    pc2^.i := i1*0;
-    pc2^.r := r1*0;
+    pc2^.im := i1*0;
+    pc2^.re := r1*0;
 
     dec(pc2);
-    pc2^.i := i1*2;
-    pc2^.r := r1*2;
+    pc2^.im := i1*2;
+    pc2^.re := r1*2;
 
 //end
 //    rold := pc^.r;

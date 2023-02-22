@@ -10,7 +10,7 @@ interface
 
 
 uses
-  packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -53,11 +53,14 @@ type
     function GetZoneStackReport(sArchive:string; z:int64; fullstack:boolean):string;overload;virtual;
     procedure GetZoneStackReport_Async(sArchive:string; z:int64; fullstack:boolean);overload;virtual;
     function GetZoneStackReport_Response():string;
-    procedure NextZoneHint(sArchive:string; z:int64);overload;virtual;
-    procedure NextZoneHint_Async(sArchive:string; z:int64);overload;virtual;
+    procedure NextZoneHint(sArchive:string; z:int64; pin:TDateTime);overload;virtual;
+    procedure NextZoneHint_Async(sArchive:string; z:int64; pin:TDateTime);overload;virtual;
     function GetArcVatCheckSum(sArchive:string; zStart:int64; zCount:int64):int64;overload;virtual;
     procedure GetArcVatCheckSum_Async(sArchive:string; zStart:int64; zCount:int64);overload;virtual;
     function GetArcVatCheckSum_Response():int64;
+    function GetZonePresenceHints(sArchive:string; zStart:int64; zCount:int64):TDynByteArray;overload;virtual;
+    procedure GetZonePresenceHints_Async(sArchive:string; zStart:int64; zCount:int64);overload;virtual;
+    function GetZonePresenceHints_Response():TDynByteArray;
 
 
     function DispatchCallback: boolean;override;
@@ -92,7 +95,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.LogThis(sArchive:string; fromid:int64; toid:int64; startblock:int64; blocklength:int64; data:TDynByteArray):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -125,7 +128,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.LogThis_Async(sArchive:string; fromid:int64; toid:int64; startblock:int64; blocklength:int64; data:TDynByteArray);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -151,7 +154,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.LogThis_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -167,7 +170,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLog(sArchive:string; pin:TDateTime; startblock:int64; blocklength:int64; out data:TDynByteArray):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -199,7 +202,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetLog_Async(sArchive:string; pin:TDateTime; startblock:int64; blocklength:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -223,7 +226,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLog_Response(out data:TDynByteArray):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -240,7 +243,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetNextLogID(sArchive:string; zone:int64; ids_to_reserve:int64):TDateTime;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -270,7 +273,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetNextLogID_Async(sArchive:string; zone:int64; ids_to_reserve:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -293,7 +296,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetNextLogID_Response():TDateTime;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -309,7 +312,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.Flush():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -336,7 +339,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.Flush_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -356,7 +359,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.Flush_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -372,7 +375,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLogRev(sArchive:string; idx:int64):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -401,7 +404,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetLogRev_Async(sArchive:string; idx:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -423,7 +426,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLogRev_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -439,7 +442,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLogRevs(sArchive:string; startidx:int64; count:int64):TDynInt64Array;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -469,7 +472,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetLogRevs_Async(sArchive:string; startidx:int64; count:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -492,7 +495,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetLogRevs_Response():TDynInt64Array;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -508,7 +511,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetStoredParam(sArchive:string; sParamName:string; sDefault:string):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -538,7 +541,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetStoredParam_Async(sArchive:string; sParamName:string; sDefault:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -561,7 +564,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetStoredParam_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -577,7 +580,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.SetStoredParam(sArchive:string; sParamName:string; sValue:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -604,7 +607,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.SetStoredParam_Async(sArchive:string; sParamName:string; sValue:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -627,7 +630,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.ListArchives():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -654,7 +657,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.ListArchives_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -674,7 +677,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.ListArchives_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -690,7 +693,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetZoneChecksum(sArchive:string; z:int64; out iSum:int64; out iXor:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -721,7 +724,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetZoneChecksum_Async(sArchive:string; z:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -743,7 +746,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetZoneChecksum_Response(out iSum:int64; out iXor:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -761,7 +764,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetZoneStackReport(sArchive:string; z:int64; fullstack:boolean):string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -791,7 +794,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetZoneStackReport_Async(sArchive:string; z:int64; fullstack:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -814,7 +817,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetZoneStackReport_Response():string;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -828,9 +831,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TRDTPArchiveClient.NextZoneHint(sArchive:string; z:int64);
+procedure TRDTPArchiveClient.NextZoneHint(sArchive:string; z:int64; pin:TDateTime);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -842,6 +845,7 @@ begin
 {$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$5510:TRDTPArchiveClient.NextZoneHint');{$ENDIF}
     WritestringToPacket(packet, sArchive);
     Writeint64ToPacket(packet, z);
+    WriteTDateTimeToPacket(packet, pin);
     if not Transact(packet, true) then raise ECritical.create('transaction failure');
   except
     on E:Exception do begin
@@ -854,9 +858,9 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TRDTPArchiveClient.NextZoneHint_Async(sArchive:string; z:int64);
+procedure TRDTPArchiveClient.NextZoneHint_Async(sArchive:string; z:int64; pin:TDateTime);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -867,6 +871,7 @@ begin
     packet.AddString('Archive');
     WritestringToPacket(packet, sArchive);
     Writeint64ToPacket(packet, z);
+    WriteTDateTimeToPacket(packet, pin);
     BeginTransact2(packet, outpacket,nil, true);
   except
     on E:Exception do begin
@@ -878,7 +883,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetArcVatCheckSum(sArchive:string; zStart:int64; zCount:int64):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -908,7 +913,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPArchiveClient.GetArcVatCheckSum_Async(sArchive:string; zStart:int64; zCount:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -931,7 +936,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPArchiveClient.GetArcVatCheckSum_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -940,6 +945,75 @@ begin
     packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
     //packet.SeqRead;//read off the service name and forget it (it is already known)
     Getint64FromPacket(packet, result);
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TRDTPArchiveClient.GetZonePresenceHints(sArchive:string; zStart:int64; zCount:int64):TDynByteArray;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try try
+    packet.AddVariant($5512);
+    packet.AddVariant(0);
+    packet.AddString('Archive');
+{$IFDEF RDTP_CLIENT_LOGGING}Debug.Log('RDTP$5512:TRDTPArchiveClient.GetZonePresenceHints');{$ENDIF}
+    WritestringToPacket(packet, sArchive);
+    Writeint64ToPacket(packet, zStart);
+    Writeint64ToPacket(packet, zCount);
+    if not Transact(packet) then raise ECritical.create('transaction failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    GetTDynByteArrayFromPacket(packet, result);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+  finally
+    packet.free;
+  end;
+end;
+//------------------------------------------------------------------------------
+procedure TRDTPArchiveClient.GetZonePresenceHints_Async(sArchive:string; zStart:int64; zCount:int64);
+var
+  packet,outpacket: TRDTPPacketAbstract;
+begin
+  if not connect then
+     raise ETransportError.create('Failed to connect');
+  packet := NeedPacket;
+  try
+    packet.AddVariant($5512);
+    packet.AddVariant(0);
+    packet.AddString('Archive');
+    WritestringToPacket(packet, sArchive);
+    Writeint64ToPacket(packet, zStart);
+    Writeint64ToPacket(packet, zCount);
+    BeginTransact2(packet, outpacket,nil, false);
+  except
+    on E:Exception do begin
+      e.message := 'RDTP Call Failed:'+e.message;
+      raise;
+    end;
+  end;
+end;
+//------------------------------------------------------------------------------
+function TRDTPArchiveClient.GetZonePresenceHints_Response():TDynByteArray;
+var
+  packet: TRDTPPacketAbstract;
+begin
+  packet := nil;
+  try
+    if not EndTransact2(packet, packet,nil, false) then raise ECritical.create('Transaction Failure');
+    if not packet.result then raise ECritical.create('server error: '+packet.message);
+    packet.SeqSeek(PACKET_INDEX_RESULT_DETAILS);
+    //packet.SeqRead;//read off the service name and forget it (it is already known)
+    GetTDynByteArrayFromPacket(packet, result);
   finally
     packet.free;
   end;

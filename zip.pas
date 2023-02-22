@@ -8,7 +8,7 @@ uses
   activex,
   comobj,
 {$ENDIF}
-  commandprocessor, stringx, sysutils,zlib, classes, memoryfilestream, helpers_stream, systemx;
+  commandprocessor, variants, stringx, sysutils,zlib, classes, memoryfilestream, helpers_stream, systemx, System.zip;
 
 const
   SHCONTCH_NOPROGRESSBOX = 4;
@@ -19,7 +19,8 @@ const
   SHCONTF_NONFOLDERS = 64;
 
 {$IFDEF WINDOWS}
-function ShellUnzip(const zipfile, targetfolder: string; filter: string = ''): boolean;
+function ShellUnzip(const zipfile, targetfolder: string; filter: string = ''): boolean;deprecated;
+function ShellUnzipToTempFolder(const zipfile: string; filter: string = ''): string;deprecated;
 {$ENDIF}
 
 
@@ -52,17 +53,56 @@ type
 
 procedure ZZip(sSource, sDest: string);
 procedure ZUnZip(sSource, sDest: string);
-function ZipRam(pSource, pDest: pbyte; sourcelen: nativeint; destlen: nativeint; prog: PProgress): nativeint;
+function ZipRam(pSource, pDest: pbyte; sourcelen: nativeint; destlen: nativeint; prog: PProgress; CompressionLevel: TCompressionLevel = clDefault): nativeint;
 function UnZipRam(pSource, pDest: pbyte; sourcelen: nativeint; destlen: nativeint; prog: PProgress): nativeint;
 function ZCompressStrA(const s: ansistring; level: TZCompressionLevel): TBytes; overload;
 function ZDecompressStrA(const s: TBytes): ansistring;
+function UnzipFile(sSource, sDest: string): boolean;
+
+
+
+
 
 
 implementation
 
+uses
+ exe;
+
+function UnzipFile(sSource, sDest: string): boolean;
+begin
+{$IFDEF MSWINDOWS}
+  if fileexists(dllpath+'7-zip\7z.exe') then begin
+    RunProgramAndWait(dllpath+'7-zip\7z.exe','x -y -o'+quote(sDest)+' '+quote(sSource),'', true);
+    exit(true);
+  end;
+{$ENDIF}
+
+  result := false;
+  var myZipFile := TZipFile.Create;
+//  myZipFile.OnCreateDecompressStream := OnCreateDecompressStream;
+  try
+    myZipFile.Open(sSource, zmRead);
+    myZipFile.ExtractAll(sDest);
+    myZipFile.Close;
+    exit(true);
+  finally
+    myZipFile.Free;
+  end;
+end;
 
 
 {$IFDEF WINDOWS}
+function ShellUnzipToTempFolder(const zipfile: string; filter: string = ''): string;
+begin
+  var topath := GetTempPathForThread;
+  try
+    if not ShellUnzip(zipfile, toPath,filter) then
+      exit('');
+    result := topath;
+  except
+  end;
+end;
 function ShellUnzip(const zipfile, targetfolder: string; filter: string = ''): boolean;
 var
   shellobj: olevariant;
@@ -78,6 +118,13 @@ begin
   srcfldr := shellobj.NameSpace(vstr1);
   forcedirectories(vstr2);
   destfldr := shellobj.NameSpace(vstr2);
+
+  if VArIsNUll(srcfldr) then
+    exit(false);
+  if VArIsNUll(destfldr) then
+    exit(false);
+  if not ((VarType(srcfldr) and varObject) = varObject) then
+    exit(false);
 
   shellfldritems := srcfldr.Items;
   if (filter <> '') then
@@ -103,7 +150,7 @@ begin
 end;
 {$ENDIF}
 
-function ZipRam(pSource, pDest: pbyte; sourcelen: nativeint; destlen: nativeint; prog: PProgress): nativeint;
+function ZipRam(pSource, pDest: pbyte; sourcelen: nativeint; destlen: nativeint; prog: PProgress; CompressionLevel: TCompressionLevel = clDefault): nativeint;
 var
   cs: TCompressionStream;
   ms: TMemoryStream;
@@ -111,7 +158,7 @@ begin
   try
     ms := TMemoryStream.Create;
     try
-      cs := TCompressionStream.create(ms);
+      cs := TCompressionStream.create(CompressionLevel, ms);
       try
         Stream_GuaranteeWrite(cs, pSource, sourcelen, prog);
       finally

@@ -36,7 +36,7 @@ type
 
   TQueueItemFinishedProc = reference to procedure (qi: TQueueItem);
 
-  TQueueItem = class(TLightObject)
+  TQueueItem = class(TBetterObject)
   strict private
     function GEtWait: boolean;inline;
   strict
@@ -92,6 +92,7 @@ type
 
   TQueueItemList = class(TDirectlyLinkedList_Shared<TQueueItem>);
 
+
   TAbstractSimpleQueue = class(TManagedThread)
   private
     FExecuteLock: TCLXCriticalSection;
@@ -114,6 +115,7 @@ type
     procedure SetHold(const Value: boolean);
     procedure CheckWorkingItems;inline;
   protected
+    tmLastCollection: ticker;
     FIterations: nativeint;
     FIncomingItems, FWorkingItems{$IFDEF TRACK_COMPLETED}, FCompletedItems{$ENDIF}: TDirectlyLInkedList_Shared<TQueueItem>;
     last_process_time: int64;
@@ -122,6 +124,7 @@ type
     function IdleBreak: Boolean; override;
     procedure AfterUrgentCopy;virtual;
   public
+    evQueueIdle: TSignal;
     shutdown: boolean;
     evHold: TSignal;
     evNotCongested: TSignal;
@@ -134,6 +137,7 @@ type
     keepSTats: boolean;
     hits, misses: int64;
     rs: TRingSTats;
+    rsAdd,rsAddLock,rsAddExtras: TringStats;
     rsIdle: TRingStats;
     idleTick: ticker;
     procedure Init;override;
@@ -143,6 +147,7 @@ type
     procedure Detach;override;
     procedure AfterProcessItem;virtual;
     procedure AddItem(itm: TQueueItem);inline;
+    procedure AddItemQuick(itm: TQueueItem);inline;
     procedure RemoveCompletedItem(itm: TQueueItem);inline;
     procedure DoExecute;override;
     procedure ExecuteLock;inline;
@@ -151,6 +156,7 @@ type
     procedure ProcessAllSynchronously;
     procedure WaitForAll;
     function Stop(bySelf: boolean=false): boolean; override;
+    procedure OnPrepareToStop; override;
     property MaxItemsInQueue: ni read FMaxItemsInQueue write FMaxItemsInQueue;
     procedure OptimizeIncoming(var incomingitem: TQueueItem);virtual;
     procedure WaitForFinish;override;
@@ -169,6 +175,7 @@ type
     function QueueFull: boolean;
     property EnableItemDebug: boolean read FEnableItemDebug write FEnableItemDEbug;
     procedure DropPending;
+
   end;
 
   TFakeCommand = class(TQueueItem)
@@ -221,12 +228,27 @@ type
   end;
 
 
+  TqiAddQueueItem = class(TQueueItem)
+  protected
+    procedure DoExecute; override;
+  public
+    qi: TQueueItem;
+    q: TAbstractSimpleQueue;
+
+  end;
+
+
+
+
 implementation
+
 
 { TAbstractSimpleQueue }
 
 
 { TAbstractSimpleQueue<T_ITEM> }
+
+
 
 procedure TAbstractSimpleQueue.AddItem(itm: TQueueItem);
 var
@@ -260,7 +282,7 @@ begin
     if estimated_queue_size + estimated_backlog_size = 0 then begin
       FIncomingItems.lock;
       bGotWork := FWorkingItems.TryLock;
-      bCanSync := ((FWorkingItems.Count + FIncomingItems.count) = 0) and (running_synchronous = false);
+      bCanSync := ((FWorkingItems.countvolatile + FIncomingItems.countvolatile) = 0) and (running_synchronous = false);
       if bCanSync and bGotWork then
         running_synchronous := true;
 
@@ -326,14 +348,13 @@ begin
         FOnNotEmpty(self);//!!!!---- under lock!
     end;
     FIncomingItems.add(itm);
-    estimated_backlog_size := FIncomingItems.count;
-    UpdateStatus(false);
+    estimated_backlog_size := FIncomingItems.countvolatile;
 
   //  Debug.ConsoleLog('Queued item #'+inttostr(FIncomingitems.count));
-    OptimizeIncoming(itm);
+//    OptimizeIncoming(itm);
     if itm.Queue = nil then
       raise Ecritical.Create('catastrophe! .. no queue assigned to '+itm.classname);
-    bWait := (FIncomingItems.count > MaxItemsInQueue) and (MaxItemsInQueue > 0);
+    bWait := (FIncomingItems.countvolatile > MaxItemsInQueue) and (MaxItemsInQueue > 0);
   finally
     FIncomingItems.Unlock;
   end;
@@ -343,6 +364,8 @@ begin
     dec(estimated_queue_size);
 {$ENDIF}
   HasWork := true;
+  UpdateStatus(false);
+
 
 
   if bWait then begin
@@ -369,6 +392,68 @@ begin
     until not bWait;
 
   end;
+
+
+end;
+
+procedure TAbstractSimpleQueue.AddItemQuick(itm: TQueueItem);
+var
+  bWait: boolean;
+  bGotWork: boolean;
+  bCanSync: boolean;
+  tm, tm2: ticker;
+  sleeptime: ticker;
+begin
+  rsAdd.BeginTime;
+  autospin := true;
+  //REGULAR ADD
+  bWait := false;
+  itm.Queue := self;
+  rsAddLock.begintime;
+  FIncomingItems.Lock;
+  try
+    rsAddLock.EndTime;
+    rsAddLock.OptionDebug('quick add lock time');
+    FIncomingItems.add(itm);
+    estimated_backlog_size := FIncomingItems.countvolatile;
+
+    bWait := (FIncomingItems.countvolatile > MaxItemsInQueue) and (MaxItemsInQueue > 0);
+  finally
+    FIncomingItems.Unlock;
+  end;
+  HasWork := true;
+  rsAddExtras.begintime;
+  UpdateStatus(false);
+
+  if bWait then begin
+    sleeptime := 0;
+    repeat
+      FIncomingItems.lock;
+      try
+        bWait := QueueFull;
+      finally
+        FIncomingItems.Unlock;
+      end;
+      if bWait then begin
+        if sleeptime > 0 then begin
+          sleep(sleeptime);//THE REASON WE ALLOW SLEEP HERE
+                           //IS TO BACK OFF when the Queue is full.  This allows the
+                           //time-critical thread a chance to drain the incoming items
+        end;
+        WaitForSignal(evNotCongested);
+        if sleeptime < 50 then
+          inc(sleeptime);
+
+//        exit;
+      end;
+    until not bWait;
+
+  end;
+  rsAddExtras.EndTime;
+  rsAddExtras.optiondebug('add extras time');
+
+  rsAdd.EndTime;
+  rsAdd.optionDebug('Quick Add Time: ');
 
 
 end;
@@ -415,7 +500,7 @@ begin
   if bForce or urgent then begin
     FIncomingItems.Lock;
     try
-      if FWorkingIndex >= FWorkingItems.count then begin
+      if FWorkingIndex >= FWorkingItems.countvolatile then begin
         FWorkingItems.clear;
         FWorkingIndex := 0;
       end;
@@ -432,13 +517,13 @@ begin
       FIncomingItems.Clear;
 
       estimated_backlog_size := 0;
-      estimated_queue_size := FWorkingItems.count;
+      estimated_queue_size := FWorkingItems.countvolatile;
       urgent := false;
       AfterUrgentCopy;
     finally
       FIncomingItems.Unlock;
     end;
-    result := FWorkingItems.count > 0;
+    result := FWorkingItems.countvolatile > 0;
   end else begin
 {$DEFINE HOLD_IN_INCOMING_LONGER}
 {$IFDEF HOLD_IN_INCOMING_LONGER}
@@ -472,13 +557,20 @@ begin
   rs := nil;
   rsIdle.free;
   rs := nil;
+  rsAdd.free;
+  rsAdd := nil;
+  rsAddLock.free;
+  rsAddLock := nil;
+  rsAddExtras.free;
+  rsAddExtras := nil;
 
   inherited;
 end;
 
 procedure TAbstractSimpleQueue.Detach;
 begin
-  inherited;
+
+
 {$IFDEF TRACK_COMPLETED}
   if FCompletedItems.count > 0 then
     raise ECritical.create('It is bad to destroy TAbstractSimpleQueue while there are items waiting in the CompletedItems list.');
@@ -493,6 +585,11 @@ begin
   evHold := nil;
   evNotCongested.free;
   evNotCongested := nil;
+  signal(evQueueIdle, true);
+  evQueueIdle.free;
+  evQueueIdle := nil;
+
+  inherited;
 
 end;
 
@@ -530,8 +627,8 @@ var
 begin
   Lock;
   try
-    while FIncomingItems.count > 0 do begin
-      x := FincomingItems.Count-1;
+    while FIncomingItems.countvolatile > 0 do begin
+      x := FincomingItems.countvolatile-1;
       i := FIncomingItems[x];
       i.cancelled := true;
       FIncomingItems.Delete(x);
@@ -541,8 +638,8 @@ begin
       end;
     end;
 
-    while FWorkingItems.count > 0 do begin
-      x := FWorkingItems.Count-1;
+    while FWorkingItems.countvolatile > 0 do begin
+      x := FWorkingItems.countvolatile-1;
       i := FWorkingItems[x];
       i.cancelled := true;
       FWorkingItems.Delete(x);
@@ -590,7 +687,7 @@ begin
 {$IFDEF FASTER_WORKING_ITEMS}
   or (FWorkingIndex >= Fworkingitems.count)
 {$endIF}
-  or (FWorkingItems.count = 0);
+  or (FWorkingItems.countvolatile = 0);
 
 end;
 
@@ -621,6 +718,8 @@ begin
 {$ENDIF}
   ICSSC(FExecuteLock, QUEUE_SPIN);
   Loop := true;
+  evQueueIdle := TSignal.create;
+  signal(evQueueIdle,true);
   evhold := TSignal.create;
   evNotCongested := TSignal.create;
   KeepStats := true;
@@ -628,6 +727,22 @@ begin
     rs := TRingStats.create;
     rs.Size := 4096;
   end;
+
+  if rsAdd = nil then begin
+    rsAdd := TRingStats.create;
+//    rsAdd.Size := 4096;
+  end;
+
+  if rsAddLock = nil then begin
+    rsAddLock := TRingStats.create;
+//    rsAdd.Size := 4096;
+  end;
+
+  if rsAddExtras = nil then begin
+    rsAddExtras := TRingStats.create;
+//    rsAdd.Size := 4096;
+  end;
+
 
   if rsIdle = nil then begin
     rsIdle := TRingStats.create;
@@ -643,7 +758,18 @@ begin
   shutdown := false;
   urgent := false;
   signal(evnotcongested, true);
+  Loop := true;
 
+
+end;
+
+procedure TAbstractSimpleQueue.OnPrepareToStop;
+begin
+  inherited;
+  shutdown := true;
+  signal(Self.evQueueIdle,true);
+  signal(Self.evHold,true);
+  signal(Self.evNotCongested,true);
 
 end;
 
@@ -654,7 +780,7 @@ end;
 
 procedure TAbstractSimpleQueue.ProcessAllSynchronously;
 begin
-  while (FIncomingItems.Count > 0) or (FWorkingItems.count > 0) do begin
+  while (FIncomingItems.countvolatile > 0) or (FWorkingItems.countvolatile > 0) do begin
     ProcessItem;
   end;
 end;
@@ -665,7 +791,7 @@ begin
   if not FincomingItems.trylock then
     exit(true);
   try
-    result := (FIncomingItems.count >= MaxItemsInQueue) and (MaxItemsInQueue > 0);
+    result := (FIncomingItems.countvolatile >= MaxItemsInQueue) and (MaxItemsInQueue > 0);
   finally
     FincomingItems.Unlock;
   end;
@@ -677,14 +803,19 @@ var
 begin
 
 //  Debug.ConsoleLog('Process');
-  if FIncomingItems.TryLock then
+  if ((FWorkingItems.Volatilecount = 0) or (gettimeSince(tmLastCollection) > 100))
+  and FIncomingItems.TryLock then
   try
     CollectIncoming(FWorkingItems.Volatilecount=0);
-    HasWork := (FWorkingItems.count > 0) or (FIncomingItems.count > 0);//NOTE! IMPORTANT!  This should be the ONLY place where HasWork is evaluated
+    tmLastCollection := getticker;
+    HasWork := (FWorkingItems.countvolatile > 0) or (FIncomingItems.countvolatile > 0);//NOTE! IMPORTANT!  This should be the ONLY place where HasWork is evaluated
+    if not HasWork then
+      Signal(evQueueIdle);
+
     //if we set a limit on the number of items we can queue then prevent
     //other threads from getting a lock on the incoming list
-    UpdateStatus(false);
-    if (MaxItemsInQueue > 0) and (FWorkingItems.Count >= MaxItemsInQueue) then begin
+
+    if (MaxItemsInQueue > 0) and (FWorkingItems.countvolatile >= MaxItemsInQueue) then begin
       BlockIncoming;
     end else begin
       UnBlockIncoming;
@@ -692,12 +823,14 @@ begin
   finally
     FIncomingItems.Unlock;
   end;
+  UpdateStatus(false);
+
   if (haswork) then begin
     itm := nil;
 
-    estimated_queue_size := FWorkingitems.Count;
+    estimated_queue_size := FWorkingitems.countvolatile;
 
-    if FWorkingItems.count > 0 then  //volatile read of count, could be zero, but shouldn't decrement
+    if FWorkingItems.countvolatile > 0 then  //volatile read of count, could be zero, but shouldn't decrement
       itm := GEtNextItem;
 
     //if (FIterations mod 100) = 0 then
@@ -728,7 +861,13 @@ begin
         if EnableItemDebug then
           Debug.Log(self.name+' Execute Item: '+itm.DebugString);
         FWorkingItems.Remove(itm);
-        itm.Execute;
+        try
+          itm.Execute;
+        except
+          on e: Exception do begin
+            debug.log('Exception executing Queue Item '+itm.classname+' '+e.message);
+          end;
+        end;
         if enableitemdebug then
           Debug.Log(self.name+' Finish Item: '+itm.DebugString);
 
@@ -793,6 +932,7 @@ procedure TAbstractSimpleQueue.SetStartingState;
 begin
   inherited;
   betterpriority := bpHighest;
+  evQueueIdle := TSignal.create;
   Hold := false;
   AutoSpin := true;
 
@@ -832,7 +972,7 @@ end;
 procedure TAbstractSimpleQueue.WaitForAll;
 begin
   while HasWork do begin
-    sleep(1);
+    WaitForSignal(evQueueIdle,100);
   end;
 end;
 
@@ -861,6 +1001,8 @@ end;
 
 destructor TQueueItem.Destroy;
 begin
+  if FQueue <> nil then
+    raise Ecritical.create('cannot destroy a '+classname+' while it is assigned to a queue.');
   if not cancelled then begin
     if not wasexecuted then
       raise Ecritical.create(getobjectdebug+' was never executed!');
@@ -1021,7 +1163,7 @@ begin
 
   evEmptyAvailable.free;
   evEmptyAvailable := nil;
-
+  FList.free;
   inherited;
 end;
 
@@ -1229,6 +1371,14 @@ begin
   end;
 
 //
+end;
+
+{ TqiAddQueueItem }
+
+procedure TqiAddQueueItem.DoExecute;
+begin
+  inherited;
+  q.AddItem(qi);
 end;
 
 end.

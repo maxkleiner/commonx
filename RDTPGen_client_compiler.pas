@@ -732,7 +732,7 @@ begin
   sLine := 'procedure '+FClass+'.'+sFunctionName+'_Async('+sParamList+');';
   AddToImplementation(sLine);
   AddToImplementation('var');
-  AddToImplementation('  packet,outpacket: TRDTPPacket;');
+  AddToImplementation('  packet,outpacket: TRDTPPacketAbstract;');
   AddToImplementation('begin');
   AddToImplementation('  if not connect then');
   AddToImplementation('     raise ETransportError.create(''Failed to connect'');');
@@ -950,7 +950,7 @@ begin
   sLine := 'function '+FClass+'.'+sFunctionName+'_Response('+sParamList+'):'+sResultType+';';
   AddToImplementation(sLine);
   AddToImplementation('var');
-  AddToImplementation('  packet: TRDTPPacket;');
+  AddToImplementation('  packet: TRDTPPacketAbstract;');
   AddToImplementation('begin');
   AddToImplementation('  packet := nil;');
   AddToImplementation('  try');
@@ -1141,7 +1141,7 @@ begin
   sLine := 'procedure '+FClass+'Base.'+sFunctionName+'_Async('+sParamList+');';
   AddToImplementation2(sLine);
   AddToImplementation2('var');
-  AddToImplementation2('  packet: TRDTPPacket;');
+  AddToImplementation2('  packet: TRDTPPacketAbstract;');
   AddToImplementation2('begin');
   AddToImplementation('  if not connect then');
   AddToImplementation('     raise ETransportError.create(''Failed to connect'');');
@@ -1251,7 +1251,7 @@ begin
   sLine := 'function '+FClass+'Base.'+sFunctionName+'_Response('+sParamList+'):'+sResultType+';';
   AddToImplementation2(sLine);
   AddToImplementation2('var');
-  AddToImplementation2('  packet: TRDTPPacket;');
+  AddToImplementation2('  packet: TRDTPPacketAbstract;');
   AddToImplementation2('begin');
   AddToImplementation2('  packet := nil;');
   AddToImplementation2('  try');
@@ -1740,7 +1740,7 @@ begin
   end;
   AddToImplementation(sLine);
   AddToImplementation('var');
-  AddToImplementation('  packet: TRDTPPacket;');
+  AddToImplementation('  packet: TRDTPPacketAbstract;');
   AddToImplementation('begin');
   AddToImplementation('  if not connect then');
   AddToImplementation('     raise ETransportError.create(''Failed to connect'');');
@@ -2119,7 +2119,7 @@ begin
   end;
   AddToImplementation2(sLine);
   AddToImplementation2('var');
-  AddToImplementation2('  packet: TRDTPPacket;');
+  AddToImplementation2('  packet: TRDTPPacketAbstract;');
   AddToImplementation2('begin');
   AddToImplementation('  if not connect then');
   AddToImplementation('     raise ETransportError.create(''Failed to connect'');');

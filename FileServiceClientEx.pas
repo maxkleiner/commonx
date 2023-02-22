@@ -27,8 +27,11 @@ type
 
     procedure PutFileEx(sLocalFile: string; sRemoteFile: string; prog: PProgress = nil);overload;
     procedure PutFileEx(sLocalFile: string; sRemoteFile: string; prog: TProc<TProgress>);overload;
-    procedure GetFolder(sRemoteFolder: string; sLocalFolder: string; prog: TProc<TProgress>);
-    procedure PutFolder(sLocalFolder,sRemoteFolder: string; prog: TProc<TProgress>);
+    procedure GetFolder(sRemoteFolder: string; sLocalFolder: string; prog: TProc<TProgress>);overload;
+    procedure PutFolder(sLocalFolder,sRemoteFolder: string; prog: TProc<TProgress>);overload;
+    procedure GetFolder(sRemoteFolder: string; sLocalFolder: string; prog: PProgress = nil; logproc: TProc<string> = nil);overload;
+    procedure PutFolder(sLocalFolder,sRemoteFolder: string; prog: PProgress = nil);overload;
+
 
   end;
 
@@ -63,6 +66,7 @@ begin
   end;
   result := dir.GetFileCheckSum(sFile);
 end;
+
 procedure TFileServiceClientEx.GetFileEx(sRemoteFile, sLocalFile: string; prog: PProgress = nil);
 var
   ftr: TFileTransferReference;
@@ -111,7 +115,7 @@ begin
 
           if ftr.o.eof then begin
 {$IFDEF MSWINDOWS}
-            fileSetDate(fs.Handle, DatetimeToFileDate(ftr.o.FileDate));
+            FileSetDateUTC(fs.Handle, DatetimeToFileDate(ftr.o.FileDateUTC));
 {$ENDIF}
           end;
           inc(iStart,ftr.o.Length);
@@ -154,7 +158,7 @@ begin
 
           if ftr.o.eof then begin
 {$IFDEF MSWINDOWS}
-            fileSetDate(fs.Handle, DatetimeToFileDate(ftr.o.FileDate));
+            FileSetDateFromGMT(fs.Handle, ftr.o.FileDateUTC);
 {$ELSE}
 {$ENDIF}
           end;
@@ -216,7 +220,7 @@ begin
             inc(prog.step, ftr.o.Length);
 
           ftr.o.EOF := fs.Position >= fs.Size;
-          ftr.o.FileDate := FileDateToDateTime(FileGetDAte(fs.handle));
+          ftr.o.FileDateUTC := FileGetDateAsGMT(fs.handle);
           ftr.o.ContainsData := true;
           self.PutFile(ftr);
           ftr.o.FreeBuffer;
@@ -296,6 +300,53 @@ begin
 end;
 
 procedure TFileServiceClientEx.GetFolder(sRemoteFolder, sLocalFolder: string;
+  prog: PProgress; logproc: TProc<string>);
+begin
+  if assigned(logproc) then
+    logproc('Get Remote folder '+sRemoteFolder+' to '+sLocalFolder);
+  sLocalFolder := FixSlashes(sLocalFolder);
+  forcedirectories(sLocalFolder);
+  var d := Dir(sRemoteFolder);
+  var fi: TFileinformation;
+  while d.GetNextFile(fi) do begin
+    GetFileCheckSum_Async(fi.FullName);
+    var loc := sLocalFolder;
+    debug.log(loc);
+    loc := fixslashes(loc);
+    debug.log(loc);
+    loc := slash(loc);
+    debug.log(loc);
+    var finame := fixslashes(fi.name);
+
+    loc := loc + finame;
+    debug.log(loc);
+    var csLocal := FileServiceClientEx.getfilechecksum(slash(fixslashes(sLocalFolder))+fixslashes(fi.name));
+    var cs := GetFileChecksum_Response;
+    if cs = csLocal then begin
+      if assigned(logproc) then
+        logproc('Skipping '+fi.FullName);
+    end else begin
+      if assigned(logproc) then
+        logproc('Get Remote file '+fi.FullName+' to '+slash(sLocalFolder)+fixslashes(fi.name));
+      try
+        GetFileEx(fi.FullName,slash(sLocalFolder)+fi.name, prog);
+      except
+        on E:exception do begin
+
+          raise;
+        end;
+      end;
+    end;
+  end;
+
+  while d.getnextfolder(fi) do begin
+    GetFolder(fi.FullName, slash(sLocalFolder)+fi.name, prog, logproc);
+  end;
+
+end;
+
+
+procedure TFileServiceClientEx.GetFolder(sRemoteFolder, sLocalFolder: string;
   prog: TProc<TProgress>);
 begin
   Debug.Log('Get Remote folder '+sRemoteFolder+' to '+sLocalFolder);
@@ -365,7 +416,7 @@ begin
           prog(pprog);
 
           ftr.o.EOF := fs.Position >= fs.Size;
-          ftr.o.FileDate := FileDateToDateTime(FileGetDAte(fs.handle));
+          ftr.o.FileDateUTC := FileGetDateAsGMT(fs.handle);
           ftr.o.ContainsData := true;
           self.PutFile(ftr);
           ftr.o.FreeBuffer;
@@ -422,12 +473,49 @@ begin
 
 
     inc(tries);
+
+    if tries <= 9 then
+      Debug.Log('push failed for '+sLocalFile+'->'+sRemoteFile);
+
   until tries >9;
 
   raise ECritical.create('failed to push or verify upload of '+sRemoteFile);
 
 end;
 
+procedure TFileServiceClientEx.PutFolder(sLocalFolder, sRemoteFolder: string;
+  prog: PProgress);
+begin
+  Debug.Log('Put local folder '+sLocalFolder+' to '+sRemoteFolder);
+  sLocalFolder := FixSlashes(sLocalFolder);
+  forcedirectories(sLocalFolder);
+  var d := TDirectory.create(sLocalFolder, ALL_FILES,0,0);
+  var fi: TFileinformation;
+  while d.GetNextFile(fi) do begin
+    if fi.name = '.DS_Store' then continue;
+    var remfile := winslash(slash(sRemoteFolder))+fi.Name;
+    GetFileCheckSum_Async(remfile);
+    var csLocal := FileServiceClientEx.getfilechecksum(fi.fullname);
+    var cs :TAdvancedFileChecksum;
+    try
+      cs := GetFileChecksum_Response;
+    except
+      cs.init;
+    end;
+    if cs = csLocal then begin
+      Debug.Log('Skipping '+fi.FullName);
+    end else begin
+      Debug.Log('Put file '+fi.FullName+' to '+remfile);
+      PutFileEx(fi.FullName,remfile);
+    end;
+  end;
+
+  while d.getnextfolder(fi) do begin
+    var nextfolder := winslash(slash(sRemoteFolder))+fi.name;
+    PutFolder(fi.FullName, nextfolder, nil);
+  end;
+
+end;
 procedure TFileServiceClientEx.PutFolder(sLocalFolder,sRemoteFolder: string;
   prog: TProc<TProgress>);
 begin

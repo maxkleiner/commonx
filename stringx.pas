@@ -9,7 +9,7 @@ uses
   stringx.ansi,
 {$ENDIF}
   Classes, variants, math, commonconstants, systemx, sort, numbers, typex, betterobject, types,
-  sysutils;
+  sysutils, iduri,HTTPUtil;
 
 const
   CRLF = #13#10;
@@ -30,6 +30,11 @@ type
     rightof_including: string;
     rightof_excluding: string;
   end;
+  TwordScore = record
+    word: string;
+    score: int64;
+  end;
+  PWordScore = ^TWordScore;
 
   TDumbRamString = record
     size: integer;
@@ -67,8 +72,13 @@ function its(i: integer): string; inline;overload;
 
 function OFirstPos(s: string; searchfor: array of string; bIgnoreCase: boolean = false; iOStartAt: ni = 1): TPosDetails;
 function ZFirstPos(s: string; searchfor: array of string; bIgnoreCase: boolean = false; iZStartAt: ni = 0): TPosDetails;
+function HTMLDecode(const AStr: String): String;
 
+function CalcLevenshtein(Word1, Word2: String): nativeint;
+function CalcLevenshteins(Word1: string; sl: TStringlist): TArray<TWordScore>;
 procedure RemovePrefixFromStringList(sPrefix: string; sl: TStrings);
+function RemoveDoubleSpaces(s: string): string;
+function AmazonHEaderTrim(s: string): string;
 function StringListFromNullTerminatedStrings(p: PByte; sz: nativeint): TStringlist;
 function StringsFromMemory(p: PByte; sz: nativeint): string;
 function Commaize(i: int64): string;
@@ -77,6 +87,9 @@ function IsSimpleFloat(s: string): boolean;
 function IsFloat(s: string): boolean;
 function IsHex(s: string): boolean;
 function StrToBool(s: string): boolean;
+function cEnc(s: string): string;
+function StringIsInStringList(s: string; sl: TStringlist): boolean;
+function BoolToStrAnon(b: boolean; t,f: TFunc<string>) : string;
 function BoolToStrEx(b: boolean; sTrue: string ='TRUE'; sFalse:string = 'FALSE') : string;
 function BoolToStr(b: boolean; sTrue: string ='TRUE'; sFalse:string = 'FALSE') : string;
 function BoolToString(b: boolean; sTrue: string ='TRUE'; sFalse:string = 'FALSE') : string;
@@ -87,35 +100,54 @@ function RemoveDuplicatesFromStringList(sl: TStringlist): boolean;
 function BtxDateToDAteTime(sBTX: string): TDateTime;
 function HTMLToPlainText(s: string): string;
 function SplitStringIntoStringList(s: string; cDelimiter: char = ' '; bRespectQuote: char = #0): TStringList;
-function ExtractLinksFromPlainText(s: string): string;
+function StringListToArray(sl: TStringList): Tarray<string>;
+function ExtractLinksFromText(s: string; bonlyHTTPS: boolean=false; endoflink: string = '"'): Iholder<TStringlist>;
 function RemoveDoubles(s: string; c: char): string;
 function StrSize(s: string): integer;
 function HextoString(sHexString: string): string;
 function StringTohex(s: string): string;
 function DelimitIfNotEmpty(sInput: string; sDelimiter: string): string;
+function ExtractNumbers(s:string; bStopAfterNumberFound: boolean= true): string;
 
 function StringRepeat(s: string; iCount: ni): string;
 procedure AppendTextToFile(sFile: string; sText: string);
 function AppendURLParam(bStandAlone: boolean; sURLorExistingParams: string; sParam: string): string;
-function AppendOrReplace(sBase, sDelimit, sAppend: string): string;
+function GetPageNameFromURL(sURL: string): string;
+function AppendOrReplace(sBase, sDelimit, sAppend: string; bDelimitOnlyIfAppendSet: boolean = false): string;
 function AOR(sBase, sDelimit, sAppend: string): string;inline;
+function AORifSet(sBase, sDelimit, sAppend: string): string;inline;
 function IPToBytes(sIP: string): TDynByteArray;
+function IPToInt32(sIP: string): cardinal;
 function CountChar(s: string; c: char): ni;
 function StrIsBinary(s: string): boolean;
 function Capitalize(s: string): string;
 function AmpEncode(s: string): string;
+function AmpDecode(s: string): string;
+function urlencode(ASrc: string): UTF8String;
+function filenameencode(s: string): string;
+function CountOverlapingStrings(a,b: Tarray<string>):ni;
+function CountSimilarStrings(a,b: Tarray<string>; lev_ratio:double=0.1):ni;
+
 function AnsiStringToBytes(s: ansistring): TArray<byte>;
+function StringToBytes(s: string): TArray<byte>;
+
 function AnsiStringToTBytes(ss: ansistring): Tbytes;
 function BytesToAnsiString(b: TArray<byte>): ansistring;
+function BytesToString(b: TArray<byte>): string;
 function InterpretInterval(sTimeRepresentation: string): double;overload;
 function InterpretInterval(sTimeRepresentation: string; defaultIfblank: double): double;overload;
-
+function FindZeroEnd(const s: string): string;
+function IsIPV6(sAddr: string): boolean;
 
 function ReplaceXMLCharacters(s: String):String;
 function MonthToInt(const sMon: string; bNoExceptions: boolean=false): ni;
 
-function Unquote(s: string): string;
-function StartsWith(sMaster: string; sStartsWith: string): boolean;
+function RichEsc(s: string): string;
+
+function Unquote(s: string; quote: string = '"'): string;
+function StartsWithCaseSensitive(sMaster: string; sStartsWith: string): boolean;
+function StartsWithNoCase(sMaster: string; sStartsWith: string): boolean;
+function EndsWithNoCase(sMaster: string; sEndsWith: string): boolean;
 function StartsWithThenSkip(var sMaster: string; sStartsWith: string): boolean;
 function Stringlist_ValuesBlank(sl: TStringlist): boolean;
 
@@ -123,7 +155,7 @@ function PairsToParams(sPairs: string): string;
 //function FloatPrecision(r: real; iDigits: integer): string;
 function FloatPrecision(r: double; iDecPLaces: integer; bCollapseIntegers: boolean = false): string;
 procedure TrimStringList(sl: tStringlist);
-procedure TrimStringListDeleteEmpty(sl: tStringlist);
+procedure TrimStringListDeleteEmpty(sl: TStrings);
 
 function IntToRank(i: integer): string;
 function MatchCase(sSource, sTarget: string): string;
@@ -133,7 +165,8 @@ function ZSubCopy(sSource: string; iPOs: nativeint; iLength: nativeint): string;
 function zpos(sSubString: string; sString: string;iSTartAt:ni=0): nativeint;overload;
 function zpos_ignorecase(sSubString: string; sString: string;iSTartAt:ni=0): nativeint;
 function zpos(sSubString: string; sString: string;bIgnoreCase: boolean; iSTartAt:ni=0): nativeint;overload;
-function opos(sSubString: string; sString: string;iSTartAt:ni=0): nativeint;overload;
+function opos(sSubString: string; sString: string;iSTartAt:ni=1): nativeint;overload;
+function UnicodeToHTML(s: string): string;
 
 function StrToFloatEx(s: string; nanresult: double = 0): double;
 
@@ -147,11 +180,14 @@ function ocopy(sString: string; iStartOneBased: nativeint; iLength: nativeint): 
 function zcopy(sString: string; iStartZeroBased: nativeint; iLength: nativeint): string;
 function zExtractDelimitedString(sSource: string; sDelimiter: string; var iStartAtZeroBased: ni; out sResult: string): boolean;
 function MemoryToString(p: pointer; l: ni): string;overload;
+function MemoryToHex(p: pointer; l: ni): string;overload;
 function MemoryToString(m: TDynByteArray): string;overload;
 function StringToMemory(s: string): TDynByteArray;
 function LinuxPath(s: string): string;
 function WinPath(s: string): string;
-
+procedure StringListReplace(sl: TStringlist; sSource, sTarget: string);
+function SplitIntoTweets(s: TStrings): IHolder<TStringList>;
+function StripUnicode(s: string): string;
 
 
 
@@ -184,15 +220,22 @@ function VArtoJSONStorage(v: variant): string;
 function SQLEscape(s: string): string;
 procedure SaveStringAsFile(sFile: string; data: string);
 
-function LoadFileAsString(sFile: string; Encoding: TEncoding = nil; iLimitLength: integer = 0): string;
+function LoadFileAsString(sFile: string; Encoding: TEncoding = nil; iLimitLength: int64 = 0): string;
+function LoadFileAsStringList(sFile: string; Encoding: TEncoding = nil): TStringList;
+function LoadFileAsStringListH(sFile: string; Encoding: TEncoding = nil): IHolder<TStringList>;
+
 function LoadStreamAsString(s: TStream): string;
-function LoadStringFromFile(sFile: string; Encoding: TEncoding = nil; iLimitLength: integer = 0): string;
+function LoadStringFromFile(sFile: string; Encoding: TEncoding = nil; iLimitLength: int64 = 0): string;
 function LoadStringFromStream(s: TStream; iLimitLength: integer = 0): string;
 function SortStringCompare(s1,s2: string): integer;
 function CleanString(s: string): string;
 function CleanInjection(s: string): string;
 function UnCleanInjection(s: string): string;
-function FriendlySizeName(i: int64): string;
+function FriendlySizeName(i: int64; sUnit: string = 'B'): string;
+function FriendlyTime(tm: TDateTime): string;
+function FriendlyNumber(i: int64; decs: integer = 0; sUnit: string = ''): string;
+function InterpretFriendlySize(s: string): int64;
+
 
 
 
@@ -200,7 +243,10 @@ function MakeThreadSafe(s: string): string;inline;
 function HexEncode(s: string): string;
 function  stringToStringList(s: string): TStringList;
 function NewStringListH(): IHolder<TStringList>;
+function stringArrayToStringListH(a: TArray<string>): IHolder<TStringList>;
 function stringToStringListH(s: string): IHolder<TStringList>;
+function DetectNewLineDelimiter(s: string): string;
+function stringToStringListH_Quick(s: string): IHolder<TStringList>;
 //procedure SplitString(sSource, sDelimiter: string; var sLeft, sRight: string);
 function TrimStr(s: string): string;
 procedure CrackDelimitedString(const sLine : string; cDelimiter : char; slList : TStringList);
@@ -210,15 +256,23 @@ function LeftStr(s: string; n: integer): string;
 function MidStr(s: string; p: integer; n: integer): string;
 
 function StrExtract(src: string; what: string): string;
-function UnParseString(sDelimiter: string; sl: TStringList; bEvenOnly: boolean = false): string;
+function UnParseString(sDelimiter: string; sl: TStringList; bEvenOnly: boolean = false; bNoMultithread: boolean = false; iStartIDX: nativeint = 0; iLength: nativeint = -1): string;overload;
+function UnParseString(sl: TStringList): string;overload;
 procedure ParseString(src: string; sDelimiter: string; slList: TStringList);overload;
 function ParseString_Quick(src: string; sDelimiter: string):TStringList;overload;
+function StringListMatchAnyOrder(sl1,sl2: TStringlist; bIgnoreCase: boolean): boolean;
+function StringListHas(sl: TStringlist; s: string; bIgnoreCase: boolean): boolean;
 procedure ParseString(src: string; sDelimiter: char; slList: TStringList);overload;
 function ParseString(src: string; sDelimiter: char): TStringlist;overload;
+function ZAtStartOfSubString(src: string; sSubString: string; zPOs: nativeint): boolean;
 function ParseStringNotIn(src: string; sDelimiter: char; NotIn: char): TStringlist;
+function ParseStringMultiQuoted(src: string; bStripQuotes: boolean; sDelimiter: string = ','; cEscape : char = '\'): Tstringlist;
+function ParseStringMultiQuotedH(src: string; bStripQuotes: boolean; sDelimiter: string = ','; cEscape : char = '\'): IHolder<Tstringlist>;
 function ParseStringNotInH(src: string; sDelimiter: char; NotIn: char): IHolder<TStringlist>;
 function ParseStringH(src: string; sDelimiter: char): IHolder<TStringlist>;overload;
+function ParseStringH(src: string; sDelimiter: string): IHolder<TStringlist>;overload;
 function ParseString(src: string; sDelimiter: string): TStringlist;overload;
+function ParseIntegerArray(sStringCSV: string):TdynINt64Array;
 procedure ParseString2(src: string; sDelimiter: string; slList: TStringList);
 procedure ParseNumericStringWithRanges(src: string; sDelimiter: string; slList: TStringList);
 procedure ParseNumericRange(src: string; sDelimiter: string; slList: TStringList);
@@ -234,6 +288,7 @@ function LastPos(sub,s : string):integer;overload;
 function SubStringExistsInString(sSrc, sWhat: string; var iPos: integer): boolean;
 function EditStringWithNewSubString(iPos: integer; sOld, sNew: string; var sSrc: string): boolean;
 function PadString(sSource: string; sPadChar: char; iWidth: integer): string;
+function PadStringRight(sSource: string; sPadChar: char; iWidth: integer): string;
 function SplitQuote(sOrig: string; sQuoteDelimiter: string; var sLeft, sRight: string; out sInQuote: string): boolean;
 function StringIsAt(sMain, sSub: string; iPosToSearch: ni): boolean;
 function SplitString(sSource: string; sSplitters: array of string; var sLeft, sRight: string; out sDelimiterUsed: string; NotIn: array of string; bStartAtRight: boolean = false): boolean; overload;
@@ -244,13 +299,16 @@ function CopyStringList(sl: TStringList): TStringList;
 
 function PosEx(sSubString, sMain: string; NotIn: array of string): integer;
 function LastPosEx(sSubString, sMain: string; NotIn: array of string): integer;
+function SimpleOb(s: string): string;
+function DifferentOb(s: string): string;
 
 
-function BestPos(SubStrings: array of string; sMain: string; out sMatch: string; out position: integer; NotIn: array of string; bStartAtRight: boolean = false): boolean;
+function BestPos(SubStrings: array of string; sMain: string; out sMatch: string; out position: ni; NotIn: array of string; bStartAtRight: boolean = false): boolean;
 
 procedure mergeStringLists(slmaster: tStringList; sInsert: string; iStartRow, iStartCol, iEndrow, iEndcol: integer);
 
 procedure DeleteStringListArea(sl: TStringList; iStartCol, iStartRow, iEndCol, iEndRow: integer; sReplace: string = '');
+function GetUnescapedLength(s: string; sEsc: string = '`'): ni;
 
 function DatetoMYSQLDate(dt: TDateTime): string;
 function MYSQLDateTimeToDateTime(s: string): TDateTime;
@@ -261,10 +319,22 @@ function Unscramble(s: string): string;
 function ordEX(c: ansichar): nativeint;overload;
 function ordEX(c: widechar): nativeint;overload;
 {$ENDIF}
+
+{$IFNDEF NEED_FAKE_ANSISTRING}
+function StrPasEx(pc: PAnsiChar): string;
+{$ENDIF}
 {##############################################################################}
 implementation
 uses
-  helpers_stream, unittest;
+  helpers_stream, unittest, globalMultiQueue, debug;
+
+
+{$IFNDEF NEED_FAKE_ANSISTRING}
+function StrPasEx(pc: PAnsiChar): string;
+begin
+  result := string(strpas(pc));
+end;
+{$ENDIF}
 
 type
   TUT_StringX = class(TUnitTest)
@@ -468,17 +538,24 @@ begin
   else
     Result := src;
 end;
+function UnParseString(sl: TStringList): string;overload;
+begin
+  result := UnparseString(',',sl);
+end;
 {------------------------------------------------------------------------------}
-function UnParseString(sDelimiter: string; sl: TStringList; bEvenOnly: boolean = false): string;
+function UnParseString(sDelimiter: string; sl: TStringList; bEvenOnly: boolean = false; bNoMultithread: boolean = false; iStartIDX: nativeint = 0; iLength: nativeint = -1): string;
 var
   t,u,tt: nativeint;
   iCount: nativeint;
   sTemp: string;
+  parts : TArray<string>;
 begin
 {x$DEFINE SLOW_UNPARSESTRING}
 {$IFDEF SLOW_UNPARSESTRING}
   result := '';
-  for t:= 0 to sl.count-1 do begin
+  if iLength < 0 then
+    iLength := sl.count;
+  for t:= iStartIDX to iLength-1 do begin
     if t< sl.count-1 then begin
       result := result + sl[t]+sDelimiter;
     end else begin
@@ -486,27 +563,60 @@ begin
     end;
   end;
 {$ELSE}
-  iCount := 0;
-  for t:= 0 to sl.count-1 do begin
-    inc(iCount, length(sl[t]));
-  end;
-  inc(iCount, length(sDelimiter)*(sl.Count-1));
+  if sl.count = 0 then
+    exit;
+  {x$DEFINE MT_UNPARSESTRING incompatible with stringlist?}
+  {$IFNDEF MT_UNPARSESTRING}
+  bNoMultithread := true;
+  {$ENDIF}
+  if bEvenOnly then
+    bNoMultiThread := true;
+  if sl.count < 500 then
+    bNoMultiThread := true;
 
-
-  setlength(result, iCount);
-  tt := 1;
-  for t := 0 to sl.Count-1 do begin
-    if bEvenOnly then if (t and 1) = 1 then continue;
-    sTemp := sl[t];
-    for u := 1 to length(sTemp) do begin
-      result[tt] := sTemp[u];
-      inc(tt);
+  if not bNoMultithread then begin
+    var cpus: integer := GetEnabledCPUCount;
+    system.setlength(parts, cpus);
+    ForV_QI(length(parts),0, sl.count-1,procedure (visor, idx, sz: int64) begin
+      parts[visor] := UnParseString(sDelimiter, sl, bEvenOnly, true, idx, sz);
+    end,[fxEndInclusive]);
+    result := parts[0];
+    parts[0] := '';
+    for t := 1 to high(parts) do begin
+      if t = 0 then
+        result := parts[t]
+      else
+        result := sDelimiter+parts[t];
+      parts[t] := '';
     end;
 
-    if t < (sl.Count-1) then begin
-      for u := 1 to length(sDelimiter) do begin
-        result[tt] := sDelimiter[u];
+
+  end else begin
+    if iLength < 0 then
+      iLength := sl.count;
+
+    iCount := 0;
+    for t:= iStartIDX to iLength-1 do begin
+      inc(iCount, length(sl[t]));
+    end;
+    inc(iCount, length(sDelimiter)*(iLength-1));
+
+
+    setlength(result, iCount);
+    tt := 1;
+    for t := iStartIDX to iLength-1 do begin
+      if bEvenOnly then if (t and 1) = 1 then continue;
+      sTemp := sl[t];
+      for u := 1 to length(sTemp) do begin
+        result[tt] := sTemp[u];
         inc(tt);
+      end;
+
+      if t < (iLength-1) then begin
+        for u := 1 to length(sDelimiter) do begin
+          result[tt] := sDelimiter[u];
+          inc(tt);
+        end;
       end;
     end;
   end;
@@ -553,6 +663,86 @@ begin
 end;
 
 
+function ZAtStartOfSubString(src: string; sSubString: string; zPOs: nativeint): boolean;
+begin
+  result := true;
+  var hi := high(src);
+  var opos := zPos + low(src);
+  for var t := low(sSubString) to high(sSubString) do begin
+    var midx := (t-low(sSubString)) + oPos;
+    if midx > hi then exit(false);
+    if src[opos] <> sSubString[t] then
+      exit(false);
+  end;
+end;
+
+
+function ParseStringMultiQuoted(src: string; bStripQuotes: boolean; sDelimiter: string = ','; cEscape:char  = '\'): Tstringlist;
+//handles special case where text can be optionally quoted with single quotes
+//or double quotes and either causes the other kind of quotes and delimiters to be ignored
+begin
+  result := TStringlist.create;
+  var bInSingle := false;
+  var bInDouble := false;
+  var bNextCharIsEscaped := false;
+  var token := '';
+  for var t := low(src) to high(src) do begin
+    if bInSingle then begin
+      if src[t] = '''' then begin
+        if not bNextCharIsEscaped then
+          bInSingle := false;
+      end;
+      token := token + src[t];
+    end else
+    if bInDouble then begin
+      if src[t] = '"' then begin
+        if not bNextCharIsEscaped then
+          bInDouble := false
+      end;
+      token := token + src[t];
+    end else begin
+      if ZAtStartOfSubString(src,sDelimiter,t-low(src)) then begin
+        result.add(token);
+        token := '';
+      end else begin
+        if src[t] = '''' then
+          bInSingle := true;
+        if src[t] = '"' then
+          binDouble := true;
+
+        token := token + src[t];
+      end;
+    end;
+
+  end;
+
+  if token <> '' then
+    result.add(token);
+
+
+  if bStripQuotes then begin
+    for var t:= 0 to result.count-1 do begin
+      result[t] := trim(result[t]);
+    end;
+    for var t:= 0 to result.count-1 do begin
+      var s := UnQuote(result[t],'''');
+      if s = result[t] then
+        s := UnQuote(result[t],'"');
+
+      result[t] := s;
+    end;
+  end;
+
+
+end;
+
+function ParseStringMultiQuotedH(src: string; bStripQuotes: boolean; sDelimiter: string = ','; cEscape : char = '\'): IHolder<Tstringlist>;
+begin
+  result := THolder<TStringlist>.create(ParseStringMultiQuoted(src,bStripQuotes,sDelimiter, cEscape));
+end;
+
+
+
 function ParseStringH(src: string; sDelimiter: char): IHolder<TStringlist>;overload;
 begin
   result := THolder<TStringList>.create;
@@ -564,6 +754,13 @@ begin
   result := TStringList.Create;
   ParseString(src, sDelimiter, result);
 end;
+
+function ParseStringH(src: string; sDelimiter: string): IHolder<TStringlist>;overload;
+begin
+  result := THolder<TStringList>.create;
+  result.o := ParseString(src, sDelimiter);
+end;
+
 //------------------------------------------------------------------------------
 procedure ParseString(src: string; sDelimiter: char; slList: TStringList);
 var
@@ -586,7 +783,16 @@ begin
     c := src[t+STRZ];
     if (c=sDelimiter) then begin
       f := t;
-      slList.add(zcopy(src, s, f-s));
+      if f-s >0 then begin
+        var temp :=  zcopy(src, s, f-s);
+//        debug.log(inttostr(t));
+        slList.add(temp);
+      end
+      else begin
+//        debug.log(inttostr(t));
+        slList.Add('');
+      end;
+
       if slList.count > 300 then begin
         if slTemp = nil then
           slTemp := TStringlist.create;
@@ -603,7 +809,10 @@ begin
   if (t>s) then begin
     f := t;
     slList.add(zcopy(src, s, f-s));
-  end;
+  end else
+    if copy(src,high(src),1) = sDelimiter then
+      slList.add('');
+
 
   if slTemp <> nil then begin
     slTemp.AddStrings(slList);
@@ -869,6 +1078,48 @@ begin
   while length(result) < iWidth do
     result := sPadChar+result;
 end;
+function PadStringRight(sSource: string; sPadChar: char; iWidth: integer): string;
+//a: Author Unknown
+//p: sSource: The original string to be padded.
+//p: sPadchar: The character to use for padding.
+//p: iWidth: The number of characters to pad.
+//Pads characters on the front of a string.
+begin
+  result := sSource;
+  while length(result) < iWidth do
+    result := result+sPadChar;
+end;
+
+//------------------------------------------------------------------------------
+function stringArrayToStringListH(a: TArray<string>): IHolder<TStringList>;
+begin
+  result := NewStringListH;
+  for var t:= 0 to high(a) do
+    result.o.add(a[t]);
+end;
+
+//------------------------------------------------------------------------------
+function DetectNewLineDelimiter(s: string): string;
+begin
+  result := #13#10;
+  var a := (zpos(#13,s));
+  var b := (zpos(#10,s));
+  if b <0 then
+    exit(#13)
+  else
+  if a <0 then
+    exit(#10)
+  else
+  if (a>=0) and (b>=0) then begin
+    if a <> (b-1) then begin
+      if a < b then
+        exit(#13)
+      else
+        exit(#10);
+    end;
+  end;
+
+end;
 //------------------------------------------------------------------------------
 function stringToStringListH(s: string): IHolder<TStringList>;
 //p: s: The string you want to convert to a TStringList;
@@ -880,8 +1131,9 @@ var
   s1: string;
 begin
   result := THolder<TStringList>.create;
-  result.o := TStringList.create;
+  result.o :=   TStringlist.create;
   s1 := s;
+
 {$IFNDEF I_TRUST_EMBARCADERO}
   result.o.TrustyText := s;
 {$ELSE}
@@ -889,6 +1141,18 @@ begin
 {$ENDIF}
 
 end;
+function stringToStringListH_Quick(s: string): IHolder<TStringList>;
+//p: s: The string you want to convert to a TStringList;
+//Takes a string, creates a TStringList class, and returns the stringlist class
+//as the result with the string set in TStringList.text.  It is useful for
+//quickly breaking apart a large document into a bunch of lines.
+//Note that you should manaually free the TStringList class yourself.
+begin
+  result := THolder<TStringList>.create;
+  result.o  := ParseString_Quick(s, DetectNewLineDelimiter(s));
+
+end;
+
 //------------------------------------------------------------------------------
 function stringToStringList(s: string): TStringList;
 //p: s: The string you want to convert to a TStringList;
@@ -899,12 +1163,13 @@ function stringToStringList(s: string): TStringList;
 var
   s1,s2: string;
 begin
-  result := TStringList.create;
-{$IFDEF FMX}
-  result.TrustyText := s;
-{$ELSE}
-  result.text := s;
-{$ENDIF}
+//  result := TStringList.create;
+//{$IFDEF FMX}
+//  result.TrustyText := s;
+//{$ELSE}
+  result := ParseString_Quick(s, #13);
+//  result.text := s;
+//{$ENDIF}
 
 end;
 //------------------------------------------------------------------------------
@@ -1118,10 +1383,23 @@ begin
 end;
 
 
-function LoadFileAsString(sFile: string; Encoding: TEncoding = nil; iLimitLength: integer = 0): string;
+function LoadFileAsString(sFile: string; Encoding: TEncoding = nil; iLimitLength: int64 = 0): string;
 begin
   result := LoadStringFromfile(sfile, Encoding, iLimitLength);
 end;
+
+function LoadFileAsStringList(sFile: string; Encoding: TEncoding = nil): TStringList;
+begin
+  result := tStringlist.create;
+  result.LoadFromFile(sFile, Encoding);
+end;
+function LoadFileAsStringListH(sFile: string; Encoding: TEncoding = nil): IHolder<TStringList>;
+begin
+  result := THolder<TStringList>.create;
+  result.o := LoadFileAsStringList(sFile, encoding);
+
+end;
+
 
 
 function LoadStreamAsString(s: TStream): string;
@@ -1137,7 +1415,7 @@ begin
   end;
 
 end;
-function LoadStringFromFile(sFile: string; Encoding: TEncoding = nil; iLimitLength: integer = 0): string;
+function LoadStringFromFile(sFile: string; Encoding: TEncoding = nil; iLimitLength: int64 = 0): string;
 var
   sl : TStringList;
   fs: TfileStream;
@@ -1180,7 +1458,7 @@ begin
         SetLength(u8, iRead);
         movemem32(@u8[strzero], @sTemp[0], iRead);
 //        setlength(u8, iRead);
-        result := u8;
+        result := string(u8);
 {$ENDIF}
 
       finally
@@ -1193,7 +1471,7 @@ begin
 
 end;
 
-function BestPos(SubStrings: array of string; sMain: string; out sMatch: string; out position: integer; NotIn: array of string; bStartAtRight: boolean = false): boolean;
+function BestPos(SubStrings: array of string; sMain: string; out sMatch: string; out position: ni; NotIn: array of string; bStartAtRight: boolean = false): boolean;
 var
   t: integer;
   sCurrentSub: string;
@@ -1232,7 +1510,7 @@ end;
 
 function SplitString(sSource: string; sSplitters: array of string; var sLeft, sRight: string; out sDelimiterUsed: string; NotIn: array of string; bStartAtRight: boolean = false): boolean; overload;
 var
-  iAT: integer;
+  iAT: ni;
 begin
   result := false;
 
@@ -1542,7 +1820,7 @@ var
   fs: TFileStream;
   s: UTF8String;
 begin
-  s := data;
+  s := utf8string(data);
 //  outputDebugString(pchar(sFile));
 
 
@@ -2159,6 +2437,10 @@ begin
   result := stringreplace(result, '\', '\\', [rfReplaceAll]);
   result := stringreplace(result, '"', '\"', [rfReplaceAll]);
   result := stringreplace(result, '''', '\''', [rfReplaceAll]);
+  result := stringreplace(result, #13#10, '\n', [rfReplaceAll]);
+  result := stringreplace(result, #13, '\n', [rfReplaceAll]);
+  result := stringreplace(result, #10, '\n', [rfReplaceAll]);
+
 end;
 
 
@@ -2247,7 +2529,7 @@ end;
 
 
 
-function StartsWith(sMaster: string; sStartsWith: string): boolean;
+function StartsWithNoCase(sMaster: string; sStartsWith: string): boolean;
 var
   sCompare: string;
 begin
@@ -2256,6 +2538,29 @@ begin
   result :=  sCompare = sStartsWith;
 
 end;
+
+function EndsWithNoCase(sMaster: string; sEndsWith: string): boolean;
+var
+  sCompare: string;
+begin
+  if length(sMaster) < length(sEndsWith) then
+    exit(false);
+
+  sEndsWith := lowercase(sEndsWith);
+  sCompare := lowercase(zcopy(sMaster, length(sMaster)-length(sEndsWith), length(sEndsWith)));
+  result :=  sCompare = sEndsWith;
+
+end;
+
+function StartsWithCaseSensitive(sMaster: string; sStartsWith: string): boolean;
+var
+  sCompare: string;
+begin
+  sCompare := zcopy(sMaster, 0,length(sStartsWith));
+  result :=  sCompare = sStartsWith;
+
+end;
+
 
 function StartsWithThenSkip(var sMaster: string; sStartsWith: string): boolean;
 begin
@@ -2266,9 +2571,9 @@ begin
   end;
 end;
 
-function Unquote(s: string): string;
+function Unquote(s: string; quote: string = '"'): string;
 begin
-  if StartsWith(s, '"') then begin
+  if StartsWith(s, quote) then begin
     result := copy(s, 2, length(s)-2); //TODO 5: This should be improved... TRIM spaces
   end else
     result := s;
@@ -2292,7 +2597,7 @@ var
   t: integer;
 begin
   result := '';
-  for t:= 1 to length(s) do begin
+  for t:= low(s) to high(s) do begin
     result := result + inttohex(ord(s[t]), 2);
   end;
 
@@ -2303,8 +2608,8 @@ var
   t: integer;
 begin
   result := '';
-  t:= 1;
-  while t < length(sHexString) do begin
+  t:= low(sHexString);
+  while t <= high(sHexString) do begin
     result := result + chr(strtoint('$'+copy(sHexString, t, 2)));
     inc(t,2);
   end;
@@ -2421,21 +2726,35 @@ begin
 
 end;
 
-function ExtractLinksFromPlainText(s: string): string;
+
+function ExtractLinksFromText(s: string; bonlyHTTPS: boolean=false; endoflink: string = '"'): Iholder<TStringlist>;
 var
   sl: TStringlist;
   t: integer;
+  ssl,ssr: string;
 begin
-  sl := SplitSTringIntoStringList(s);
+  result := stringToStringListH('');
+  sl := StringToStringList(s);
   try
     for t:= sl.count-1 downto 0 do begin
       s := sl[t];
-      if not (zcopy(lowercase(s), 0, length('http://')) = 'http://') then begin
-        sl.delete(t);
+      ssr := s;
+      while SplitString(ssr, 'https://', ssl,ssr) do begin
+        if SplitString(ssr, '"', ssl,ssr) then begin
+          result.o.add('https://'+ssl);
+        end;
+      end;
+
+      if not bOnlyHTTPS then begin
+        ssr := s;
+        while SplitString(ssr, 'http://', ssl,ssr) do begin
+          if SplitString(ssr, '"', ssl,ssr) then begin
+            result.o.add('http://'+ssl);
+          end;
+        end;
       end;
     end;
   finally
-    result := sl.text;
     sl.free;
   end;
 end;
@@ -2453,6 +2772,14 @@ begin
   while SplitSTringNoCase(result, '<style', sBefore,s2) do begin
     splitstring(s2, '/style>', s1,sAfter);
     result := sBefore+' '+sAfter;
+  end;
+end;
+
+function StringListToArray(sl: TStringList): Tarray<string>;
+begin
+  setlength(result,sl.count);
+  for var t:= 0 to sl.count-1 do begin
+    result[t] := sl[t];
   end;
 end;
 
@@ -2544,7 +2871,7 @@ begin
 
 end;
 
-procedure TrimStringListDeleteEmpty(sl: tStringlist);
+procedure TrimStringListDeleteEmpty(sl: TStrings);
 var
   t: integer;
 begin
@@ -2679,7 +3006,28 @@ begin
 
 
 end;
+function StringIsInStringList(s: string; sl: TStringlist): boolean;
+var
+  ss: string;
+begin
+  if StartsWith(s,NEWLINE) then begin
+    ss := trim(s);
+    for var t := 0 to sl.count-1 do begin
+      if Startswith(sl[t],ss) then
+        exit(true);
+    end;
+  end;
+  for var t := 0 to sl.count-1 do begin
+    if zpos(s,sl[t]) >=0 then
+      exit(true);
+  end;
+  exit(false);
+end;
 
+function cEnc(s: string): string;
+begin
+  result := stringreplace(s,'`','``',[rfReplaceAll]);
+end;
 function StrToBool(s: string): boolean;
 begin
   if IsInteger(s) then begin
@@ -2705,6 +3053,9 @@ begin
     if s = '0' then
       result := false
     else
+    if s = '1' then
+      result := true
+    else
     if s = '-1' then
       result := true
     else
@@ -2721,6 +3072,18 @@ function BoolToStrEx(b: boolean; sTrue: string ='TRUE'; sFalse:string = 'FALSE')
 begin
   result := BoolToStr(b, sTrue, sFalse);
 end;
+function BoolToStrAnon(b: boolean; t,f: TFunc<string>) : string;
+begin
+  if b then begin
+    if assigned(t) then
+      exit(t());
+  end else begin
+    if assigned(f) then
+      exit(f());
+  end;
+  exit('');
+end;
+
 
 function BoolToStr(b: boolean; sTrue: string ='TRUE'; sFalse:string = 'FALSE') : string;
 begin
@@ -2814,7 +3177,7 @@ begin
   end;
 end;
 
-function opos(sSubString: string; sString: string;iSTartAt:ni=0): nativeint;overload;
+function opos(sSubString: string; sString: string;iSTartAt:ni=1): nativeint;overload;
 begin
   result := zpos(sSubString, sString, iStartAt-1)+1;
 end;
@@ -2858,13 +3221,34 @@ begin
   result := '';
   if length(sString) = 0 then
     exit;
+  IF iLength <=0 then
+    exit;
   setlength(result, lesserof(iLength, length(sString)-(iStartZeroBased)));
+  IF length(result) <=0 then
+    exit;
   movemem32(@result[low(result)], @sString[((low(sString)+iStartZeroBased))], length(result)*sizeof(char));
 end;
 
 function ocopy(sString: string; iStartOneBased: nativeint; iLength: nativeint): string;
 begin
   result := zcopy(sString, iStartOneBased-1, iLength);
+end;
+
+function UnicodeToHTML(s: string): string;
+begin
+  result := s;
+  result := StringReplace(result, '&', '&amp;', [rfReplaceAll]);
+  result := StringReplace(result, ' ', '&nbsp;', [rfReplaceAll]);
+  result := StringReplace(result, '<', '&lt;', [rfReplaceAll]);
+  result := StringReplace(result, '>', '&gt;', [rfReplaceAll]);
+
+  //this loop is a little bizarre...
+  //string replace only for unicode characters that are actually found in the string
+  for var t := low(s) to high(s) do begin
+    if ord(s[t]) > 127 then begin
+      result := StringReplace(result, s[t], '&#x'+inttohex(ord(s[t]),1)+';',[rfReplaceAll]);
+    end;
+  end;
 end;
 
 function trimcharsfromfront(sString: string; char: string): string;
@@ -3055,7 +3439,8 @@ begin
       130: begin
         VariationName := 'function ExtractLinksFromPlainText(s: string): string;';
         //function ExtractLinksFromPlainText(s: string): string;
-        utresult := ExtractLinksFromPlainText('There is a link http://www.google.com/?wtf=isgoingon#123 somewhere in here.');
+        utresult := 'deprecated';
+//        utresult := ExtractLinksFromPlainText('There is a link http://www.google.com/?wtf=isgoingon#123 somewhere in here.');
 
       end;
       140: begin
@@ -3873,6 +4258,19 @@ begin
 
 end;
 
+function RemoveDoubleSpaces(s: string): string;
+begin
+  result := s;
+  while zpos('  ',result)>=0  do begin
+    result := Stringreplace(result,'  ',' ',[rfReplaceAll]);
+  end;
+end;
+
+function AmazonHEaderTrim(s: string): string;
+begin
+  result := Trim(RemoveDoubleSpaces(s));
+end;
+
 
 function StringListFromNullTerminatedStrings(p: PByte; sz: nativeint): TStringlist;
 var
@@ -3905,7 +4303,7 @@ begin
         setlength(s,st-1);
 {$ENDIF}
         if s <> '' then
-          sl.Add(s);
+          sl.Add(string(s));
 {$IFDEF NEED_FAKE_ANSISTRING}
         s.SetLength(st-1);
 {$ELSE}
@@ -3944,7 +4342,35 @@ begin
 
 end;
 
-function FriendlySizeName(i: int64): string;
+
+function InterpretFriendlySize(s: string): int64;
+begin
+  result := 0;
+  s := trim(s);
+  if s = '' then
+    exit(0);
+
+  var l,r: string;
+  splitstring(s, ' ', l,r);
+  var f := strtofloat(l);
+  if r = '' then
+    exit;
+  if r[STRZ] = 'K' then
+    exit(round(f*1000.0));
+  if r[STRZ] = 'M' then
+    exit(round(f*1000000.0));
+  if r[STRZ] = 'G' then
+    exit(round(f*1000000000.0));
+  if r[STRZ] = 'T' then
+    exit(round(f*1000000000000.0));
+  if r[STRZ] = 'P' then
+    exit(round(f*1000000000000000.0));
+
+
+
+end;
+
+function FriendlySizeName(i: int64; sUnit: string = 'B'): string;
 var
   bNeg: boolean;
 begin
@@ -3953,22 +4379,22 @@ begin
   if bNeg then
     i := 0-i;
 
-  result := inttostr(i)+' Bytes';
+  result := inttostr(i)+' '+sUnit;
   if i >= (QUADRILLION) then begin
-    result := FloatPrecision(i / (QUADRILLION), 3)+' PB';
+    result := FloatPrecision(i / (QUADRILLION), 3)+' P'+sUnit;
   end else
   if i >= (TRILLION) then begin
-    result := FloatPrecision(i / TRILLION, 3)+' TB';
+    result := FloatPrecision(i / TRILLION, 3)+' T'+sUnit;
   end else
   if i >= (BILLION) then begin
-    result := FloatPrecision(i / BILLION, 3)+' GB';
+    result := FloatPrecision(i / BILLION, 3)+' G'+sUnit;
   end else
   if i >= (MILLION) then begin
-    result := FloatPrecision(i / MILLION, 3)+' MB';
+    result := FloatPrecision(i / MILLION, 3)+' M'+sUnit;
     exit;
   end else
   if i >= (1000) then begin
-    result := FloatPrecision(i / 1000, 3)+' KB';
+    result := FloatPrecision(i / 1000, 3)+' K'+sUnit;
   end;
 
 
@@ -3976,11 +4402,39 @@ begin
   if bNeg then
     i := 0-i;
 
+end;
+
+function FriendlyNumber(i: int64; decs: integer = 0; sUnit: string = ''): string;
+var
+  bNeg: boolean;
+begin
+  //PB EB ZB
+  bNeg := i < 0;
+  if bNeg then
+    i := 0-i;
+
+  result := inttostr(i)+' '+sUnit;
+  if i >= (QUADRILLION) then begin
+    result := FloatPrecision(i / (QUADRILLION), decs)+' P'+sUnit;
+  end else
+  if i >= (TRILLION) then begin
+    result := FloatPrecision(i / TRILLION, decs)+' T'+sUnit;
+  end else
+  if i >= (BILLION) then begin
+    result := FloatPrecision(i / BILLION, decs)+' B'+sUnit;
+  end else
+  if i >= (MILLION) then begin
+    result := FloatPrecision(i / MILLION, decs)+' M'+sUnit;
+    exit;
+  end else
+  if i >= (1000) then begin
+    result := FloatPrecision(i / 1000, decs)+' K'+sUnit;
+  end;
 
 
 
-
-
+  if bNeg then
+    i := 0-i;
 
 end;
 
@@ -4025,6 +4479,36 @@ begin
 
 end;
 
+function StringListHas(sl: TStringlist; s: string; bIgnoreCase: boolean): boolean;
+begin
+  for var t := 0 to sl.count-1 do begin
+    if bIgnorecase then
+      if (CompareText(sl[t], s)=0) then
+        exit(true)
+    else
+      if (CompareStr(sl[t], s)=0) then
+        exit(true)
+  end;
+  exit(false);
+end;
+
+function StringListMatchAnyOrder(sl1,sl2: TStringlist; bIgnoreCase: boolean): boolean;
+begin
+  for var t := 0 to sl1.count-1 do begin
+    if not StringListHas(sl2,sl1[t],bIgnoreCase) then
+      exit(false);
+  end;
+
+  for var t := 0 to sl2.count-1 do begin
+    if not StringListHas(sl1,sl2[t],bIgnoreCase) then
+      exit(false);
+  end;
+
+
+  exit(true);
+
+end;
+
 function ParseString_Quick(src: string; sDelimiter: string): TStringlist;overload;
 var
   slTemp, slTemp2, sl: TStringlist;
@@ -4047,7 +4531,10 @@ begin
           s := slTemp[t];
           if SplitString(s, sDelimiter, s1,s2, false, length(s) div 2) then begin
             slTemp2.add(s1);
-            slTemp2.add(s2);
+            if (sDelimiter = #13) and (length(s2) >0) and (s2[low(s2)]=#10) then
+              slTemp2.add(zcopy(s2,1,length(s2)-1))
+            else
+              slTemp2.add(s2);
             bDone := false;
           end else begin
             slTemp2.Add(s1);
@@ -4123,6 +4610,10 @@ begin
 end;
 
 
+function MemoryToHex(p: pointer; l: ni): string;overload;
+begin
+  result := MemoryTostring(p,l);
+end;
 function MemoryToString(p: pointer; l: ni): string;overload;
 var
   s,ss: string;
@@ -4345,6 +4836,13 @@ begin
   result[3] := strtoint(s2);
 end;
 
+function IPToInt32(sIP: string): cardinal;
+begin
+  var byts := IPToBytes(sIP);
+  result := cardinal(byts[3])+(cardinal(byts[2]) shl 8)+(cardinal(byts[1]) shl 16)+(cardinal(byts[0]) shl 24);
+
+end;
+
 function zpos(sSubString: string; sString: string;bIgnoreCase: boolean; iSTartAt:ni=0): nativeint;overload;
 begin
   if bIgnoreCase then
@@ -4475,6 +4973,14 @@ begin
 
 end;
 
+function GetPageNameFromURL(sURL: string): string;
+begin
+  result := '';
+  var slh := ParseStringH(sURL, '/');
+  if slh.o.count > 0 then
+    result := slh.o[slh.o.count-1];
+
+end;
 function AppendURLParam(bStandAlone: boolean; sURLorExistingParams: string; sParam: string): string;
 var
   hasquestion: boolean;
@@ -4504,7 +5010,143 @@ begin
 
 end;
 
+function HTMLDecode(const AStr: String): String;
+var
+  Sp, Rp, Cp, Tp: PChar;
+  S: String;
+  I, Code: Integer;
+begin
+  SetLength(Result, Length(AStr));
+  Sp := PChar(AStr);
+  Rp := PChar(Result);
+  Cp := Sp;
+  try
+    while Sp^ <> #0 do
+    begin
+      case Sp^ of
+        '&': begin
+               Cp := Sp;
+               Inc(Sp);
+               case Sp^ of
+                 'a': if AnsiStrPos(Sp, 'amp;') = Sp then  { do not localize }
+                      begin
+                        Inc(Sp, 3);
+                        Rp^ := '&';
+                      end;
+                 'l',
+                 'g': if (AnsiStrPos(Sp, 'lt;') = Sp) or (AnsiStrPos(Sp, 'gt;') = Sp) then { do not localize }
+                      begin
+                        Cp := Sp;
+                        Inc(Sp, 2);
+                        while (Sp^ <> ';') and (Sp^ <> #0) do
+                          Inc(Sp);
+                        if Cp^ = 'l' then
+                          Rp^ := '<'
+                        else
+                          Rp^ := '>';
+                      end;
+                 'n': if AnsiStrPos(Sp, 'nbsp;') = Sp then  { do not localize }
+                      begin
+                        Inc(Sp, 4);
+                        Rp^ := ' ';
+                      end;
+                 'q': if AnsiStrPos(Sp, 'quot;') = Sp then  { do not localize }
+                      begin
+                        Inc(Sp,4);
+                        Rp^ := '"';
+                      end;
+                 '#': begin
+                        Tp := Sp;
+                        Inc(Tp);
+                        while (Sp^ <> ';') and (Sp^ <> #0) do
+                          Inc(Sp);
+                        SetString(S, Tp, Sp - Tp);
+                        Val(S, I, Code);
+                        Rp^ := Chr((I));
+                      end;
+                 else
+                   Exit;
+               end;
+           end
+      else
+        Rp^ := Sp^;
+      end;
+      Inc(Rp);
+      Inc(Sp);
+    end;
+  except
+  end;
+  SetLength(Result, Rp - PChar(Result));
+end;
+
+function AmpDecode(s: string): string;
+begin
+  result := HTMLDecode(s);
+//  result := TIdURI.URLDecode(s);
+end;
+
+function urlencode(ASrc: string): UTF8String;
+const
+  HexMap: UTF8String = '0123456789ABCDEF';
+
+  function IsSafeChar(ch: Integer): Boolean;
+  begin
+    if (ch >= 48) and (ch <= 57) then Result := True // 0-9
+    else if (ch >= 65) and (ch <= 90) then Result := True // A-Z
+    else if (ch >= 97) and (ch <= 122) then Result := True // a-z
+    else if (ch = 33) then Result := True // !
+    else if (ch >= 39) and (ch <= 42) then Result := True // '()*
+    else if (ch >= 45) and (ch <= 46) then Result := True // -.
+    else if (ch = 95) then Result := True // _
+    else if (ch = 126) then Result := True // ~
+    else Result := False;
+  end;
+var
+  I, J: Integer;
+  ASrcUTF8: UTF8String;
+begin
+  Result := '';    {Do not Localize}
+
+  ASrcUTF8 := UTF8Encode(ASrc);
+  // UTF8Encode call not strictly necessary but
+  // prevents implicit conversion warning
+
+  I := low(ASrcUTF8); J := low(ASrcUTF8);
+  SetLength(Result, Length(ASrcUTF8) * 3); // space to %xx encode every byte
+  while I <= high(ASrcUTF8) do
+  begin
+    if IsSafeChar(Ord(ASrcUTF8[I])) then
+    begin
+      Result[J] := ASrcUTF8[I];
+      Inc(J);
+    end
+    else
+    begin
+      Result[J] := '%';
+      Result[J+1] := HexMap[(Ord(ASrcUTF8[I]) shr 4) + 1];
+      Result[J+2] := HexMap[(Ord(ASrcUTF8[I]) and 15) + 1];
+      Inc(J,3);
+    end;
+    Inc(I);
+  end;
+
+  SetLength(Result, J-low(result));
+end;
+function filenameencode(s: string): string;
+begin
+  result := urlencode(s);
+  result := stringreplace(result,':',' ',[rfReplaceAll]);
+  result := stringreplace(result,'/',' ',[rfReplaceAll]);
+  result := stringreplace(result,'\',' ',[rfReplaceAll]);
+  result := stringreplace(result,'?',' ',[rfReplaceAll]);
+end;
+
 function AmpEncode(s: string): string;
+{$IFNDEF OLD}
+begin
+  result := HTTPUtil.HTMLEscape(s);
+end;
+{$ELSE}
 var
   sEscapeChar: string;
   t: ni;
@@ -4551,15 +5193,25 @@ begin
 
 
 end;
+{$ENDIF}
 
 
 function AOR(sBase, sDelimit, sAppend: string): string;
 begin
-  result := AppendOrReplace(sBase, sDelimit, sAppend);
+  result := AppendOrReplace(sBase, sDelimit, sAppend, false);
 end;
 
-function AppendOrReplace(sBase, sDelimit, sAppend: string): string;
+function AORifSet(sBase, sDelimit, sAppend: string): string;inline;
 begin
+  result := AppendOrReplace(sBase, sDelimit, sAppend, true);
+end;
+
+
+function AppendOrReplace(sBase, sDelimit, sAppend: string; bDelimitOnlyIfAppendSet: boolean = false): string;
+begin
+  if sAppend = '' then
+    exit(sBase);//if nothing to append, then don't delimit
+
   if sBase = '' then
     result := sAppend
   else
@@ -4625,6 +5277,10 @@ begin
   movemem32(@result[STRZ], @b[0], length(b));
 {$ENDIF}
 
+end;
+function BytesToString(b: TArray<byte>): string;
+begin
+  result := TEncoding.UTF8.Getstring(b);
 end;
 
 function InterpretInterval(sTimeRepresentation: string; defaultIfblank: double): double;
@@ -4790,6 +5446,270 @@ begin
 end;
 {$ENDIF}
 
+
+function SimpleOb(s: string): string;
+begin
+  result := s;
+  for var t:= low(s) to high(s) do begin
+    var c := ord(s[t]);
+    result[t] := char(c xor 1);
+  end;
+end;
+
+function DifferentOb(s: string): string;
+begin
+  result := s;
+  for var t:= low(s) to high(s) do begin
+    var c := ord(s[t]);
+    result[t] := char(c xor 2);
+  end;
+end;
+
+
+function GetUnescapedLength(s: string; sEsc: string = '`'): ni;
+begin
+  result := 0;
+  var slh := ParseStringH(s, '`');
+  for var t := 0 to slh.o.count-1 do begin
+    if (t and 1) <> 0 then continue;//skip odd lines
+    inc(result, length(slh.o[t]));
+  end;
+end;
+
+function RichEsc(s: string): string;
+begin
+  result := s;
+  var bHasHigh := false;
+  for var t := low(s) to high(s) do begin
+    if (ord(s[t]) > 127) or ((ord(s[t]) in  [0])) then begin
+      bHasHigh := true;
+      break;
+    end;
+  end;
+
+  if not bHasHigh then exit;
+
+  result := '';
+  for var t := low(s) to high(s) do begin
+    var iord := ord(s[t]);
+    if (iord < 128) and (iOrd > 0) then
+      result := result + s[t]
+    else
+      result := result + '?';//'\u'+inttohex(iord,1)+'?';
+
+
+  end;
+
+end;
+
+
+function ParseIntegerArray(sStringCSV: string): TDynInt64Array;
+
+begin
+  var slh := ParseStringh(sStringCSV, ',');
+
+  var cnt: nativeint := slh.o.count;
+  system.setlength(result, cnt);
+  for var t:= 0 to slh.o.count-1 do begin
+    result[t] := strtoint64(slh.o[t]);
+  end;
+
+end;
+
+function FindZeroEnd(const s: string): string;
+begin
+  result := s;
+  for var t:= low(s) to high(s) do begin
+    if s[t] = #0 then
+      exit(copy(result, strz, t-strz));
+  end;
+end;
+
+function IsIPV6(sAddr: string): boolean;
+begin
+  if zpos(':', sAddr) >=0 then
+    exit(true);
+  exit(false);
+end;
+function ExtractNumbers(s:string; bStopAfterNumberFound: boolean= true): string;
+begin
+  result := '';
+  for var t := low(s) to high(s) do begin
+    var c := s[t];
+    if charinset(c, ['0','1','2','3','4','5','6','7','8','9']) then begin
+      result := result + c;
+    end else
+      if bStopAfterNumberFound and (result <> '') then
+        exit;
+  end;
+end;
+
+function StringToBytes(s: string): TArray<byte>;
+begin
+  result := TEncoding.UTF8.GetBytes(s);
+end;
+
+procedure StringListReplace(sl: TStringlist; sSource, sTarget: string);
+begin
+  for var t:= 0 to sl.count-1 do begin
+    sl[t] := StringReplace(sl[t], sSource, sTarget, [rfReplaceAll, rfIgnoreCase]);
+
+  end;
+end;
+
+function SplitIntoTweets(s: TStrings): IHolder<TStringList>;
+var
+  remainder: string;
+
+  procedure Commit(s: string; bAllowMerge: boolean);
+  begin
+    var merge := bAllowMerge and (result.o.Count>0) and (length(result.o[0]+' '+s) < 170);
+//    Debug.Log('+'+s);
+    if trim(s) <> '' then begin
+      if merge then
+        result.o[result.o.count-1] := result.o[result.o.count-1]+' '+s
+      else
+        result.o.Add(s);
+    end;
+    remainder := '';
+  end;
+begin
+  result := THolder<TStringList>.create(Tstringlist.Create);
+  var output: string := '';
+  for var t:= 0 to s.Count-1 do begin
+    var ph := ParseStringh((s[t]), ' ');
+    var idx := 0;
+//    Debug.Log(s[t]);
+    var first := true;
+    while true do begin
+      if ph.o.Count < 1 then break;
+
+      var proposed_line := remainder+' '+ph.o[idx];
+
+      if (length(proposed_line) > 170) or ((remainder<>'') and (remainder[high(remainder)] = '.')) then begin
+        if remainder <> '' then
+          Commit(remainder, not first);
+        first := false;
+      end;
+
+      remainder := AOR(remainder, ' ', ph.o[idx]);
+      inc(idx);
+
+      if idx= ph.o.Count then begin
+        break;
+      end;
+
+    end;
+
+    if remainder <> '' then begin
+      Commit(remainder, true);
+      remainder := '';
+    end;
+
+
+  end;
+end;
+
+function StripUnicode(s: string): string;
+begin
+  result := '';
+  for var t := low(s) to high(s) do begin
+    if ord(s[t]) < 256 then
+      result := result + s[t];
+  end;
+end;
+
+function CalcLevenshteins(Word1: string; sl: TStringlist): TArray<TWordScore>;
+begin
+  system.setlength(result, sl.Count);
+  for var t := 0 to high(result) do begin
+    var w := sl[t];
+    result[t].word := w;
+    var s := CalcLevenshtein(Word1,w);
+    result[t].score := s;
+  end;
+
+
+
+
+end;
+function CalcLevenshtein(Word1, Word2: String): nativeint;
+var lev : array of array of nativeint;
+    i,j : nativeint;
+begin
+   // Word1 := LowerCase(Word1);
+   // Word2 := LowerCase(Word2);
+
+  // If the words are identical, do nothing
+  if Word1 = Word2 then
+  begin
+    result := 0;
+    exit;
+  end;
+
+  system.SetLength(lev, length(Word1) + 1);
+  for i := low(lev) to high(lev) do
+    system.setLength(lev[i], length(Word2) + 1);
+
+  for i := low(lev) to high(lev) do lev[i][0] := i;
+  for j := low(lev[low(lev)]) to high(lev[low(lev)]) do lev[0][j] := j;
+
+  for i := low(lev)+1 to high(lev) do
+    for j := low(lev[i])+1 to high(lev[i]) do
+      lev[i][j] := min(min(lev[i-1][j] + 1,lev[i][j-1] + 1)
+                      ,lev[i-1][j-1] + ifthen(Word1[i] = Word2[j], 0, 1));
+
+  result := lev[length(word1)][length(word2)];
+end;
+
+function CountOverlapingStrings(a,b: Tarray<string>):ni;
+begin
+  result := 0;
+  for var aa :=0 to high(a) do begin
+    for var bb :=0 to high(b) do begin
+      if 0=CompareText(a[aa],b[bb]) then
+        inc(result);
+    end;
+  end;
+
+
+
+end;
+function CountSimilarStrings(a,b: Tarray<string>; lev_ratio:double=0.1):ni;
+begin
+  result := 0;
+  for var aa :=0 to high(a) do begin
+    for var bb :=0 to high(b) do begin
+      if length(a[aa]) = 0 then continue;
+      var lev := CalcLevenshtein(lowercase(a[aa]),lowercase(b[bb]));
+      if (lev/length(a[aa])) < lev_ratio then
+        inc(result);
+    end;
+  end;
+end;
+function FriendlyTime(tm: TDateTime): string;
+begin
+  if (tm > 365.0) then begin
+    result := floatprecision(tm,1)+'y';
+  end else
+  if (tm > 30.0) then begin
+    result := floatprecision(tm,1)+'mo';
+  end else
+  if (tm > 1.0) then begin
+    result := floatprecision(tm,1)+'d';
+  end else
+  if (tm > (1/24)) then begin
+    result := floatprecision(tm*24,1)+'h';
+  end else
+  if (tm > (1/(24*60))) then begin
+    result := floatprecision(tm*24*60,1)+'m';
+  end;
+
+
+
+
+
+end;
 
 
 initialization

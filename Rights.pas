@@ -4,11 +4,11 @@ interface
 
 uses RequestInfo, MTDTInterface, Dataobject, sysutils, windows, rightsClasses;
 
-function UserHasRight(rqInfo: TRequestInfo; sRight: ansistring): boolean;
-function CurrentUserHasRight(rqInfo: TRequestInfo; sRight: ansistring): boolean;
+function UserHasRight(rqInfo: TRequestInfo; sRight: string): boolean;
+function CurrentUserHasRight(rqInfo: TRequestInfo; sRight: string): boolean;
 
-function RightsDispatch(rqInfo: TRequestInfo; sRight: ansistring; out right: PRight): boolean;
-function RoleHasRight(rqInfo: TRequestInfo; sRight: ansistring; iRoleID: integer): boolean;
+function RightsDispatch(rqInfo: TRequestInfo; sRight: string; out right: PRight): boolean;
+function RoleHasRight(rqInfo: TRequestInfo; sRight: string; iRoleID: integer): boolean;
 
 
 
@@ -17,12 +17,12 @@ implementation
 
 
 //------------------------------------------------------------------------------
-function UserHasRight(rqInfo: TRequestInfo; sRight: ansistring): boolean;
+function UserHasRight(rqInfo: TRequestInfo; sRight: string): boolean;
 begin
   raise Exception.create('Unimplemented');
 end;
 //------------------------------------------------------------------------------
-function RoleHasRight(rqInfo: TRequestInfo; sRight: ansistring; iRoleID: integer): boolean;
+function RoleHasRight(rqInfo: TRequestInfo; sRight: string; iRoleID: integer): boolean;
 var
   doRight: TDataObject;
   right: PRight;
@@ -50,14 +50,17 @@ begin
 
 end;
 
-function CurrentUserHasRight(rqInfo: TRequestInfo; sRight: ansistring): boolean;
+function CurrentUserHasRight(rqInfo: TRequestInfo; sRight: string): boolean;
 var
   doRight: TDataObject;
   right: PRight;
   iRoleID: integer;
 begin
 //  doRight := LazyQuery(rqInfo, 'SELECT * Role where roleid='+inttostr(iRoleID), false);
-  iRoleID := QuickSession(rQInfo).assoc['user']['roleid'].AsVariant;
+  var sess := QuickSession(rQInfo);
+  if sess = nil then
+    exit(false);
+  iRoleID := sess.assoc['user']['roleid'].AsVariant;
   doRight := LazyQueryMap(rqInfo, 'SELECT * from Role where roleid='+inttostr(iRoleID),'TdoRole',  iroleID);
 
   if RightsDispatch(rqINfo, sRight, right) then begin
@@ -78,24 +81,9 @@ begin
     result := false;
   end;
 
-  if rqInfo.Request.HasParam('CH') then begin
-    if uppercase(sRight) = 'SYS_XML_CW_VIEW' then begin
-      result := true;
-      exit;
-    end;
-    if uppercase(sRight) = 'SYS_XML_CW_INSTALL' then begin
-      result := true;
-      exit;
-    end;
-    if uppercase(sRight) = 'SYS_XML_CW_DELETE' then begin
-      result := true;
-      exit;
-    end;
-  end;
-
 end;
 
-function RightsDispatch(rqInfo: TRequestInfo; sRight: ansistring; out right: PRight): boolean;
+function RightsDispatch(rqInfo: TRequestInfo; sRight: string; out right: PRight): boolean;
 begin
   right := FindRight(sRight);
   result := right <> nil;

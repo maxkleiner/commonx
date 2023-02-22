@@ -3,7 +3,7 @@ unit zx_firmware;
 interface
 
 uses
-  typex, systemx, simpleabstractconnection, stringx, sharedobject, classes, tickcount, datahandler, hexconvert, beeper, speech, debug, sysutils, endian, numbers, Compressor_Simple;
+  typex, systemx, simpleabstractconnection, stringx, sharedobject, classes, tickcount, datahandler, hexconvert, beeper, speech, debug, sysutils, endian, numbers, Compressor_Simple, betterobject;
 
 type
   TZXFirmwareHandler = class(TSharedObject)
@@ -144,7 +144,7 @@ begin
     FirmWareUpdateMode := false;
     beeper.beepchord([100,90,144], 500, 50, 400);
     FirmwareResult := 'Timed out, messages from device ceased.';
-    SayNatural('Firmware update Timed Out');
+//    SayNatural('Firmware update Timed Out');
   end;
 
   IF GetTimeSince(LastStatUpdate) >= 1000 then begin
@@ -269,7 +269,7 @@ begin
     end;
     $54: begin
       conn.GuaranteeReadData(@b, 1);
-      SayNatural('Firmware update complete code '+inttostr(b));
+//      SayNatural('Firmware update complete code '+inttostr(b));
       if FirmwareUpdateMode then
         beeper.beepchord([300,600,900], 1000, 300, 300);
       FirmwareUpdateMode := false;

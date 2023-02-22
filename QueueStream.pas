@@ -1,11 +1,18 @@
 unit QueueStream;
 interface
+
+{x$DEFINE LLQC}  //LOW-Latency Queue Completion
+
 {x$DEFINE HOLD}
+{x$DEFINE USE_UBTREE}
 {$IFDEF MSWINDOWS}
+{$DEFINE UB_STATS}
 {$DEFINE PACKED_MASK}
-{x$DEFINE CHECK_FLUSH_OFTEN}//<<-----probably slows down fast disks...okay for USBS
+{x$DEFINE CHECK_FLUSH_OFTEN}//<<-----probably slows down fast disks...okay for USBs
+{$DEFINE READ_BEFORE_WRITE}
 {$DEFINE READ_PRIORITY_CODE_2020}
-{$DEFINE BULK_READ_BEFORE_FLUSH}//<<---maybe for USBs...
+{$DEFINE BULK_READ_BEFORE_FLUSH}//<<---maybe for USBs... off for ssds
+{$DEFINE BULK_READ_AUTO_STAT}
 {x$DEFINE LIMIT_FREQUENCY_OF_CHECK_FLUSH}
 //!!!!WINDOWS ONLY FOR NOW!!!!
 
@@ -68,16 +75,17 @@ interface
 {x$DEFINE ALERT_WRITE}
 {x$DEFINE LOCK_UNDER_INSTEAD_OF_BACK}
 
-{$DEFINE CHECK_SIZE_BEFORE_READ}
+{x$DEFINE CHECK_SIZE_BEFORE_READ}
 {$DEFINE ALLOW_UB_SIDE_FETCH}//yes, tries prefetches n stuff
 {$DEFINE MINIMAL_UB_PREFETCH}
 {$DEFINE ALLOW_UB_WRITE_BEHIND}//yes, flush-behind keeps the pipes clean
 
 {x$DEFINE ALLOW_SIDEFETCH_REQUEUE}
 {$DEFINE USE_PERIODIC_QUEUE}
-{$DEFINE READ_BEFORE_WRITE}
 {$DEFINE DO_NOT_COMBINE_WRITES}//????crash if combination is enabled
-{$DEFINE USE_UNBUFFERED}
+{$IFNDEF PROJ_DISABLE_UNBUFFERED}
+  {$DEFINE USE_UNBUFFERED}
+{$ENDIF}
 {$DEFINE ALLOW_UNBUFFERED_FLAG}
 {$DEFINE USE_LINKED_BUFFERS}
 {x$DEFINE ALLOW_SYNCHRONOUS_READS}//if enabled, reads can potentially be handled in calling thread, so you're relying more of prefetches to bring things into memory
@@ -91,14 +99,16 @@ interface
 
 {x$DEFINE BAD_USES}
 uses
-  tickcount, writebuilder, ringstats, globaltrap, fileproxy,AnonCommand, globalmultiqueue, perfmessage, perfmessageclient,
+  tickcount, writebuilder, ringstats, globaltrap, fileproxy,AnonCommand, globalmultiqueue, perfmessage, perfmessageclient, btree,
 {$IF Defined(MSWINDOWS)}
   windows,
   windowsx,
 {$ENDIF}
+  remotepayloadstream,
   betterobject, multibufferstream, SimpleQueue, sharedobject, typex, classes, sysutils, managedthread, numbers,debug, betterfilestream, collision, systemx, periodicevents, commandprocessor, commands_system, linked_list;
 
 const
+  PREFETCH_ALLOWANCE_CREEP = 0.01;
   //ALLOCATION_UNIT_SIZE = 4096;
 //  L0_CACHE_SIZE:int64 = int64(262144);
 //  L0_CACHES:int64 = 256;
@@ -132,12 +142,19 @@ const
   {$ELSE}
 //  UNBUFFERSIZE = int64(262144);//<<<<--CHANGE TOGETHER!
 //  UNBUFFERSHIFT = int64(18);//<<<<<<--------^
-
+{x$DEFINE UNBUFFER_RANDOM_OPT}
+{$IFDEF UNBUFFER_RANDOM_OPT}
+  UNBUFFERSIZE = int64(65536);//<<<<--CHANGE TOGETHER!  MUST BE MULTIPLE OF 64... 8 for bits in byte mask and 8 for 8byte int64-optimized array checks
+  UNBUFFERSHIFT = int64(16);//<<<<<<--------^
+  UNBUFFERMASK: Uint64 = int64(UNBUFFERSIZE)-int64(1);
+  UNBUFFERED_BUFFERED_PARTS = 514*4*4;//514;//514;//!! SHoULD EQUAL BIG BLOCK SIZE{$IFDEF UNBUFFER_RANDOM_OPT}
+{$ELSE}
   UNBUFFERSIZE = int64(262144);//<<<<--CHANGE TOGETHER!  MUST BE MULTIPLE OF 64... 8 for bits in byte mask and 8 for 8byte int64-optimized array checks
   UNBUFFERSHIFT = int64(18);//<<<<<<--------^
 
   UNBUFFERMASK: Uint64 = int64(UNBUFFERSIZE)-int64(1);
-  UNBUFFERED_BUFFERED_PARTS = 514;//514;//514;//!! SHoULD EQUAL BIG BLOCK SIZE
+  UNBUFFERED_BUFFERED_PARTS = 514;//514;//514;//514;//!! SHoULD EQUAL BIG BLOCK SIZE plus a couple
+{$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
@@ -160,8 +177,10 @@ type
 
   TStreamQueue = class(TSimpleQUeue)
   private
+{$IFDEF READ_BEFORE_WRITE}
     function ItemHasOverlaps(itm: TQueueStreamItem): TQueueStreamItem;
     procedure PrioritizeOverlapping(itm: TQueueStreamItem);
+{$ENDIF READ_BEFORE_WRITE}
 
   protected
     potentiallyHasReads: boolean;
@@ -186,6 +205,7 @@ type
 
 
   end;
+
 
 
   TQueueStreamItem = class(TQueueItem)
@@ -238,7 +258,7 @@ type
   end;
   TReadCommand = class(TQueueStreamItem)
   private
-    FPOinter: pbyte;
+    FPointer: pbyte;
     FResult: int64;
     procedure SEtAddr(const Value: int64);inline;
   public
@@ -280,7 +300,7 @@ type
     function GEtSize: int64;virtual;
     procedure SetSize(const Value: int64);virtual;
     procedure ReadInitialSize;virtual;
-    procedure RefreshQueueStats;
+    procedure RefreshQueueStats;inline;
   public
     phIO: TPerfHandle;
     phQueue: TPerfHandle;
@@ -300,8 +320,8 @@ type
 
     procedure BeginWrite(const addr: int64; const pointer: pbyte; const size: int64);
     procedure BeginWriteZeros(const addr: int64; const size: int64);
-    function BeginRead(const addr: int64; const pointer: pbyte; const size: int64; bDisallowSynchronous: boolean; bForget: boolean = false): TReadCommand;inline;
-    function EndRead(qi: TREadCommand): int64;inline;
+    function BeginRead(const addr: int64; const pointer: pbyte; const size: int64; bDisallowSynchronous: boolean; bForget: boolean = false; iReadExtra: ni = 0): TReadCommand;inline;
+    function EndRead(const qi: TREadCommand): int64;inline;
     property Size: int64 read GEtSize write SetSize;
 
     function TryEnd(qi: TQueueItem): boolean;
@@ -324,6 +344,7 @@ type
     FDisableLookAhead: boolean;
     FDisableMinimumPrefetch: boolean;
     FFLags: cardinal;
+    FRemotePayload: boolean;
     procedure SetFileName(const Value: string);
   protected
     function CreateAndConfigureUnderclasses(sFile: string): TStream;virtual;
@@ -347,7 +368,7 @@ type
   private
     FPosition: int64;
     PerformanceHints: TPerformanceHints;
-    procedure AdaptiveRead(p: pbyte; iSize: int64);inline;
+    procedure AdaptiveRead(const p: pbyte; const iSize: int64);inline;
   public
     constructor Create(const AFileName: string; Mode: cardinal; Rights:cardinal; Flags: cardinal);reintroduce;overload;virtual;
     constructor Create(const AFileName: string; Mode: cardinal);reintroduce;overload;virtual;
@@ -355,8 +376,8 @@ type
 
 
     property Position: int64 read FPosition write FPosition;
-    function Seek(iPos: int64; origin: TseekOrigin): int64;overload;inline;
-    function Seek(iPOs: int64; origin: int64): int64;overload;inline;
+    function Seek(const iPos: int64; const origin: TseekOrigin): int64;overload;inline;
+    function Seek(const iPOs: int64; const origin: int64): int64;overload;inline;
     procedure AdaptiveWrite(p: Pbyte; iSize: int64);inline;
     function BeginAdaptiveRead(p: pbyte; iSize: int64;bDisallowSynchronous: boolean; bForget: boolean = false): TReadCommand;inline;
     function EndAdaptiveRead(qi: TReadCommand): int64;inline;
@@ -431,14 +452,14 @@ type
     procedure FirstInit;
     procedure Init;
     procedure Finalize;
-    procedure ClearDirtyMask;
+    procedure ClearDirtyMask;inline;
     function AllDirty: boolean;inline;
     function AnyDirty: boolean;inline;
     function ClusterIsDirty(iClusterOff: ni): TDirtiness;
-    function ByteDirtyMask(iOFF: ni): byte;
-    function ByteIsDirty(iOFF: ni): boolean;
+    function ByteDirtyMask(iOFF: ni): byte;inline;
+    function ByteIsDirty(iOFF: ni): boolean;inline;
     procedure SetDirty(offset, cnt: ni);overload;inline;
-    procedure SetAllDirty;
+    procedure SetAllDirty;inline;
     function SetDirty(offset: ni): boolean;overload;inline;
 
 
@@ -453,9 +474,12 @@ type
   end;
   PUnbuffer = ^TunBuffer;
 
+  TUBTreeItem = class;//forward
+
   TUnbufferObj = class(TBetterObject)
   public
     buf: PUnbuffer;
+    ti: TUBTreeItem;
   end;
 
   TUnBufferList = TDirectlyLinkedList<TUnbufferObj>;
@@ -495,15 +519,32 @@ type
     sz: ni;
     seekpos: int64;
   public
-    procedure Assign(seekpos: int64; pb: Pbyte; sz: ni);
+    procedure Assign(seekpos: int64; pb: Pbyte; sz: ni);inline;
     destructor Destroy;override;
     procedure Doop;override;
   end;
 
+  TUBTreeItem = class(TBTreeItem)
+  public
+    buf: TUnbufferObj;
+    procedure Copy(const [unsafe] ACopyTo:TBTreeItem); override;
+
+    function Compare(const [unsafe] ACompareTo:TBTreeItem):ni; override;
+      // a < self :-1  a=self :0  a > self :+1
+
+
+  end;
+  TUBTree = class(TBTree)
+  public
+  end;
+
+
+
   TUBWriteBehindZeros = class(TUBOp)
   strict
   private
-    procedure SetSz(const Value: ni); protected
+    procedure SetSz(const Value: ni);inline;
+  protected
     Fsz: ni;
     seekpos: int64;
   public
@@ -523,11 +564,12 @@ type
     FBuffers: array[0..LASTPAGE] of TUnbuffer;
 {$IFDEF USE_LINKED_BUFFERS}
     FBufferOrders: TUnBufferLIst;
+    FBuffersByPAgeNumber: TUBTree;
     //todo 1: create buffers
     //todo 1: destroy buffers
     //todo 1: create buffer list
     //todo 1: destroy buffer list
-    //todo 1: update the method for reordering buffers upon use
+    //todo 1: update the method for reordering buffers upon us
 {$ELSE}
     FBufferOrders: array[0..LASTPAGE] of PUnbuffer;
 {$ENDIF}
@@ -552,19 +594,25 @@ type
 {$ELSE}
     procedure bringtofront(iBufNum: ni);inline;
 {$ENDIF}
+    function HasPage_Optimal(iPage: int64): boolean;
     function FindPage(iPage: int64): PUnbuffer;
     procedure FlushPageBruteForce(buf: PUnBuffer; iRecursions: ni=0);
     procedure PreparePageForFlush(buf: PUnBuffer; iRecursions: ni=0);
     procedure FlushPage(buf: PUnBuffer; iRecursions: ni=0);inline;
-    procedure FetchPage(const iPage: int64; const buf: PUnbuffer; const stage: TFetchBufferStage = fbInitial; alt_buf: PByte = nil);//
-    procedure SeekPage(const iPage: int64; bForEof: boolean = false);//inline;//
+    procedure FetchPage(const neededoffset: int64; const neededbytes: int64; const iPage: int64; const buf: PUnbuffer; const stage: TFetchBufferStage = fbInitial; alt_buf: PByte = nil);//
+    procedure SeekPage(const iPage: int64; bForEof: boolean = false);inline;//
     procedure WriteEOF();inline;
     procedure FetchPageAndApplyMask(buf: PUnbuffer);inline;//
     procedure OnUnbufferThreadxExecute(thr: Tmanagedthread);//
     function IndexOfPage(iPage: int64): ni;//
     procedure DebugPAges;
+
 {$IFDEF USE_LINKED_BUFFERS}
+   {$IFDEF USE_UBTREE}
+    function FindPageObj(iPage: int64): TUBTreeItem;
+   {$ELSE}
     function FindPageObj(iPage: int64): TUnbufferObj;//
+   {$ENDIF}
 {$ENDIF}
 
     procedure CheckOrStartFlushCommand;
@@ -582,6 +630,7 @@ type
     procedure DecDirtyCount;
     procedure IncDirtyCount;
     function CountDirtyBuffers_Slow: ni;
+    function HasAnyPageRange(iPage, iCount: int64): boolean;
   protected
     scratch1, scratch2: array[0..511] of byte;
     writebuilder: TWriteBuilder;
@@ -591,13 +640,15 @@ type
     function FindLowestWriteThrough: PUnbuffer;//
     function FindWriteThroughPage(iPageNumber: int64): PUnbuffer;//
     procedure OptimalFlush;//
-    procedure FlushWithoutRead(buf: PUnbuffer);//
+    procedure FlushWithoutRead(const buf: PUnbuffer);//
     procedure RefreshDirtyStats;
+    function ReadLLQC(qi: TReadCommand): int64;
   public
     phIO: TPerfHandle;
     phCache: TPerfhandle;
     phUnder: TPerfHandle;
     warnings: ni;
+    doBulkRead: boolean;
     opsIn, OpsPerformed: ni;
     sfthread: TUnbufferedSideFetchThread;
     upperqueue: TSimpleQueue;
@@ -613,14 +664,16 @@ type
     opcount: ni;
     debugme: boolean;
     lastuse: ticker;
+    lastphysicalaccess: ticker;
     rsPrefetchInterruption: TRingSTats;
     UseBackSeek: boolean;
-    FREcommendedPrefetchAllowance: ni;
+    FREcommendedPrefetchAllowance: single;
     UpStreamHints: PPerformancehints;
 
 //    EnableDirtyDebug: boolean;
     //property FlexSeek: int64 read GetFlexSeek write SetFlexSeek;
     procedure CheckFlush;
+    procedure KeepAlive;
     function GetLowestExpiredPage: PUnbuffer;
     function GetLowestUnfetchedExpiredPage: PUnbuffer;
     constructor Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal);override;
@@ -630,11 +683,11 @@ type
     function Write(const Buffer; Count: Longint): Longint; override;//
     function Seek(const offset: int64; Origin: TSeekOrigin): int64; override;//
 
-    procedure GuaranteeSyncWrite(pb: Pbyte; count: ni; bZeroFlag: boolean = false);//
-    procedure GuaranteeSyncread(pb: Pbyte; count: ni);//
+    procedure GuaranteeSyncWrite(const pb: Pbyte; const count: ni; const bZeroFlag: boolean = false);//
+    procedure GuaranteeSyncread(const pb: Pbyte; const count: ni);//
 
     procedure SyncWriteZeros(sz: ni);//
-    function SyncRead(var Buffer; Count: Longint): Longint;inline;//
+    function SyncRead(var Buffer; const Count: Longint): Longint;inline;//
     procedure EnterIdleState;
     procedure EnterActiveState;
     function SyncWrite(const Buffer; Count: Longint; bZeroFlag: boolean = false): Longint;inline;//
@@ -651,7 +704,7 @@ type
     procedure FlushAll;//
     function SmartSideFetch(EXTQueue: TAbstractSimpleQueue): boolean;//
     property PrefetchBytePos: int64 read GEtPrefetchbytepos write SetPrefetchBytePos;//
-    function PrePareAndLockPAge(iPAge: int64; bNeedREad: boolean; bForEof: boolean = false): TUnbufferobj;//
+    function PrePareAndLockPAge(const startoffset, neededbytes: int64; iPAge: int64; bNeedREad: boolean; bForEof: boolean = false): TUnbufferobj;//
     function PerformOp: boolean;//
     procedure PerformAllOps; inline;//
     procedure PerformOps_FallingBehind; inline;//
@@ -679,17 +732,18 @@ type
 //var
 //  g_alarm: boolean;
 var
-  G_ub_QUEUE_DEPTH :ni = 3000;
+  G_ub_QUEUE_DEPTH :ni = 256;
   g_FORCE_UB_PREFETCH : ni = 3;
   g_USE_OPTIMAL_FLUSH: boolean = false;
   FLUSH_TIME_LIMIT : nativeint = 23;
+  UB_DIRTY_TIME_LIMIT : nativeint = 4000;
   balancer: TCLXCriticalSection;
 
 
-{$ENDIF}
 
 procedure Balance;
 
+{$ENDIF}
 
 implementation
 
@@ -717,7 +771,7 @@ begin
 end;
 
 function TQueueStream.BeginRead(const addr: int64; const pointer: pbyte;
-  const size: int64; bDisallowSynchronous: boolean; bForget: boolean): TReadCommand;
+  const size: int64; bDisallowSynchronous: boolean; bForget: boolean; iReadExtra: ni): TReadCommand;
 var
   rq: TReadCommand;
 begin
@@ -737,11 +791,28 @@ begin
     rq.Ptr := pointer;
 {$IFDEF ALLOW_SYNCHRONOUS_READS}
     rq.allowSynchronous := not bDisallowSynchronous;
+{$ELSE}
+    rq.allowSynchronous := false;
 {$ENDIF}
     result := rq;
     result.AutoDestroy := bForget;
+{$IFDEF QUEUE_BEHIND}
+    globalmultiqueue.QueueBehind(FQueue, rq);
+{$ELSE}
     FQueue.AddItem(rq);
+{$ENDIF}
     RefreshQueueStats;
+
+    if iReadExtra > 0 then
+    begin
+      var sz := self.FTrackedSize;
+      var readaheadpoint: int64 := int64(UNBUFFERSIZE)+((int64(addr+size)) and int64(not int64(UNBUFFERMASK)));
+      var READ_AHEAD_SIZE: int64 := UNBUFFERSIZE;
+      if readaheadpoint + READ_AHEAD_SIZE < sz then
+        BeginRead(readaheadpoint, nil, READ_AHEAD_SIZE, true, true, 0);
+    end;
+
+
 
 //  end;
   FQueue.urgent := true;
@@ -774,7 +845,12 @@ begin
     wq.Count := size;
     wq.Ptr := pointer;
     wq.AutoDestroy := true;
+{$IFDEF QUEUE_BEHIND}
+    globalmultiqueue.QueueBehind(FQueue, wq);
+{$ELSE}
     FQueue.AddItem(wq);
+{$ENDIF}
+
     FTrackedSize := GreaterOf(wq.Addr+wq.count, FTrackedSize);
     if phIO.node <> nil then begin
       phIO.node.incw(size);
@@ -809,7 +885,12 @@ begin
       wzq.Addr := addr;
       wzq.Count := size;
       wzq.AutoDestroy := true;
-      FQueue.AddItem(wzq);
+{$IFDEF QUEUE_BEHIND}
+    globalmultiqueue.QueueBehind(FQueue, wzq);
+{$ELSE}
+    FQueue.AddItem(wzq);
+{$ENDIF}
+
       if phIO.node <> nil then begin
         phIo.node.incw(size);
         RefreshQueueStats;
@@ -869,7 +950,7 @@ begin
   qi.WAitFor;
 end;
 
-function TQueueStream.EndRead(qi: TREadCommand): int64;
+function TQueueStream.EndRead(const qi: TREadCommand): int64;
 begin
   result := 0;
   if qi = nil then exit;
@@ -969,7 +1050,11 @@ begin
   qi.Stream := self;
   qi.NewSize := value;
   qi.AutoDestroy := true;
-  FQueue.addItem(qi);
+{$IFDEF QUEUE_BEHIND}
+    globalmultiqueue.QueueBehind(FQueue, qi);
+{$ELSE}
+    FQueue.AddItem(qi);
+{$ENDIF}
 
   FTrackedSize := value;
 
@@ -1032,7 +1117,12 @@ begin
 //    Debug.Log(self,'After write size is now '+inttohex(fStream.size,0));
   except
     on E: Exception do begin
-      Debug.Log(self,E.Message+' when writing to addr 0x'+inttohex(addr, 0)+' size 0x'+inttohex(self.count,0));
+      while true do begin
+        Debug.Log(self,E.Message+' when writing to addr 0x'+inttohex(addr, 0)+' size 0x'+inttohex(self.count,0));
+        sleep(30000);
+        Debug.Log('system halted to protect data');
+      end;
+
       //raise;
     end;
   end;
@@ -1089,19 +1179,40 @@ end;
 function TQueuedFileSTream.CreateAndConfigureUnderclasses(
   sFile: string): TStream;
 begin
-  result := nil;
-  if not fileexists(FFileName) then begin
-    UnderStream := TFileStreamClass(getunderclass).create(sfile, fmCReate, 0, Flags);
+  FRemotePayload := 0=comparetext(zcopy(sFile, 0, 4),'rps:');
+  if FRemotePayload then begin
+    InitPerfHandle;
+    var sHost: string;
+    var sPort: string;
+    SplitString(sFile, ':', sFile, sHost);
+    SplitString(sHost, ':', sHost, sPort);
+    if sPort = '' then
+      sPort := '6666';
+
+    var rps := TRemotePayloadStream.create(sHost, strtoint64(sPort));
+    rps.phIO.desc.left := self.phIO.id;
+    rps.phIO.desc.desc := sHost+':'+sPort;
+    UnderStream := rps;
+    result := rps;
+
+  end else begin
+    result := nil;
+    if not fileexists(FFileName) then begin
+      UnderStream := TFileStreamClass(getunderclass).create(sfile, fmCReate, 0, Flags);
+      result := understream;
+      UnderStream.free;
+      UnderStream := nil;
+    end;
+
+    //Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal)
+    underStream := TFileStreamClass(getunderclass).Create(sFile, self.OpenMode, cardinal(0), cardinal(Flags));
+    Self.FQueue.Name := FQueue.classname+' for '+self.ClassNAme+' '+sFile;
+    configureUnderclass;
     result := understream;
-    UnderStream.free;
-    UnderStream := nil;
   end;
 
 
-  //Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal)
-  underStream := TFileStreamClass(getunderclass).Create(sFile, self.OpenMode, cardinal(0), cardinal(Flags));
-  Self.FQueue.Name := FQueue.classname+' for '+self.ClassNAme+' '+sFile;
-  configureUnderclass;
+
 
 end;
 
@@ -1120,11 +1231,15 @@ function TQueuedFileSTream.GetUnderClass: TStreamClass;
 begin
   InitPerfHandle;
 
-{$IFDEF USE_UNBUFFERED}
-  result := TUnbufferedFileStream;
-{$ELSE}
-  result := TFileStreamWithVirtualConstructors;
-{$ENDIF}
+  if FRemotePayload then begin
+    result := TRemotePAyloadStream;
+  end else begin
+  {$IFDEF USE_UNBUFFERED}
+    result := TUnbufferedFileStream;
+  {$ELSE}
+    result := TFileStreamWithVirtualConstructors;
+  {$ENDIF}
+  end;
 end;
 
 procedure TQueuedFileSTream.GrowFile(iSize: int64);
@@ -1140,7 +1255,11 @@ begin
     wz.Addr := size;
     wz.Count := iFill;
     wz.AutoDestroy := true;
+{$IFDEF QUEUE_BEHIND}
+    globalmultiqueue.QueueBehind(FQueue, wz);
+{$ELSE}
     FQueue.AddItem(wz);
+{$ENDIF}
   end;
 
 
@@ -1180,14 +1299,23 @@ begin
 end;
 
 procedure TReadCommand.DoExecute;
-var
-  sf: TSideFetchCommand;
 begin
   inherited;
+{$IFDEF LLQC}
+  if FStream.UnderStream is TUnbufferedFileStream then begin
+    self.result := TUnbufferedFileStream(FStream.UnderStream).ReadLLQC(self);
+    Fstream.phIO.node.incr(result);
+    FStream.RefreshQueueStats;
+  end else
+    NotImplemented('LLQC only implemented for TUnbufferedFileStream');
+
+{$ELSE}
 //  debug.consolelog('read start');
   FStream.UnderStream.Seek(Addr, soBeginning);
 
   result := STream_GuaranteeRead(FStream.UnderStream, self.Ptr, self.Count);
+//  if result = 1 then
+//    Debug.log('1');
   Fstream.phIO.node.incr(result);
   FStream.RefreshQueueStats;
 
@@ -1196,17 +1324,19 @@ begin
   Debug.Log(self, 'read @'+inttohex(Addr,1));
 {$ENDIF}
 
+{$ENDIF}
 //  debug.consolelog('read end');
+{$IFDEF UB_TRACK_HIT_MISS}
   if FStream.UnderStream is TUnbufferedFileStream then begin
 {$IFDEF ALLOW_SIDEFETCH_REQUEUE}
-    sf := TSideFetchCommand.Create;
+    var sf := TSideFetchCommand.Create;
     sf.FStream := self.FStream;
     queue.SelfAdd(sf);
 {$ENDIF}
     FStream.Queue.hits := TUnbufferedFileStream(FStream.UnderStream).hits;
     FStream.Queue.misses :=  TUnbufferedFileStream(FStream.UnderStream).misses;
   end;
-
+{$ENDIF}
 
 
 end;
@@ -1228,7 +1358,7 @@ end;
 
 { TAdaptiveQueuedFileStream }
 
-procedure TAdaptiveQueuedFileStream.AdaptiveRead(p: pbyte; iSize: int64);
+procedure TAdaptiveQueuedFileStream.AdaptiveRead(const p: pbyte; const iSize: int64);
 begin
   EndAdaptiveRead(BeginAdaptiveRead(p, iSize, false));
 end;
@@ -1272,9 +1402,11 @@ begin
   if n <> nil then n.busy := true;
 {$ENDIF}
   iSize := lesserof(iSize, size-Position);
-  result := BeginRead(position, p, iSize, bDisallowSynchronous, bForget);
+  result := BeginRead(position, p, iSize, bDisallowSynchronous, bForget, 0);
   Position := Position + iSize;
   PerformanceHints.pendingOps := Self.Queue.EstimatedSize;
+
+
 end;
 
 constructor TAdaptiveQueuedFileStream.Create(const AFileName: string;
@@ -1304,8 +1436,8 @@ end;
 function TAdaptiveQueuedFileStream.EndAdaptiveRead(qi: TReadCommand): int64;
 begin
 //{$IFDEF phIO_IN_ADVANCEDQUEUEDFILESTREAM}
-  var n := phIO.node;
-  if n <> nil then  n.busyR := true;
+//  var n := phIO.node;
+//  if n <> nil then  n.busyR := true;
 //{$ENDIF}
   qi.WaitFor;
   result := qi.result;
@@ -1332,8 +1464,8 @@ begin
 end;
 
 
-function TAdaptiveQueuedFileStream.Seek(iPos: int64;
-  origin: TseekOrigin): int64;
+function TAdaptiveQueuedFileStream.Seek(const iPos: int64;
+  const origin: TseekOrigin): int64;
 begin
   case origin of
     soBeginning: Position := iPOs;
@@ -1345,7 +1477,7 @@ begin
 
 end;
 
-function TAdaptiveQueuedFileStream.Seek(iPOs, origin: int64): int64;
+function TAdaptiveQueuedFileStream.Seek(const iPOs, origin: int64): int64;
 begin
   position := iPos + origin;
   result := position;
@@ -1409,12 +1541,14 @@ function TAdvancedAdaptiveQueuedFileStream.CreateAndConfigureUnderclasses(
   sFile: string): TStream;
 var
   ubs: TUnbufferedFileStream;
+  rps: TRemotePayloadStream;
   mbs: TmultibufferQueueStream;
   aqs: TAdaptiveQueuedStream;
   mode: cardinal;
 begin
   InitPerfHandle;
   phIO.desc.desc := 'AQFS';
+  FRemotePayload := 0=comparetext(zcopy(sFile, 0, 4),'rps:');
 
 {$IFDEF COMPLEX_STREAM}
   //TAdaptiveQueuedFileStream->TMultibufferQueueStream->TAdaptiveQueuedStream->TUnbufferedFileStream
@@ -1438,23 +1572,39 @@ begin
 {$ELSE}
   //TAdaptiveQueuedFileStream->TMultibufferStream->TAdaptiveQueuedStream->TUnbufferedFileStream
   //we need to create two underclasses for thsi configuration;
-  if fileexists(sFile) then
-    mode := fmOpenReadWrite+fmShareExclusive
-  else
-    mode := fmCreate;
+  if FRemotePayload then begin
+    var sHost: string;
+    var sPort: string;
+    SplitString(sFile, ':', sFile, sHost);
+    SplitString(sHost, ':', sHost, sPort);
+    if sPort = '' then
+      sPort := '6666';
 
-  ubs:=Tunbufferedfilestream.Create(sfile, mode, 0,0);
-  ubs.upperqueue := self.queue;
-  ubs.upstreamHints := @self.PerformanceHints;
-  ubs.phIO.desc.left := self.phIO.id;
-  ubs.phIO.desc.desc := 'UBS';
+    rps := TRemotePayloadStream.create(sHost, strtoint64(sPort));
+    rps.phIO.desc.left := self.phIO.id;
+    rps.phIO.desc.desc := sHost+':'+sPort;
+    understream := rps;
+    result := rps;
 
-  understream := ubs;
-  result := ubs;
+  end else begin
+    if fileexists(sFile) then
+      mode := fmOpenReadWrite+fmShareExclusive
+    else
+      mode := fmCreate;
+
+    ubs:=Tunbufferedfilestream.Create(sfile, mode, 0,0);
+    ubs.upperqueue := self.queue;
+    ubs.upstreamHints := @self.PerformanceHints;
+    ubs.phIO.desc.left := self.phIO.id;
+    ubs.phIO.desc.desc := 'UBS';
+
+    understream := ubs;
+    result := ubs;
+  end;
   configureunderclass;
 
   FQueue.AOnEmpty := procedure begin
-    ubs.CheckOrStartFlushCommand;
+//    ubs.CheckOrStartFlushCommand;
   end;
 
 {$ENDIF}
@@ -1686,7 +1836,7 @@ begin
 
   result := nil;
 
-    for var u := 0 to FWorkingItems.count-1 do begin
+    for var u := 0 to FWorkingItems.countvolatile-1 do begin
       var wi := fWorkingItems[u] as TQueueStreamItem;
       if wi = itm then exit(nil);
 
@@ -1756,7 +1906,7 @@ var
   t: ni;
 begin
   result := nil;
-  for t:= 0 to FWorkingItems.count-1 do begin
+  for t:= 0 to FWorkingItems.countvolatile-1 do begin
     if FWorkingItems[t] is TReadCommand then begin
       exit(TReadCommand(FWorkingItems[t]));
     end;
@@ -1816,8 +1966,8 @@ begin
       a := qi.Addr;
       b := qi.Count;
 
-      for t := FIncomingItems.count-1 downto 0 do begin
-        if t >= FIncomingItems.count then
+      for t := FIncomingItems.countvolatile-1 downto 0 do begin
+        if t >= FIncomingItems.countvolatile then
           continue;
 
         itm := FIncomingItems[t];
@@ -1838,7 +1988,7 @@ begin
 //            if qidx > t then begin
 //              dec(qidx);
 //            end;
-            itm := FIncomingItems[FincomingItems.count-1];
+            itm := FIncomingItems[FincomingItems.countvolatile-1];
             if itm is TWriteCommand then begin
               qi := itm as TWriteCommand;
               bRetry := bDid;
@@ -1856,7 +2006,7 @@ begin
 
 end;
 
-
+{$IFDEF READ_BEFORE_WRITE}
 procedure TStreamQueue.PrioritizeOverlapping(itm: TQueueStreamItem);
 var
   a: TArray<TQueueStreamItem>;
@@ -1903,6 +2053,7 @@ begin
 
 
 end;
+{$ENDIF READ_BEFORE_WRITE}
 
 procedure TStreamQueue.ProcessItem;
 begin
@@ -1914,7 +2065,7 @@ end;
 
 function Tunbuffer.AnyDirty: boolean;
 begin
-  result := DirtyCount > 0;
+  result := (DirtyCount > 0);
 end;
 
 function Tunbuffer.ByteDirtyMask(iOFF: ni): byte;
@@ -1960,12 +2111,13 @@ var
   cx: ni;
   cnt: ni;
 begin
-  cx := 512-iClusterOff;
+  var iii := iClusterOff shl 9;
+  cx := 512;
   cnt := 0;
-  while cx > 0 do begin
-    if not byteisdirty(iClusterOff) then
+   while cx > 0 do begin
+    if not byteisdirty(iii) then
       inc(cnt);
-    inc(iClusterOff);
+    inc(iii);
     dec(cx);
   end;
 
@@ -2011,26 +2163,19 @@ end;
 
 procedure TUnbufferedFileStream.CalculateNewRecommendedPrefetchAllowance;
 var
-  rec, mx: ni;
   r: single;
 begin
-{$IFDEF MINIMAL_UB_PREFETCH}
-  FRecommendedPrefetchAllowance := 2;//2 = 250MB
-  exit;
-{$ENDIF}
+//{$IFDEF MINIMAL_UB_PREFETCH}
+//  FRecommendedPrefetchAllowance := 2;//2 = 250MB
+//  exit;
+//{$ENDIF}
 
-  mx := FREcommendedPrefetchAllowance;
-  r := rsPrefetchInterruption.PEriodicAverage/greaterof(mx,1);
-  if (r) > 0.50 then
-    inc(mx)
-  else
-    dec(mx);
+  r := rsPrefetchInterruption.PEriodicAverage;
+  if r > (UNBUFFERED_BUFFERED_PARTS-1) then
+    r := (UNBUFFERED_BUFFERED_PARTS-1);
+  FREcommendedPrefetchAllowance := r;
 
-
-  mx := greaterof(1, lesserof(UNBUFFERED_BUFFERED_PARTS shr 2, mx));
-
-  FREcommendedPrefetchAllowance := mx;
-
+//  debug.log('Prefetch Set to '+ floatprecision(r,8));
 
 end;
 
@@ -2055,6 +2200,7 @@ var
 //  pct: single;
   workingMaxdirtyTime: ni;
 begin
+  KeepAlive;
 {$IFDEF LIMIT_FREQUENCY_OF_CHECK_FLUSH}
   if GEtTimeSince(lastuse) < FLUSH_TIME_LIMIT then
     exit;
@@ -2063,6 +2209,11 @@ begin
   tm := 0;
   tm := GetTicker;
 {$IFDEF BULK_READ_BEFORE_FLUSH}
+{$IFDEF BULK_READ_AUTO_STAT}
+
+
+  if doBulkREad then
+{$ENDIF}
   while bRepeat do begin
     bRepeat := false;
     if TECS(self.lckBuffers) then
@@ -2073,9 +2224,11 @@ begin
         bRepeat := buf <> nil;
         if buf = nil then break;
         if TECS(buf.lck) then
-        try
+        try                                                   //v note... this SEEMS wrong, but it is okay... intended to be a very short time to make sure we're not optimally flushing stuff that was totally-just-now dirtied
           if (buf.AnyDirty and (gettimesince(buf.Dirtytime) > FLUSH_TIME_LIMIT)) then begin
+{$IFDEF ZERO_OPT}                                             //^this is okay because this is the BULK_READ-before-write stat, not the actual buffer flush stat
             if not buf.ContainsSomeZeroes then
+{$ENDIF}
               PreparePageForFlush(buf);
 
           end;
@@ -2112,7 +2265,9 @@ begin
         try
 
           if (buf.AnyDirty and (gettimesince(buf.Dirtytime) > FLUSH_TIME_LIMIT)) or buf.AllDirty then begin
+{$IFDEF ZERO_OPT}
             if not buf.ContainsSomeZeroes then
+{$ENDIF}
               FlushPage(buf);
           end;
 
@@ -2181,6 +2336,7 @@ var
   FProcs: array of TAnonymousIteratorQI;
 begin
   {$IFDEF USE_LINKED_BUFFERS}
+  FBuffersByPAgeNumber := TUBTree.create;
   FBufferORders := TDirectlyLinkedList<TUnbufferObj>.create;
   for t:= 0 to high(FBuffers) do begin
     FBuffers[t].FirstInit;
@@ -2188,11 +2344,15 @@ begin
   SetLength(FProcs, length(FBuffers));
 
   for t:= 0 to high(FBuffers) do begin
-    FProcs[t] := InlineIteratorProcQI(t, procedure (idx: ni) begin
+    FProcs[t] := InlineIteratorProcQI(t, procedure (idx: int64) begin
 //        Debug.Log('init buffer '+inttostr(idx));
         FBuffers[idx].Init;
         end);
   end;
+
+
+
+
   for t:= 0 to high(FBuffers) do begin
     FProcs[t].WaitFor;
     FProcs[t].Free;
@@ -2205,6 +2365,14 @@ begin
     //obj.buf.ClearDirtyMask;
     FBufferOrders.Add(obj);
   end;
+
+ for t:= 0 to high(FBuffers) do begin
+    var ti := TUBTreeItem.create;
+    ti.buf := FBufferOrders[t];
+    ti.buf.ti := ti;
+    FBuffersByPAgeNumber.Add(ti);
+  end;
+
   {$ELSE}
   for t:= 0 to high(FBuffers) do begin
     FBuffers[t].FirstInit;
@@ -2278,6 +2446,14 @@ begin
   {$ENDIF}
 
   FBufferORders.free;
+  while FBuffersByPageNumber.Root <> nil do begin
+    var r := FBuffersByPageNumber.root;
+    FBuffersByPageNumber.Remove(r);//also frees
+  end;
+
+  FBuffersByPageNumber.ClearBruteForce;
+  FBuffersByPAgeNumber.Free;
+
 end;
 
 procedure TUnbufferedFileStream.EnterActiveState;
@@ -2287,8 +2463,8 @@ end;
 
 procedure TUnbufferedFileStream.EnterIdleState;
 begin
-    allowed_prefetches := g_FORCE_UB_PREFETCH;
-    FRecommendedPrefetchAllowance := g_FORCE_UB_PREFETCH;
+    allowed_prefetches := (RecommendedPrefetchAllowance);
+//   FRecommendedPrefetchAllowance := g_FORCE_UB_PREFETCH;
     sfthread.stepcount := allowed_prefetches;
     sfthread.runhot := true;
     sfthread.haswork := true;
@@ -2296,7 +2472,7 @@ end;
 
 constructor TUnbufferedFileStream.Create(const AFileName: string; Mode: cardinal; Rights: Cardinal; Flags: cardinal);
 begin
-  inherited Create(AfileName, Mode, Rights, Flags{$IFDEF ALLOW_UNBUFFERED_FLAG} or FILE_FLAG_NO_BUFFERING{$ENDIF});
+  inherited Create(AfileName, Mode, Rights, Flags{$IFDEF ALLOW_UNBUFFERED_FLAG} or FILE_FLAG_NO_BUFFERING or FILE_FLAG_WRITE_THROUGH{$ENDIF});
   phIO := PMC.GetPerfHandle;
   phUnder := PMC.GetPerfHandle;
   phUnder.desc.Desc := AfileName;
@@ -2321,15 +2497,15 @@ begin
   rsFetchApplyMask := TRingStats.create;
   rsFlushPageBruteForce := TRingStats.create;
   rsPrefetchInterruption := TRingStats.create;
-  rsPrefetchInterruption.Size := 64;
+  rsPrefetchInterruption.Size := 200;
   writeBuilder := TWriteBuilder.create;
-  ICS(lckTemp);
-  ICS(lckUnder);
-  ICS(lckOp);
-  ICS(lckDirtyCount);
-  ICS(lckBack);
-  ICS(lckState);
-  ICS(lckBuffers);
+  ICS(lckTemp, classname+'-lckTemp');
+  ICS(lckUnder, classname+'-lckUnder');
+  ICS(lckOp, classname+'-lckOp');
+  ICS(lckDirtyCount, classname+'-lckDirtyCount');
+  ICS(lckBack, classname+'-lckBack');
+  ICS(lckState, classname+'-lckState');
+  ICS(lckBuffers, classname+'-lckBuffers');
   FSeekPage := -1;
   FFront_SeekPosition := 0;
   FBack_SeekPOsition := 0;
@@ -2542,11 +2718,11 @@ begin
 end;
 {$ENDIF}
 
-procedure TUnbufferedFileStream.FetchPage(const iPage: int64; const buf: PUnbuffer; const stage: TFetchBufferStage = fbInitial; alt_buf: PByte = nil);
+procedure TUnbufferedFileStream.FetchPage(const neededoffset: int64; const neededbytes: int64; const iPage: int64; const buf: PUnbuffer; const stage: TFetchBufferStage = fbInitial; alt_buf: PByte = nil);
 var
   iJustRead, iTotalToRead, iTogo: int64;
   p: Pbyte;
-  iCnt: ni;
+//  iCnt: ni;
   iUnderPos: int64;
   iUnderPos2: int64;
   iUnderSize: int64;
@@ -2557,7 +2733,9 @@ begin
 {$IFDEF BALANCE}
   Balance;
 {$ENDIF}
-//  rsFetchPage.BeginTIme;
+{$IFDEF UB_STATS}
+  rsFetchPage.BeginTIme;
+{$ENDIF}
 //  if g_traphit then
 //    debug.Log('here');
   ECS(buf.lck);
@@ -2569,14 +2747,15 @@ begin
 //    end;
 
 {$IFDEF CHECK_SIZE_BEFORE_READ}
-    iUnderSize := FileSeekPx(FHandle, int64(0), int64(ord(soEnd)));
+xxx
+    iUnderSize := FileSeek(FHandle, int64(0), int64(ord(soEnd)));
     if iUndersize = -1 then begin
       Debug.Log(filename+' unable to determine file size error '+inttostr(GetlastError));
     end;
 {$ENDIF}
 
     iUnderPos := iPage*UNBUFFERSIZE;
-    iUnderPos2 := FileSeekPx(FHandle, iUnderPos, int64(soBeginning));//ok
+    iUnderPos2 := FileSeek(FHandle, iUnderPos, int64(soBeginning));//ok
 //    iUnderPos :=  FileSeekPx(FHandle, 0, int64(soCurrent));//ok
 
     if alt_buf = nil then begin
@@ -2609,12 +2788,13 @@ begin
     //iRead := 0;
     iTogo := iTotalToRead;
 
-    iCnt := 0;
+//    iCnt := 0;
+    var n := phUnder.node;
+    if n <> nil then  n.busyR := true;
     while iTogo > 0 do begin
 //      rsIndividualRead.BeginTime;
-      var n := phUnder.node;
-      if n <> nil then  n.busyR := true;
-      iJustRead := FileReadPx(@self.aligned_temp,FHandle, p^, iTogo);//ok
+
+      iJustRead := FileRead(FHandle, p^, iTogo);//ok
       if n <> nil then
         n.incr(iJustRead);
 //      rsIndividualRead.EndTime;
@@ -2628,16 +2808,11 @@ begin
 {$ENDIF}
         break;
       end;
-//      inc(iRead, iJustRead);
       inc(p, iJustRead);
       dec(iTogo, iJustREad);
-      inc(iCnt);
-      inc(iUnderPos, iJustRead);
-{$IFDEF CHECK_SIZE_BEFORE_READ}
-      if(iUnderPos = iUnderSize) then
-        break;
-{$ENDIF}
     end;
+    inc(iUnderPos, neededbytes-iTogo);
+
 //        if iPAge = 0 then
 //          if (p[81+600] <> 1) then
 //            Debug.Log('AHA!');
@@ -2676,12 +2851,14 @@ begin
 
   end;
 {$ENDIF}
-//  rsFetchPage.EndTime;
-//  if rsFetchPage.NewBAtch then begin
-//    rsFetchPage.OptionDebug('FPTime for '+self.FileName);
-//    if assigned(upperqueue) then
-//      upperqueue.NoWorkRunInterval := greaterof(1,round(rsFetchPage.PeriodicAverage/10000));
-//  end;
+{$IFDEF UB_STATS}
+  rsFetchPage.EndTime;
+  if rsFetchPage.NewBAtch then begin
+    rsFetchPage.OptionDebug('FPTime for '+self.FileName);
+    if assigned(upperqueue) then
+      upperqueue.NoWorkRunInterval := greaterof(1,round(rsFetchPage.PeriodicAverage/10000));
+  end;
+{$ENDIF}
 
 end;
 
@@ -2697,7 +2874,7 @@ begin
         ecs(lckTEmp);
         try
           //movemem32(@ftemp[0],@data[0],sizeof(data));
-          fetchpage(buf.pagenumber, buf, fbInitial, @FTemp[0]);
+          fetchpage(0, UNBUFFERSIZE, buf.pagenumber, buf, fbInitial, @FTemp[0]);
 
 {$IFDEF PACKED_MASK}////
           MoveMem32WithMaskPacked_NOT(@data[0], @Ftemp[0], @fdirtymask[0], 0 , sizeof(data));//ok
@@ -2708,14 +2885,14 @@ begin
           lcs(lckTEmp);
         end;
       end else begin
-        fetchpage(buf.pagenumber, buf);
+        fetchpage(0,UNBUFFERSIZE, buf.pagenumber, buf);
       end;
     finally
       LCS(lck);
     end;
   end;
   rsFetchApplyMask.EndTime;
-  rsFetchApplyMask.OptionDebug('FPMAskTime for '+self.FileName);
+  rsFetchApplyMask.OptionDebug('rsFetchApplyMask time for '+self.FileName);
 //  Cleardirtymask;
 end;
 
@@ -2729,7 +2906,7 @@ begin
     min := nil;
     for t:= 1 to high(FBuffers) do begin
       cur := @FBuffers[t];
-      if ((not cur.ContainsSomeZeroes) and cur.AnyDirty and cur.wasfetched) or cur.AllDirty then begin
+      if ({$IFDEF ZERO_OPT}(not cur.ContainsSomeZeroes) and {$ENDIF}cur.AnyDirty and cur.wasfetched) or cur.AllDirty then begin
         if (min = nil) or (cur.pagenumber < min.pagenumber) then
           min := cur;
       end;
@@ -2743,13 +2920,24 @@ end;
 
 function TUnbufferedFileStream.FindPage(iPage: int64): PUnbuffer;
 var
-  t: ni;
   b: PUnbuffer;
   bo: TUnbufferObj;
 begin
   result := nil;
   if iPage < 0 then exit;
 {$IFDEF USE_LINKED_BUFFERS}
+  {$IFDEF USE_UBTREE}
+  var rr: PUnBuffer := nil;
+  FBuffersByPAgeNumber.Iterate(procedure ([unsafe] ABTreeItem:TBTreeItem; var ANeedStop:boolean) begin
+    ANeedStop := TUBTreeItem(ABTreeItem).buf.buf.pagenumber = iPage;
+    if ANeedStop then
+      rr := TUBTreeItem(ABTreeItem).buf.buf;
+  end);
+
+  result := rr;
+
+  {$ELSE}
+
   bo := FBufferOrders.last;
   while bo <> nil do begin
     b := bo.buf;
@@ -2757,8 +2945,9 @@ begin
       exit(b);
     bo := TUnbufferObj(bo.Prev);
   end;
+  {$ENDIF}
 {$ELSE}
-  for t:= high(Fbuffers) downto 0 do begin
+  for var t:= high(Fbuffers) downto 0 do begin
     b := FBufferOrders[t];
     if b.pagenumber = iPage then begin
       result := FBufferorders[t];
@@ -2769,6 +2958,19 @@ begin
 {$ENDIF}
 end;
 
+{$IFDEF USE_UBTREE}
+function TUnbufferedFileStream.FindPageObj(iPage: int64): TUBTreeItem;
+begin
+  var rr: TUBTreeItem := nil;
+  FBuffersByPAgeNumber.Iterate(procedure ([unsafe] ABTreeItem:TBTreeItem; var ANeedStop:boolean) begin
+    ANeedStop := TUBTreeItem(ABTreeItem).buf.buf.pagenumber = iPage;
+    if ANeedStop then
+      rr := TUBTreeItem(ABTreeItem);
+  end);
+
+  result := rr;
+end;
+{$ELSE}
 {$IFDEF USE_LINKED_BUFFERS}
 function TUnbufferedFileStream.FindPageObj(iPage: int64): TUnbufferObj;
 var
@@ -2795,6 +2997,7 @@ begin
     lcs(lckBuffers);
   end;
 end;
+{$ENDIF}
 {$ENDIF}
 
 procedure TUnbufferedFileStream.FlushAll;
@@ -2857,7 +3060,9 @@ begin
   with buf^ do begin
     ECS(lck);
     try
-//      rsFlush.BeginTime;
+{$IFDEF UB_STATS}
+      rsFlushPageBruteForce.beginTime;
+{$ENDIF}
       if not AnyDirty then begin
   //      Debug.Log('page '+inttostr(buf.pagenumber)+' is not dirty, no flushing.');
         exit;
@@ -2881,7 +3086,7 @@ begin
 
       ECS(lckUnder);
       try
-        FileSeekPx(FHandle, iSeek, 0);
+        FileSeek(FHandle, iSeek, 0);
 //        if iSeek = 0 then
 //          if (buf.data[81+600] <> 1) then
 //            Debug.Log('AHA!');
@@ -2901,7 +3106,17 @@ begin
 
 //      AnyDirty := false;
 //      AllDirty := false;
-//      rsFlush.EndTime; if rsFlush.NewBAtch then Debug.log('flush='+rsFlush.debugtiming);
+{$IFDEF UB_STATS}
+      rsFlushPageBruteForce.EndTime;
+      if rsFlushPageBruteForce.NewBAtch then begin
+        Debug.log(self.FileName+' flushBruteForce='+rsFlushPageBruteForce.debugtiming);
+        doBulkREad :=  (rsFlushPageBruteForce.PeriodicAverage = 0)
+          or (rsFlushPageBruteForce.PeriodicAverage>8000)
+          or ((rsFlushPageBruteForce.PeriodicMax/rsFlushPageBruteForce.PeriodicAverage) > 2.0)
+      end;
+
+{$ENDIF}
+
     finally
       LCS(lck);
     end;
@@ -2923,10 +3138,10 @@ begin
   end;}
 
 end;
-procedure TUnbufferedFileStream.FlushWithoutRead(buf: PUnbuffer);
+procedure TUnbufferedFileStream.FlushWithoutRead(const buf: PUnbuffer);
 var
-  iOFFByte, iOFF, iStart: int64;
-  iCnt: int64;
+  iOFFByte, iOFFBlock, iStartBlock: int64;
+  iCntBlock: int64;
   iSeekPos: int64;
   iEnd: int64;
   iRead: int64;
@@ -2952,7 +3167,7 @@ var
 {$ENDIF}
   procedure Commit;
   begin
-    if iCnt <= 0 then
+    if iCntBlock <= 0 then
       exit;
     ecs(lckUnder);
     try
@@ -2960,34 +3175,43 @@ var
       CheckForDoubleZeroes;
 {$ENDIF}
       if buf.pagenumber = 1479 then
-        debug.Log('trap 1479');
+        debug.Log('commit() trap 1479');
 {$IFDEF DETAILED_DEBUGGING}
       Debug.Log(extractfilename(filename)+' commit page '+buf.pagenumber.tostring);
 {$ENDIF}
       iSeekPos := (buf.pagenumber shl unbuffershift) + (iOFFbyte);
-      iEnd := FileSeekPx(FHandle, 0, 2);
+      iEnd := FileSeek(FHandle, 0, 2);
       if iSeekPos >= iEnd then
         FlushPageBruteForce(buf)
       else begin
 //        if (writebuilder.startpoint shr 9).tohexstring = '1F' then
 //          Debug.Log('trap');
-//        Debug.Log('COMMIT** FlushBlock='+(writebuilder.startpoint shr 9).tohexstring+' '+'Flush='+(writebuilder.startpoint).tohexstring+' size='+(writebuilder.datasize).tohexstring);
-        FileSeekPx(FHandle, writebuilder.startpoint, 0);
+        Debug.Log('COMMIT** FlushBlock='+(writebuilder.startpoint shr 9).tohexstring+' '+'Flush='+(writebuilder.startpoint).tohexstring+' size='+(writebuilder.datasize).tohexstring);
+        FileSeek(FHandle, writebuilder.startpoint, 0);
         GuaranteeWriteUnder(writebuilder.buffer, writebuilder.datasize);
       end;
     finally
       lcs(lckUnder);
     end;
-    iCnt := 0;
-    iStart := -1;
+    iCntBlock := 0;
+    iStartBlock := -1;
     writebuilder.new;
   end;
 begin
+  //scan the entire UNBUFFER for dirty blocks...
+  //add the blocks into a write builder until we find a clean block
+  //-- once a clean block is found, we'll commmit
+  //-- if a block contains dirty and clean parts, then
+  //   we must read the individual block from the disk and mask the clean parts
+  //   into it
+  //At the end of it all... make sure anything pending is committed also
+
+
   with buf^ do begin
 
     ECS(lck);
     try
-//      Debug.Log('FlushWithoutRead '+buf.pagenumber.tostring);
+      Debug.Log('FlushWithoutRead '+buf.pagenumber.tostring);
       if buf.pagenumber < 0 then
         exit;
       if not buf.AnyDirty then
@@ -2995,19 +3219,21 @@ begin
 
       //start a new write builder
       writebuilder.New;
-      iStart := -1;
-      iOFF := 0;
-      iCnt := 0;
-      while iOFF < (UNBUFFERSIZE shr 9) do begin
-        iOffByte := iOff shl 9;
+      iStartBlock := -1;
+      iOFFBlock := 0;
+      iCntBlock := 0;
+      while iOFFBlock < (UNBUFFERSIZE shr 9) do begin
+        iOffByte := iOffBlock shl 9;
         if not buf.anydirty then exit;//the buffer might be brute-force flushed at any time so we can potentially exit early
         if buf.wasfetched then
           d := dirtAll
         else
-          d := buf.ClusterIsDirty(iOFF);
+          d := buf.ClusterIsDirty(iOFFBlock);
         case d of
           dirtSome: begin
-//            Debug.Log('dirtSome '+iOff.tohexstring);
+            //a mix of bytes in the 512-byte block were dirty..
+            //reconcile by reading the 512-byte block and masking dirty data into it
+            Debug.Log('dirtSome '+iOffBlock.tohexstring);
             iSeekPos := (buf.pagenumber shl unbuffershift) + (iOFFbyte);
 //            if (iSeekPOs shr 9) = $1f then
 //              Debug.Log('trap');
@@ -3016,13 +3242,13 @@ begin
             ecs(lckUnder);
             try
 
-              iEnd := FileSeekPx(FHandle, 0, 2);
+              iEnd := FileSeek(FHandle, 0, 2);
               if iSeekPos < iEnd then begin
                 var n := phUnder.node;
                 if n <> nil then n.busyR := true;
-                FileSeekPx(FHandle, iSeekPOs {yes this is 512 byte aligned},0);
+                FileSeek(FHandle, iSeekPOs {yes this is 512 byte aligned},0);
                 //read the data into scratch1
-                iRead := FileReadPx(@self.aligned_temp,FHandle, scratch1[0], 512);
+                iRead := FileRead(FHandle, scratch1[0], 512);
                 if n <> nil then
                   n.incr(iREad);
                 if iRead <> 512 then begin
@@ -3034,7 +3260,7 @@ begin
             end;
 
             //move into scratch2, data read from disk scratch1, but keep only bytes
-            //bits/bytes that are  dirty 0x00
+            //bits/bytes that are  NOT dirty 0x00
 {$IFDEF PACKED_MASK}
             MoveMem32WithMaskPacked_NOT(@scratch2[0], @scratch1[0], @buf.FDirtyMAsk[iOFFbyte shr 3], iOffByte, 512);//ok
 {$ELSE}
@@ -3047,37 +3273,39 @@ begin
             MoveMem32WithMask(@scratch2[0], @buf.data[iOFFByte], @buf.FDirtyMAsk[iOFFbyte], 512);
 {$ENDIF}
             //if nothing started then begin
-            if iStart <0 then begin
+            if iStartBlock <0 then begin
               writebuilder.startpoint := iSeekPos;
-              iStart := iOFF;
+              iStartBlock := iOFFBlock;
             end;
             //append the data with the writebuilder
             writebuilder.AppendData(@scratch2[0], 512);
             //count the number of clusters pending
-            inc(iCnt);
+            inc(iCntBlock);
           end;
-          dirtAll: begin
-//            Debug.Log('dirtAll '+iOff.tohexstring);
+          dirtAll: begin  //all bytes in 512-byte block were dirty
+//            Debug.Log('dirtAll '+iOffBlock.tohexstring);
             //if nothing started then begin
-            if iStart <0 then begin
+            if iStartBlock <0 then begin
               writebuilder.startpoint := (buf.pagenumber shl UNBUFFERSHIFT) + (iOffByte);
-              iStart := iOFF;
+              iStartBlock := iOFFBlock;
             end;
             //append the data with the writebuilder
             writebuilder.AppendData(@buf.data[iOFFByte], 512);
             //count the number of clusters pending
-            inc(iCnt);
+            inc(iCntBlock);
           end;
-          dirtClean: begin
-            //Debug.Log('clean '+iOff.tohexstring);
+          dirtClean: begin //NO bytes in 512-byte block were dirty
             //flush the stuff, ignore clean parts
-            if iCnt > 0 then begin
+            if iCntBlock > 0 then begin
               Commit;
             end;
+
+//            Debug.Log('clean '+iOffBlock.tohexstring);
+
           end;
         end;
         //move forward
-        inc(iOff);
+        inc(iOffBlock);
       end;
       //final commit
       commit;
@@ -3218,12 +3446,14 @@ begin
         FReportedSize := inherited Seek(0,soEnd);
         ecs(lckBuffers);
         try
-          WriteEOF();
-          {$IFDEF USE_LINKED_BUFFERS}
-            Self.FlushPage(Fbufferorders[0].buf);
-          {$ELSE}
-            Self.FlushPage(Fbufferorders[0]);
-          {$ENDIF}
+          if (fmOpenReadwrite and Self.ModeAtOpen) = fmOpenReadWrite then begin
+            WriteEOF();
+            {$IFDEF USE_LINKED_BUFFERS}
+              Self.FlushPage(Fbufferorders[0].buf);
+            {$ELSE}
+              Self.FlushPage(Fbufferorders[0]);
+            {$ENDIF}
+          end;
         finally
           lcs(lckBuffers);
         end;
@@ -3271,7 +3501,7 @@ begin
 
 end;
 
-procedure TUnbufferedFileStream.GuaranteeSyncread(pb: Pbyte; count: ni);
+procedure TUnbufferedFileStream.GuaranteeSyncread(const pb: Pbyte; const count: ni);
 var
   ijust: integer;
   cx: int64;
@@ -3284,45 +3514,57 @@ begin
   try
   cx := count;
   wptr := pb;
+  var tm1 := getticker;
   while cx > 0 do begin
     iTo := cx;
     ijust := SyncRead(wptr^, iTo);
     inc(wptr, iJust);
     dec(cx, ijust);
   end;
+  var tm2 := getticker;
+  if GetTimeSince(tm2,tm1) > 7000 then begin
+    Debug.log('Sync Read took a long time for '+FileName);
+  end;
+
   finally
     UnlockBack;
     lcs(lckOp);
   end;
 end;
 
-procedure TUnbufferedFileStream.GuaranteeSyncWrite(pb: Pbyte; count: ni; bZeroFlag: boolean = false);
+procedure TUnbufferedFileStream.GuaranteeSyncWrite(const pb: Pbyte; const count: ni; const bZeroFlag: boolean = false);
 var
   ijustwrote: integer;
-  cx: int64;
+//  cx: int64;
   wptr:pbyte;
   iToWrite: int64;
-  tm1, tm2, tmDif: ticker;
+//  tm1, tm2, tmDif: ticker;
 begin
   //DOES NOT NECESSARILY TOUCH FILE (may possibly only touch buffers)
   ecs(lckOp);
   LockBack('GuaranteeSyncWrite');
   try
-  cx := count;
+  var cx := count;
   wptr := pb;
-  tm1 := GetTicker;
-  while cx > 0 do begin
+{$IFDEF TIME_WARNINGS}
+  var tm1 := GetTicker;
+{$ENDIF}
+  var endptr := pb + count;
+  while wptr < endptr do begin
     iToWrite := cx;
     ijustwrote := SyncWrite(wptr^, iToWrite, bZeroFlag);
     inc(wptr, iJustWrote);
     dec(cx, ijustwrote);
   end;
-  tm2 := GetTicker;
-  tmDif := GetTimeSince(tm2,tm1);
+{$IFDEF TIME_WARNINGS}
+  var tm2 := GetTicker;
+  var tmDif := GetTimeSince(tm2,tm1);
 //  Debug.Log('Write '+self.FileName+' sz='+count.tostring+' in '+tmDif.tostring);
+
   if GetTimeSince(tm2,tm1) > 60000 then begin
     inc(warnings);
   end;
+{$ENDIF}
   finally
     UnlockBack;
     lcs(lckOp);
@@ -3333,7 +3575,7 @@ end;
 
 procedure TUnbufferedFileStream.GuaranteeWriteUnder(pb: Pbyte; sz: ni);
 var
-  iJustWrote, iTotalToWrite, iToGo, writesize, iWritten: int64;
+  iJustWrote, iTotalToWrite, iToGo, {writesize,} iWritten: int64;
 begin
 {x$DEFINE SIMPLE}
 {$IFDEF SIMPLE}
@@ -3348,11 +3590,11 @@ begin
     iWritten := 0;
     iTotalToWrite := sz;
     iTogo := iTotalToWrite;
-    writesize := 262144*8;
+//    writesize := 262144*8;
     while iTogo > 0 do begin
       var n := phUnder.node;
       if n <> nil then n.busyW := true;
-      iJustWrote := FileWritePx(@self.aligned_temp,FHandle, pb^, lesserof(iTogo, 262144));
+      iJustWrote := FileWrite(FHandle, pb^, lesserof(iTogo, UNBUFFERSIZE));
       if n <> nil then
         n.incw(iJustWrote);
 
@@ -3380,6 +3622,72 @@ begin
 {$ENDIF}
 end;
 
+function TUnbufferedFileStream.HasAnyPageRange(iPage: int64; iCount: int64): boolean;
+begin
+  ecs(lckBuffers);
+  try
+    while icount > 0 do begin
+      if HasPage_optimal(iPage) then
+        exit(true);
+
+      inc(iPage);
+      dec(iCount);
+
+
+
+    end;
+
+    exit(false);
+  finally
+    lcs(lckBuffers);
+  end;
+
+end;
+
+function TUnbufferedFileStream.HasPage_Optimal(iPage: int64): boolean;
+begin
+  ecs(lckBuffers);
+  try
+{$IFDEF SIMPLE_HASPAGE}
+zz    for var t:= 0 to high(FBuffers) do begin
+      if FBufferorders[t].buf.pagenumber = iPage then begin
+        exit(true);
+      end;
+    end;
+    exit(false);
+{$ELSE}
+  {$IFDEF USE_UBTREE}
+    var rr: PUnBuffer := nil;
+    FBuffersByPAgeNumber.Iterate(procedure ([unsafe] ABTreeItem:TBTreeItem; var ANeedStop:boolean) begin
+      ANeedStop := TUBTreeItem(ABTreeItem).buf.buf.pagenumber = iPage;
+      if ANeedStop then
+        rr := TUBTreeItem(ABTreeItem).buf.buf;
+    end);
+
+    result := rr <> nil;
+    exit(result);
+  {$ELSE}
+
+
+    for var t:= 0 to high(FBuffers) do begin
+      if FBuffers[t].pagenumber = iPage then begin
+        exit(true);
+      end;
+    end;
+    exit(false);
+
+  {$ENDIF}
+
+
+
+
+{$ENDIF}
+
+  finally
+    lcs(lckBuffers);
+  end;
+end;
+
 function TUnbufferedFileStream.FindWriteThroughPage(
   iPageNumber: int64): PUnbuffer;
 var
@@ -3390,7 +3698,7 @@ begin
   try
     for t:= 1 to high(FBuffers) do begin
       cur := @FBuffers[t];
-      if (not cur.ContainsSomeZeroes) and (cur.pagenumber = iPAgeNumber) and ((cur.anydirty and cur.wasfetched) or cur.AllDirty) then begin
+      if {$IFDEF ZERO_OPT}(not cur.ContainsSomeZeroes) and{$ENDIF} (cur.pagenumber = iPAgeNumber) and ((cur.anydirty and cur.wasfetched) or cur.AllDirty) then begin
         exit(cur);
       end;
     end;
@@ -3444,6 +3752,23 @@ begin
   result := iPOs >=size;
 end;
 
+procedure TUnbufferedFileStream.KeepAlive;
+var
+  buf: array[0..511] of byte;
+begin
+  if gettimesince(lastphysicalaccess) > 20000 then begin
+    if tecs(lckUnder) then
+    try
+      FileSeek(FHandle, 0, 0);
+      FileRead(FHandle, buf, sizeof(buf));
+
+    finally
+      lastphysicalaccess := getticker;
+      lcs(lckUnder);
+    end;
+  end;
+end;
+
 procedure TUnbufferedFileStream.Lock;
 begin
   ecs(lckState);
@@ -3470,7 +3795,7 @@ begin
         ubs.FetchPageAndApplyMask(@self);
       end;
     end else begin
-        ubs.FetchPage(PageNumber, @self);
+        ubs.FetchPage(0,UNBUFFERSIZE, PageNumber, @self);
     end;
     inc(ubs.Misses);
   end else
@@ -3521,7 +3846,7 @@ begin
     buf := FindWriteThroughPage(buf.pagenumber+1);
   end;
 
-  FileSeekPx(FHandle, writebuilder.StartPOint, 0);
+  FileSeek(FHandle, writebuilder.StartPOint, 0);
   iWritten := 0;
   iTotalToWrite := writebuilder.datasize;
   GuaranteeWriteUnder(writebuilder.buffer, writebuilder.DataSize);
@@ -3604,7 +3929,7 @@ begin
   result := allowed_prefetches;
 end;
 
-function TUnbufferedFileStream.PrePareAndLockPAge(iPAge: int64;
+function TUnbufferedFileStream.PrePareAndLockPage(const startoffset, neededbytes: int64; iPAge: int64;
   bNeedREad: boolean; bForEof: boolean = false): TUnbufferobj;
 begin
   ecs(lckBuffers);
@@ -3671,7 +3996,7 @@ begin
   end;}
 
 end;
-function TUnbufferedFileStream.SYncRead(var Buffer; Count: Integer): Longint;
+function TUnbufferedFileStream.SYncRead(var Buffer; const Count: Integer): Longint;
 var
   iPossible: int64;
   iOffSet: int64;
@@ -3706,22 +4031,21 @@ begin
   try
     FBack_SeekPOsition := seekpos;
     iPage := FBack_SeekPosition shr unbuffershift;
-    buf := PrePareAndLockPAge(iPAge, true);
-    try
-      //determine offset
-      iOffset := FBack_SeekPosition and UNBUFFERMASK;
-      iPossible := FReportedSize - FBack_SeekPosition;
-      iPossible := lesserof(iPossible, UNBUFFERSIZE-(iOffset));
+    //determine offset
+    iOffset := FBack_SeekPosition and UNBUFFERMASK;
 
-      //determine how many bytes we will read based on possible or bytes requested
-      result := lesserof(iPOssible, count);
+    //determine how many bytes we will read based on possible or bytes requested
+    iPossible := FReportedSize - FBack_SeekPosition;
+    iPossible := lesserof(iPossible, UNBUFFERSIZE-(iOffset));
+    result := lesserof(iPOssible, count);
+    buf := PrePareAndLockPAge(iOffset, result, iPAge, true);
+    try
       //get the stuff from the buffer
   {$IFDEF USE_LINKED_BUFFERS}
       movemem32(@byte(buffer), @buf.buf.data[iOffset],result);
   {$ELSE}
       movemem32(@byte(buffer), @buf.buf.data[iOffset],result);
   {$ENDIF}
-
       FBack_SeekPosition := FBack_SeekPosition + result;
       //update EOF flag
       //eof := FSeekPosition >= FReportedSize;
@@ -3825,7 +4149,7 @@ begin
 
       ecs(lckUnder);
       try
-      FileSeekPx(FHandle, nsz, 0);
+      FileSeek(FHandle, nsz, 0);
       {$IF Defined(MSWINDOWS)}
         Win32Check(SetEndOfFile(FHandle));
       {$ELSEIF Defined(POSIX)}
@@ -3901,10 +4225,10 @@ begin
             start := prefetchposition;
             if start >=0 then begin
               ecs(lckBuffers);
-              pidx := IndexOfPage(prefetchposition);
+              var has := HasPage_Optimal(prefetchposition);
               lcs(lckBuffers);
-              if not (pidx>=0) then begin
-                PrePareAndLockPAge(prefetchposition, NOT prefetchwritemode).buf.unlock;
+              if not has then begin
+                PrePareAndLockPAge(0,UNBUFFERSIZE,prefetchposition, NOT prefetchwritemode).buf.unlock;
                 result := true;
                 Dec(allowed_prefetches);
                 inc(prefetchposition, 1);
@@ -3947,7 +4271,6 @@ var
   i: ni;
   bufo: TUnbufferObj;
   buf: PUnBuffer;
-  obj: TUnbufferObj;
   timing: boolean;
 begin
   timing := false;
@@ -3957,24 +4280,29 @@ begin
 
   if FSeekPAge = iPage then exit;
 {$IFDEF USE_LINKED_BUFFERS}
+  {$IFDEF USE_UBTREE}
+  var tobj := FindPageObj(iPage);
 
-
-
-  obj := FindPageObj(iPage);
+  var obj : TUnBufferObj := nil;
+  if tobj <> nil then
+    obj := tobj.buf;
+  {$ELSE}
+  var obj := FindPageObj(iPage);
+  {$ENDIF}
+  //we found the page, move it to the front
   if obj <> nil then begin
     bringtofront(obj);
     FSeekPage := iPage;
     exit;
   end;
-//  DebugPAges;
+
+  //We DID NOT find the page...
+  //now we will figure out which page we watch to flush out
   bufo := FBufferOrders.Last;
   buf := bufo.buf;
-//  if iPage = 0 then
-//    if (buf.data[81+600] <> 1) then
-//      Debug.Log('AHA!')
-//    else
-//      Debug.Log('Ahoy?');
   buf.Lock;
+  var nuti := bufo.ti;
+
   try
 {$ELSE}
   i := IndexOfPage(iPage);
@@ -3993,14 +4321,25 @@ begin
       FlushPage(buf);
   end;
 
+  FBuffersByPAgeNumber.Remove(nuti,true);
 
   with buf^ do begin
     pagenumber := iPage;
     wasfetched := false;
   end;
+
+  FBuffersByPageNumber.add(nuti);
 //  DebugPAges;
 {$IFDEF USE_LINKED_BUFFERS}
   bringtofront(bufo);
+  {$IFDEF USE_BTREE}
+  if tobj = nil then
+    tobj := FindPageObj(-1);
+  if tobj = nil then
+    raise ECritical.create('should have found page -1 but did not');
+
+  FBuffersByPageNumber.Add(tobj);
+  {$ENDIF}
 {$ELSE}
   bringtofront(buf);
 {$ENDIF}
@@ -4078,7 +4417,7 @@ begin
   end;
   try
     FBack_SeekPOsition := seekpos;
-    bufo := PrePareAndLockPAge(FBack_SeekPosition shr unbuffershift, false);
+    bufo := PrePareAndLockPAge(0,UNBUFFERSIZE, FBack_SeekPosition shr unbuffershift, false);
     buf := bufo.buf;
     try
 //      Debug.Log(FBack_SeekPosition.ToString);
@@ -4369,7 +4708,7 @@ begin
   iPAge := (iSZ-1) shr UNBUFFERSHIFT;
 
 //  rsEof.BeginTime;
-  bufo := PrePareAndLockPAge(iPage, false, true);
+  bufo := PrePareAndLockPAge(0,UNBUFFERSIZE,iPage, false, true);
 //  rsEof.endTime;
   buf := bufo.buf;
   try
@@ -4399,7 +4738,7 @@ end;
 function TUnbufferedFileStream.Read(var Buffer; Count: Integer): Longint;
 begin
   lastuse := getticker;
-  try
+//  try
     ecs(lckOp);
     LockBack('Read');
     try
@@ -4419,9 +4758,9 @@ begin
       UnlockBack;
     end;
     lcs(lckOp);
-  finally
-
-  end;
+//  finally
+//
+//  end;
 end;
 
 function TUnbufferedFileStream.ReadEOF(var iLength: int64): boolean;
@@ -4439,7 +4778,7 @@ begin
 
     iSZ := inherited Seek(0,soEnd);
     ipage := (iSZ-1) div UNBUFFERSIZE;
-    buf := PrePareAndLockPAge(iPAge, true).buf;
+    buf := PrePareAndLockPAge(0,UNBUFFERSIZE, iPAge, true).buf;
     try
       iOffset := UNBUFFERSIZE - 16;
 
@@ -4460,9 +4799,47 @@ end;
 
 
 
+function TUnbufferedFileStream.ReadLLQC(qi: TReadCommand): int64;
+begin
+  result := 0;
+  //DO the ABSOLUTE MINIMUM AMOUNT FO WORK REQUIRED TO FULFILL THE QUEUE ITEM.
+  lastuse := getticker;
+    ecs(lckOp);
+    LockBack('Read');
+    try
+      ecs(lckState);
+      IF HasAnyPageRange(qi.addr shr UNBUFFERSHIFT, 1+((qi.Count-1) shr UNBUFFERSHIFT)) then begin
+        Seek(qi.Addr,soFromBeginning);
+        result := Stream_GuaranteeRead(self, qi.FPointer, qi.Count);
+      end else begin
+
+        FBack_SeekPosition := FFront_SeekPOsition;
+        var n := phIO.node;
+        if n <> nil then
+          n.busyR := true;
+
+        qi.result := FileReadPx_BlockAlign(qi.addr, self.Handle, qi.FPointer^,qi.count);
+        inc(FFront_SeekPosition, qi.result);
+
+        if n <> nil then
+          n.incr(qi.result);
+      end;
+
+      lcs(lckSTate);
+    finally
+      UnlockBack;
+    end;
+    lcs(lckOp);
+end;
+
 function TUnbufferedFileStream.RecommendedPrefetchAllowance: ni;
 begin
-  result := FRecommendedPrefetchAllowance;
+  FRecommendedPrefetchAllowance := FRecommendedPrefetchAllowance + PREFETCH_ALLOWANCE_CREEP;
+  var maxpre := (UNBUFFERED_BUFFERED_PARTS shr 1);
+  if FRecommendedPrefetchAllowance >  maxpre then
+    FRecommendedPrefetchAllowance := maxpre;
+
+  result := round(FRecommendedPrefetchAllowance);
 end;
 
 procedure TUnbufferedFileStream.RefreshDirtyStats;
@@ -4860,7 +5237,7 @@ end;
 
 { TAlignedTempSpace }
 
-{$ENDIF}
+
 
 procedure Balance;
 begin
@@ -4869,6 +5246,30 @@ begin
 
 end;
 
+
+{ TUBTreeItem }
+
+function TUBTreeItem.Compare(const [unsafe] ACompareTo: TBTreeItem): ni;
+begin
+  //todo 1: optimize
+      // a < self :-1  a=self :0  a > self :+1
+
+  if TUBTreeItem(ACompareTo).buf.buf.PageNumber < self.buf.buf.pagenumber then
+    exit(-1);
+  if TUBTreeItem(ACompareTo).buf.buf.PageNumber > self.buf.buf.pagenumber then
+    exit(1);
+
+  exit(0);
+
+
+end;
+
+procedure TUBTreeItem.Copy(const [unsafe] ACopyTo: TBTreeItem);
+begin
+  inherited;
+  TUBTreeItem(ACopyTo).buf := self.buf;
+end;
+{$ENDIF}
 
 initialization
 {$IFDEF MSWINDOWS}

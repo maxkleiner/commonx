@@ -3,19 +3,21 @@ unit IRCServer;
 interface
 
 uses
-  tickcount, classes, typex, systemx, stringx, idtcpserver,idglobal, betterobject, idcontext, better_collections, debug, sysutils;
+  helpers_stream, tickcount, classes, typex, systemx, stringx, idtcpserver,idglobal, betterobject, idcontext, better_collections, debug, sysutils, managedthread, fatmessage;
 
 type
   TIRCFlags = record
     namesx: boolean;
     uhnames: boolean;
   end;
+  TchallengeMode = (cmRequired, cmRequiredForCHANL, cmOptional);
 
   TIRCChannel = class;//forward
   TIRCServer = class;//forward)
 
   TIRCConnection = class(TSharedObject)
   public
+    challengemet: boolean;
     nick: string;
     user: string;
     user_num: string;
@@ -23,8 +25,10 @@ type
     context: TIdContext;
     gotcaps: boolean;
     flags: TIRCFlags;
+    scramble: boolean;
     lastseen: ticker;//time last seen, ponged or pinged or other line/command
     lastping: ticker;//time last ping was sent (pending pong)
+    challenge_sent: string;
     procedure send_generic_msg(id: string; sTrailer: string);overload;
     procedure send_generic_msg(id: string; params: TArray<string>; sTrailer: string);overload;
 
@@ -38,16 +42,22 @@ type
     procedure Detach; override;
     constructor Create; override;
     procedure Disconnect;
+    function ScrambleString(s: string): string;
+    function UnScrambleString(s: string): string;
+    procedure SendScrambledLine(sLine: string);
   end;
 
   TIRCChannel = class(TSharedObject)
   protected
     procedure NotifyJoined(con: TIRCConnection);
     procedure NotifyLeft(con: TIRCConnection);
+    procedure OpenLogFile;
+    procedure CloseLogFile;
   public
     [weak] irc: TIRCSErver;
     name: string;
     users: TSharedList<TIRCConnection>;
+    logfile: TFileStream;
     constructor Create; override;
     procedure Detach; override;
     procedure join(con: TIRCConnection);
@@ -57,6 +67,9 @@ type
 
     procedure EchoNames(toCon: TIRCConnection);
     procedure EchoWhoHere(toCon: TIRCConnection);
+    procedure EchoWhoHere_ToEveryone();
+    procedure LogToFile(confrom: TIRCConnection; sMSG: string);
+
 
 
   end;
@@ -68,36 +81,56 @@ type
     FPort: int64;
   protected
     idsrv: TIdTCPServer;
+    mq: TFatMessageQueue;
+    eet: TExternalEventThread;
     function FindChannel(sName: string): TIRCChannel;
     function HasChannel(sName: string) : boolean;
     function AddChannel(sName: string): boolean;
+    function CloseChannel(sName: string): boolean;
 
     procedure StartListening;
     procedure StopListening;
     procedure SRVOnConnect(AContext: TIdContext);
     procedure SRVOnDisconnect(AContext: TIdContext);
     procedure SRVOnExecute(AContext: TIdContext);
+    procedure EETOnExecute(thr: TExternalEventThread);
 
     procedure handle_line(con: TIRCConnection; sLine: string);
+    procedure handle_command_scramble(con: TIRCConnection);
     procedure handle_command(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_join(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_hist(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_close(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_promote(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_chal(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_char(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_chanL(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_whohere(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_part(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_names(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_command_privmsg(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_invite(con: TIRCConnection; sLine: string; sl: TStringList);
+    procedure handle_command_kick(con: TIRCConnection; sLine: string; sl: TStringList);
     procedure handle_welcome(con: TIRCConnection);
     procedure RemoveFromAllChannels(con: TIRCConnection);
     procedure SendChannels();overload;
     procedure SendChannels(con: TIRCconnection);overload;
     procedure ChannelEmpty(chan: TIRCChannel);
     procedure ExpireDeadConnections;
+    function AdjustNick(sNick: string): string;
+    function HasNick(sNick: string): boolean;
 
   public
+    challengemode : TchallengeMode;
     constructor Create; override;
     procedure Detach; override;
     property Port: int64 read FPort write FPort;
+
   end;
+
+
+
+
 
 implementation
 
@@ -105,10 +138,12 @@ implementation
 
 function TIRCServer.AddChannel(sName: string): boolean;
 begin
-  var lck := FChannels.locki;
+  var lck : ILock := FChannels.locki;
 
   if HasChannel(sName) then
     exit(false);
+
+  Debug.Log('adding channel '+sName);
 
   var chan := TIRCChannel.create;
   chan.name := sName;
@@ -118,27 +153,90 @@ begin
 
 end;
 
+function TIRCServer.AdjustNick(sNick: string): string;
+begin
+  var l := FCons.LockI;
+  var append := '';
+  var iter := 0;
+  var adj := sNick;
+  while HasNick(adj) do begin
+    inc(iter);
+    adj := sNick + inttostr(iter);
+  end;
+  result := adj;
+
+end;
+
 procedure TIRCServer.ChannelEmpty(chan: TIRCChannel);
 begin
-//  if FChannels.trylock then
-  FChannels.lock;
+  if FChannels.trylock then
   try
-    FChannels.Remove(chan);
-    chan.free;
-    chan := nil;
+    if zcopy(chan.name,0,1) <> '#' then begin
+      FChannels.Remove(chan);
+      chan.free;
+      chan := nil;
+    end;
   finally
     fChannels.unlock;
   end;
   SendChannels;
 end;
 
+function TIRCServer.CloseChannel(sName: string): boolean;
+//Returns: false if users still in channel
+//Returns: true if close was successful, including if already closed or doesn't exist
+begin
+  var lck : ILock := FChannels.locki;
+
+  if HasChannel(sName) then
+    exit(true);
+
+  Debug.Log('closing channel '+sName);
+
+
+  var chan := Self.FindChannel(sNAme);
+  if chan = nil then
+    exit(true);
+  if chan.users.Count > 0 then
+    exit(false);
+
+  FChannels.Remove(chan);
+  chan.Free;
+  chan := nil;
+  exit(true);
+end;
+
 constructor TIRCServer.Create;
 begin
   inherited;
+  challengemode := cmRequiredForCHANL;
+  mq := TFatMessageQueue.Create;
   fCons := TSharedList<TIRCConnection>.create;
   fChannels := TSharedList<TIRCChannel>.create;
   port := 223;
+
   StartListening;
+
+
+  mq.handler := function (msg: IHolder<TFatMessage>): boolean
+    begin
+      Debug.Log('handling chanl_updated message');
+      if msg.o.messageClass = 'chanl_updated' then begin
+
+        var channame := msg.o.params[0];
+        if FChannels.TryLock then
+        try
+          var chan := Self.FindChannel(channame);
+          if chan <> nil then
+            chan.EchoWhoHere_ToEVeryone;
+        finally
+          FChannels.Unlock;
+        end;
+
+
+      end;
+    end;
+
 
 end;
 
@@ -148,7 +246,18 @@ begin
   StopListening;
   FCons.free;
   FChannels.free;
+  mq.Free;
+  mq := nil;
+
   inherited;
+
+end;
+
+procedure TIRCServer.EETOnExecute(thr: TExternalEventThread);
+begin
+  thr.RunHot := mq.ProcessNextMessage;
+  ExpireDeadConnections;
+
 
 end;
 
@@ -191,57 +300,87 @@ procedure TIRCServer.handle_command(con: TIRCConnection; sLine: string;
 begin
   if sl.count = 0 then exit;
   var cmd := uppercase(sl[0]);
-  if cmd = 'CAP' then begin
+  if (cmd = 'CHAL') or (cmd = SimpleOb('CHAL')) then begin
+    handle_command_chal(con, sLine, sl);
+  end else
+  if (cmd = 'CHAR') or (cmd = SimpleOb('CHAR')) then begin
+    handle_command_chaR(con, sLine, sl);
+  end else
+  if (cmd = 'OBFS') or (cmd = SimpleOb('OBFS')) then begin
+    con.scramble := true;
+    con.SendScrambledLine('OBFS');
+  end else
+  if (cmd = 'CAP') or (cmd = SimpleOb('CAP')) then begin
     if uppercase(sl[1]) = 'END' then begin
       con.gotcaps := true;
     end;
   end else
-  if cmd = 'NICK' then begin
+  if (cmd = 'NICK') or (cmd = SimpleOb('NICK')) then begin
     if sl.count < 2 then
       exit;
-    con.nick := sl[1];
+
+    var conl := Fcons.LockI;
+    con.nick := AdjustNick(sl[1]);
+//    if con.nick <> sl[1] then
+      con.SendScrambledLine('UR '+con.nick);
+
   end else
-  if cmd = 'USER' then begin
+  if (cmd = 'USER') or (cmd = SimpleOb('USER')) then begin
     con.user := sl[1];
     con.user_num := sl[2];
     con.user_wild := sl[3];
-    con.context.connection.Socket.writeln('compa.net CAP * LS unrealircd.org/plaintext-policy unrealircd.org/link-security extended-join chghost cap-notify userhost-in-names multi-prefix away-notify account-notify sasl tls');
+    con.SendScrambledLine('compa.net CAP * LS unrealircd.org/plaintext-policy unrealircd.org/link-security extended-join chghost cap-notify userhost-in-names multi-prefix away-notify account-notify sasl tls');
     handle_welcome(con);
   end else
-  if cmd = 'PING' then begin
+  if (cmd = 'PING') or (cmd = SimpleOb('PING')) then begin
     con.pinged;
     ExpireDeadConnections;
   end else
-  if cmd = 'PONG' then begin
+  if (cmd = 'PONG') or (cmd = SimpleOb('PONG')) then begin
     con.pinged;
     ExpireDeadConnections;
   end else
-  if cmd = 'NAMESX' then begin
+  if (cmd = 'NAMESX') or (cmd = SimpleOb('NAMESX')) then begin
     con.flags.namesx := true;
   end else
-  if cmd = 'UHNAMES' then begin
+  if (cmd = 'UHNAMES') or (cmd = SimpleOb('UHNAMES')) then begin
     con.flags.uhnames := true;
   end else
-  if cmd = 'JOIN' then begin
+  if (cmd = 'CLOSE') or (cmd = SimpleOb('CLOSE')) then begin
+    handle_command_close(con, sLIne, sl);
+  end else
+  if (cmd = 'HIST') or (cmd = SimpleOb('HIST')) then begin
+    handle_command_hist(con, sLIne, sl);
+  end else
+  if (cmd = 'PROMOTE') or (cmd = SimpleOb('PROMOTE')) then begin
+    handle_command_promote(con, sLIne, sl);
+  end else
+  if (cmd = 'JOIN') or (cmd = SimpleOb('JOIN')) then begin
     handle_command_join(con, sLIne, sl);
   end else
-  if cmd = 'PART' then begin
+  if (cmd = 'PART') or (cmd = SimpleOb('PART')) then begin
     handle_command_part(con, sLIne, sl);
   end else
-  if cmd = 'NAMES' then begin
+  if (cmd = 'NAMES') or (cmd = SimpleOb('NAMES')) then begin
     handle_command_names(con, sLIne, sl);
   end else
-  if cmd = 'MODE' then begin
+  if (cmd = 'MODE') or (cmd = SimpleOb('MODE')) then begin
 //    handle_command_join(con, sLIne, sl);
   end else
-  if cmd = 'CHANL' then begin
+  if (cmd = 'CHANL') or (cmd = SimpleOb('CHANL')) then begin
     handle_command_chanL(con, sLIne, sl);
   end else
-  if cmd = 'WHOHERE' then begin
+  if (cmd = 'WHOHERE') or (cmd = SimpleOb('WHOHERE')) then begin
     handle_command_whohere(con, sLIne, sl);
   end else
-  if cmd = 'PRIVMSG' then begin
+  if (cmd = 'PRIVMSG') or (cmd = SimpleOb('PRIVMSG')) then begin
     handle_command_privmsg(con, sLIne, sl);
+  end else
+  if (cmd = 'INVITE') or (cmd = SimpleOb('INVITE')) then begin
+    handle_command_invite(con, sLIne, sl);
+  end else
+  if (cmd = 'KICK') or (cmd = SimpleOb('KICK')) then begin
+    handle_command_kick(con, sLIne, sl);
   end else begin
     Debug.Log('WARNING!!!!! *** unknown command '+cmd+' line:'+sLine);
   end;
@@ -250,10 +389,83 @@ begin
 
 end;
 
+procedure TIRCServer.handle_command_chal(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+const
+  alpha = '0123456789qazwsxedcrfvtgbyhnujmikolpQAZWSXEDCRFVTGBYHNUJMIKOLP';
+begin
+  var cs := '';
+  for var t:= 0 to 63 do begin
+    cs := cs + alpha[random(high(alpha))];
+  end;
+  con.challenge_sent := cs;
+  con.SendScrambledLine('CHAQ '+SimpleOb(con.challenge_sent));
+end;
+
 procedure TIRCServer.handle_command_chanL(con: TIRCConnection; sLine: string;
   sl: TStringList);
 begin
-  SendChannels(con);
+  if con.challengemet then
+    SendChannels(con)
+  else
+    con.SendScrambledLine('challenge not met');
+end;
+
+procedure TIRCServer.handle_command_char(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+  var res := zcopy(sLine, 5,length(sLine));
+  if DifferentOb(res) = con.challenge_sent then
+    con.challengemet := true;
+
+end;
+
+procedure TIRCServer.handle_command_close(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+  if sl.count < 2 then
+    exit;
+
+  var ilock := FChannels.LockI;
+
+  var slh := parsestringh(sl[1], ',');
+  for var t:= 0 to slh.o.count-1 do begin
+    if CloseChannel(slh.o[t]) then
+      sendChannels();
+  end;
+end;
+
+procedure TIRCServer.handle_command_hist(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+
+  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+
+procedure TIRCServer.handle_command_invite(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+  FCons.Lock;
+  try
+    if sl.count < 3 then begin
+      Debug.Log('BAD LINE: '+sLine);
+      exit;
+    end;
+
+    var user := sl[1];
+    var chan := sl[2];
+    for var t := 0 to FCons.Count-1 do begin
+      if 0=comparetext(FCons[t].nick, user) then begin
+        try
+        FCons[t].send_generic_msg('INVITE',[chan],'');
+        except
+        end;
+      end;
+    end;
+  finally
+    FCons.Unlock;
+  end;
 
 
 end;
@@ -283,6 +495,32 @@ begin
 end;
 
 
+procedure TIRCServer.handle_command_kick(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+  FCons.Lock;
+  try
+    if sl.count < 3 then begin
+      Debug.Log('BAD LINE: '+sLine);
+      exit;
+    end;
+
+    var user := sl[1];
+    var chan := sl[2];
+    for var t := 0 to FCons.Count-1 do begin
+      if 0=comparetext(FCons[t].nick, user) then begin
+        try
+        FCons[t].send_generic_msg('KICK',[chan],'');
+        except
+        end;
+      end;
+    end;
+  finally
+    FCons.Unlock;
+  end;
+
+end;
+
 procedure TIRCServer.handle_command_names(con: TIRCConnection; sLine: string;
   sl: TStringList);
 begin
@@ -303,8 +541,11 @@ begin
   for var t:= 0 to slh.o.count-1 do begin
     var chan := FindChannel(slh.o[t]);
     if chan <> nil then begin
+      Debug.Log('connection is leaving channel '+chan.name);
       chan.leave(con);
+      Debug.Log('notifying other connections that we''ve left the channel '+chan.Name);
       chan.EchoWhoHere(con);
+      MQ.QuickBroadcast('chanl_updated', [chan.name]);
     end;
   end;
 
@@ -321,9 +562,9 @@ begin
     if sl.count > 1 then
     for var t := 0 to FChannels.count-1 do begin
       if sl.count < 2 then exit;
-
+      var sTo := sl[1];
       var chan := FChannels[t];
-      if comparetext(chan.name, sl[1])=0 then begin
+      if comparetext(chan.name, sTo)=0 then begin
         sl.delete(0);
         sl.delete(0);
         var msg := unparsestring(' ',sl);
@@ -333,6 +574,19 @@ begin
   finally
     FChannels.unlock;
   end;
+end;
+
+procedure TIRCServer.handle_command_promote(con: TIRCConnection; sLine: string;
+  sl: TStringList);
+begin
+
+  raise ECritical.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+
+procedure TIRCServer.handle_command_scramble(con: TIRCConnection);
+begin
+  con.scramble := true;
 end;
 
 procedure TIRCServer.handle_command_whohere(con: TIRCConnection; sLine: string;
@@ -397,6 +651,18 @@ end;
 function TIRCServer.HasChannel(sName: string): boolean;
 begin
   result := FindChannel(sName) <> nil;
+end;
+
+function TIRCServer.HasNick(sNick: string): boolean;
+begin
+  var l := FCons.LockI;
+  for var t:= 0 to FCons.Count-1 do begin
+    if comparetext(Fcons[t].nick, sNick)=0 then
+      exit(true);
+  end;
+
+  exit(false);
+
 end;
 
 procedure TIRCServer.RemoveFromAllChannels(con: TIRCConnection);
@@ -466,7 +732,10 @@ begin
 
     while AContext.Connection.Connected do begin
       Acontext.Connection.IOHandler.ReadTimeout := 10;
+      Acontext.Connection.IOHandler.DefStringEncoding := IndyTextEncoding_UTF8;
       var s := Acontext.Connection.IOHandler.ReadLn();
+      if cli.scramble then
+        s := cli.UnScrambleString(s);
       if s <> '' then begin
         handle_line(cli, s);
       end else begin
@@ -487,6 +756,13 @@ end;
 
 procedure TIRCServer.StartListening;
 begin
+  eet := TPM.Needthread<TExternalEventThread>(nil);
+  eet.Name := 'IRCServer Events';
+  eet.ColdRunInterval := 8000;
+  eet.OnExecute := EETOnExecute;
+
+
+
   if idsrv = nil then begin
     idsrv := TIdTCPServer.create(nil);
     idsrv.DefaultPort := port;
@@ -497,12 +773,20 @@ begin
     idsrv.active :=true;
   end;
 
+  eet.Start;
+
 end;
 
 procedure TIRCServer.StopListening;
 begin
+  eet.Stop;
+
   idsrv.free;
   idsrv := nil;
+
+  TPM.NoNeedthread(eet);
+  eet := nil;
+
 
 end;
 
@@ -511,8 +795,9 @@ end;
 procedure TIRCConnection.send_generic_msg(id: string; sTrailer: string);
 begin
   var sLine := id+' '+Nick+' :'+sTrailer;
-  context.Connection.IOHandler.WriteLn(sLine);
   debug.log('>>>>>'+sLine);
+  SendScrambledLine(sLine);
+
 end;
 
 procedure TIRCConnection.channel_msg(from: TIRCConnection; chan: TIRCChannel;
@@ -538,8 +823,9 @@ begin
 
   if context <> nil then
   if context.connection <> nil then
-    if context.connection.iohandler <> nil then
-      context.Connection.IOHandler.WriteLn(sLine);
+    if context.connection.iohandler <> nil then begin
+      SendScrambledLine(sLine);
+    end;
 end;
 
 procedure TIRCConnection.cmdmsg(sCmd, sFrom: string);
@@ -551,7 +837,7 @@ begin
   if assigned(context) then
     if assigned(context.connection) then
       if assigned(context.connection.iohandler) then
-        context.connection.iohandler.writeln(sLine);
+        SendScrambledLine(sLine);
 
 end;
 
@@ -594,14 +880,14 @@ begin
   if assigned(context) then
     if assigned(context.connection) then
       if assigned(context.connection.iohandler) then
-        context.connection.iohandler.writeln(sLine);
+        SendScrambledLine(sLine);
 end;
 
 procedure TIRCConnection.msg_chan_to_specific_user_raw(chan: TIRCChannel;
   sRaw: string; sPreChan: string = '');
 begin
   var sLine := ':system!system@system '+sPreChan+chan.name+' '+sRaw;
-  context.Connection.IOHandler.WriteLn(sLine);
+  SendScrambledLine(sLine);
   debug.log('>>ch>>'+sLine);
 end;
 
@@ -620,8 +906,31 @@ begin
     sFrom := 'system!system@system';
 
   var sLine := ':'+sFrom+' PRIVMSG '+sTarget+' :'+sMessage;
-  context.Connection.IOHandler.WriteLn(sLine);
+  SendScrambledLine(sLine);
   debug.log('>>>>>'+sLine);
+end;
+
+function TIRCConnection.Scramblestring(s: string): string;
+begin
+  result := s;
+  for var t:= low(s) to high(s) do begin
+    case s[t] of #13, #10, #$58,#$5F: begin
+      end else begin
+      result[t] := char(ord(s[t]) xor $55);
+      end;
+    end;
+
+  end;
+end;
+
+procedure TIRCConnection.SendScrambledLine(sLine: string);
+begin
+  if scramble then
+    sline := ScrambleString(sLIne);
+
+  context.Connection.IOHandler.DefStringEncoding := IndyTextEncoding_UTF8;
+  context.Connection.IOHandler.WriteLn(sLine);
+
 end;
 
 procedure TIRCConnection.send_generic_msg(id: string; params: TArray<string>;
@@ -633,11 +942,23 @@ begin
   end;
   sLine := sLine+':'+sTrailer;
 
-  context.Connection.IOHandler.WriteLn(sLine);
+  SendScrambledLine(sLine);
   debug.log('>>>>>'+sLine);
 end;
 
+function TIRCConnection.UnScrambleString(s: string): string;
+begin
+  result := SCrambleString(s);
+end;
+
 { TIRCChannel }
+
+procedure TIRCChannel.CloseLogFile;
+begin
+  var lck := Locki;
+  logfile.Free;
+  logfile := nil;
+end;
 
 constructor TIRCChannel.Create;
 begin
@@ -682,14 +1003,28 @@ begin
   toCon.cmdmsg('WHOHERE '+name+' '+sUsers);
 end;
 
+procedure TIRCChannel.EchoWhoHere_ToEveryone;
+begin
+  self.irc.idsrv.Contexts.LockList;
+  try
+  var l := users.locki;
+  for var t := 0 to users.count-1 do begin
+    var con := users[t];
+    EchoWhohere(con);
+  end;
+  finally
+    self.irc.idsrv.Contexts.UnlockList;
+  end;
+end;
+
 procedure TIRCChannel.join(con: TIRCConnection);
 begin
   var lck := users.locki;
 
   if not users.Has(con) then begin
     con.cmdmsg('JOIN :'+name, con.FullIdent);
-    con.cmdmsg('332 '+con.nick+' '+name+' :Welcome to the channel... i think...');
-    con.cmdmsg('333 '+con.nick+' '+name+' yourmom 12341234');
+    con.cmdmsg('332 '+con.nick+' '+name+' :Welcome...');
+    con.cmdmsg('333 '+con.nick+' '+name+' not used 12341234');
 //    con.msg_chan_to_specific_user_raw(self, '333', 'yourmom 123412341234');
   end;
   if users.Has(con) then
@@ -705,11 +1040,44 @@ end;
 
 procedure TIRCChannel.leave(con: TIRCConnection);
 begin
-  var lck := users.locki;
-  users.remove(con);
-  NotifyLeft(con);
-  if users.count = 0 then
+  var empty := false;
+  begin
+    var lck := users.locki;
+    if users.Has(con) then begin
+      users.remove(con);
+      NotifyLeft(con);
+    end;
+    empty := users.Count = 0;
+
+  end;
+
+  if empty then
     irc.channelempty(self);
+
+
+
+
+
+
+end;
+
+procedure TIRCChannel.LogToFile(confrom: TIRCConnection; sMSG: string);
+begin
+  var lck := LockI;
+  OpenLogFile;//if not opened
+  logfile.seek(0, soEnd);
+  var from :string := ':';
+  if confrom <> nil then
+    from := confrom.nick+':';
+
+
+  var bytes := StringToBytes(from+sMsg+NL);
+
+  stream_guaranteewrite(logfile, @bytes[low(bytes)], length(bytes));
+
+  CloseLogFile;
+
+
 
 
 
@@ -717,9 +1085,11 @@ end;
 
 procedure TIRCChannel.msg_everyone_in_channel(confrom: TIRCConnection; sMsg: string; bExcludeSelf: boolean = true);
 begin
+  LogToFile(confrom,sMsg);
   self.irc.idsrv.Contexts.LockList;
   try
   var l := users.locki;
+
   for var t := 0 to users.count-1 do begin
     var con := users[t];
     if (not bExcludeSelf) or (con<>conFrom) then
@@ -749,13 +1119,54 @@ begin
 
 end;
 
+procedure TIRCChannel.OpenLogFile;
+var
+  fil: string;
+begin
+  var lck := Locki;
+  if logfile <> nil then
+    exit;
+  fil := dllpath+'ChannelLogs\'+name+'.txt';
+  forcedirectories(extractfilepath(fil));
+  if not fileexists(fil) then begin
+    logfile := TFileStream.Create(fil, fmCreate);
+  end else begin
+    logfile := TfileStream.Create(fil, fmOpenReadWrite+fmShareDenyNone);
+  end;
+
+
+
+end;
+
 procedure TIRCChannel.privmsg_everyone_in_channel(confrom: TIRCConnection;
   sMsg: string);
 begin
+  LogToFile(confrom,sMsg);
   var l := users.locki;
   for var t := 0 to users.count-1 do begin
     users[t].privmsg(name, sMsg, confrom.fullident);
   end;
 end;
+
+
+
+initialization
+debug.Log('Simple obfuscation: CAP='+SimpleOb('CAP'));
+debug.Log('Simple obfuscation: NICK='+SimpleOb('NICK'));
+debug.Log('Simple obfuscation: USER='+SimpleOb('USER'));
+debug.Log('Simple obfuscation: PING='+SimpleOb('PING'));
+debug.Log('Simple obfuscation: PONG='+SimpleOb('PONG'));
+debug.Log('Simple obfuscation: NAMESX='+SimpleOb('NAMESX'));
+debug.Log('Simple obfuscation: UHNAMES='+SimpleOb('UHNAMES'));
+debug.Log('Simple obfuscation: JOIN='+SimpleOb('JOIN'));
+debug.Log('Simple obfuscation: PART='+SimpleOb('PART'));
+debug.Log('Simple obfuscation: NAMES='+SimpleOb('NAMES'));
+debug.Log('Simple obfuscation: CHANL='+SimpleOb('CHANL'));
+debug.Log('Simple obfuscation: PRIVMSG='+SimpleOb('PRIVMSG'));
+debug.Log('Simple obfuscation: WHOHERE='+SimpleOb('WHOHERE'));
+debug.Log('Simple obfuscation: DCC='+SimpleOb('DCC'));
+debug.Log('Simple obfuscation: XDCC='+SimpleOb('XDCC'));
+debug.Log('Simple obfuscation: RESUME='+SimpleOb('RESUME'));
+
 
 end.

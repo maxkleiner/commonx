@@ -1,14 +1,16 @@
 unit SharedObject;
-
+{x$DEFINE DONT_LEAK_MONITOR}
 {$INCLUDE DelphiDefs.inc}
 //The classes contained in sharedobject.pas provide solid, foundations upon which
 //to build a thread-safe classes.  See each class for more info.
 {$D+}
+{$DEFINE OLD_UNIT}
 interface
-{$IFNDEF OLD_UNIT}
+{$IFDEF OLD_UNIT}
 uses
   betterobject;
 {$ELSE}
+xxx
 {$DEFINE FREEDICT}
 {x$DEFINE THREAD_BLOCKING_DIAGNOSTICS}
 {x$DEFINE LOCK_DEBUG}
@@ -280,8 +282,8 @@ const
   READ_LOCK = 1;
 
 
-{$ENDIF}
 
+{$ENDIF}
 var
   MasterMonitor: TStandardMonitor;
   nodebug: boolean;
@@ -291,7 +293,7 @@ var
 
 
 implementation
-{$IFNDEF OLD_UNIT}
+{$IFDEF OLD_UNIT}
 uses orderlyinit;
 {$ELSE}
 uses Debug, tickcount, orderlyinit;
@@ -1144,8 +1146,9 @@ end;
 
 procedure TMonitorableObject.Detach;
 begin
-  inherited;
+
   UnregisterFromMonitors;
+  inherited;
 
 end;
 
@@ -1346,19 +1349,27 @@ end;
 
 procedure oinit;
 begin
+{x$IFNDEF OLD_UNIT}
   nodebug := true;
   MasterMonitor := TstandardMonitor.create;
+{x$ENDIF}
 end;
 
 procedure ofinal;
 begin
-//  MasterMonitor.free;
-//  MasterMonitor := nil;
+{x$IFNDEF OLD_UNIT}
+{$IFDEF DONT_LEAK_MONITOR}
+  if assigned(MasterMonitor) then
+    MasterMonitor.free;
+  MasterMonitor := nil;
+{$ENDIF}
+{x$ENDIF}
 end;
 
 
 initialization
-  init.registerprocs('SharedObject', oinit, ofinal);
+
+init.registerprocs('SharedObject', oinit, ofinal,'');
 
 finalization
 

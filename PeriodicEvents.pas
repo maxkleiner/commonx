@@ -17,7 +17,7 @@ type
   private
     FSynchronized: boolean;
   protected
-    FFrequency: ticker;
+    FInterval: ticker;
     FEnabled: boolean;
     FLastExecutionTime: ticker;
     FArmed: boolean;
@@ -32,12 +32,15 @@ type
   public
     Startimmediately: boolean;
     BanStartTime: ticker;
+
     destructor Destroy;override;
     procedure Execute;
     function CanArm: boolean;virtual;
     function Finished: boolean;virtual;
     procedure HeartBeatcheck;virtual;
-    property Frequency: ticker read FFrequency write FFrequency;
+    constructor Create; override;
+    property Frequency: ticker read FInterval write FInterval;
+    property Interval: ticker read FInterval write FInterval;
     property LastExecutionTime: ticker read FLastExecutionTime write FLastExecutionTime;
     property Enabled: boolean read FEnabled write FEnabled;
     property IsTime: boolean read GetIsTime;
@@ -59,15 +62,18 @@ type
   end;
 
   TPeriodicEventAggregator = class(TManagedThread)
+  private
+    procedure Init;override;
   protected
     FEvents: TList<TPeriodicEvent>;
     idx: ni;
   public
     procedure Add(event: TPeriodicEvent);
     procedure Remove(event: TPeriodicEvent);
-    procedure Init;override;
+    procedure InitFromPool;override;
     destructor Destroy;override;
     procedure DoExecute;override;
+    procedure RegisterLeaks;
   end;
 
   TExternalPeriodicEvent = class(TPeriodicEvent)
@@ -107,6 +113,12 @@ implementation
 function TPeriodicEvent.CanArm: boolean;
 begin
   result := true;
+end;
+
+constructor TPeriodicEvent.Create;
+begin
+  inherited;
+
 end;
 
 destructor TPeriodicEvent.Destroy;
@@ -150,7 +162,7 @@ begin
   if StartImmediately then begin
     result := 0;
   end else
-    result := (FLastExecutionTime+FFrequency) - GetTicker;
+    result := (FLastExecutionTime+FInterval) - GetTicker;
 
 end;
 
@@ -203,39 +215,44 @@ begin
 
   Lock;
   try
-    if idx >= FEvents.count then begin
+    if FEvents.count = 0 then begin
       RunHot := false;
+      exit;
+    end;
+    if idx >= FEvents.count then begin
       idx := 0;
       exit;
     end;
-    var crv := 1000;
-    for var t := 0 to FEvents.Count-1 do begin
-      crv := lesserof(crv, FEvents[t].Frequency);
-    end;
-    ColdRunInterval := crv;
 
 
-    RunHot := true;
-    FCurrent := FEvents[idx];
-    if FCurrent.canarm then begin
-      tm := GetTicker;
-      if (FCurrent.BanStartTime = 0) or (gettimesince(tm,FCurrent.BanStartTime) > 60000) then
-      if FCurrent.StartImmediately or (GetTimeSince(tm,FCurrent.LastExecutionTime) > FCurrent.Frequency) then begin
-        FCurrent.StartImmediately := false;
-        FCurrent.Armed := true;
-        FCurrent.LastExecutionTime := tm;
+    repeat
+      RunHot := true;
+      FCurrent := FEvents[idx];
+      if FCurrent.canarm then begin
+        tm := GetTicker;
+        if (FCurrent.BanStartTime = 0) or (gettimesince(tm,FCurrent.BanStartTime) > 60000) then
+        if FCurrent.StartImmediately or (GetTimeSince(tm,FCurrent.LastExecutionTime) > FCurrent.Frequency) then begin
+          FCurrent.StartImmediately := false;
+          FCurrent.Armed := true;
+          FCurrent.LastExecutionTime := tm;
+        end;
       end;
-    end;
 
-    inc(idx);
+      inc(idx);
+    until (FCurrent.Armed) or (idx >= FEvents.count);
+
   finally
     Unlock;
   end;
 
+  if not assigned(FCurrent) then begin
+    runhot := false;
+  end else
   try
     if FCurrent.Armed then begin
       try
         FCurrent.Execute;
+        runhot := true;
       except
         on e: exception do begin
           FCurrent.BanStartTime := getticker;
@@ -243,6 +260,29 @@ begin
           Debug.Log('Execution of this event will be banned for 60 seconds.');
         end;
       end;
+    end else begin
+      runhot := false;
+      var crv := 1000;
+      var tmNao := getticker;
+      var bestNext : ticker := 0;
+      Lock;
+      try
+        for var t := 0 to FEvents.Count-1 do begin
+          var nextEx := FEvents[t].FLastExecutionTime+FEvents[t].Frequency;
+          var tmUntil := gettimesince(nextEx, tmNao);
+
+          if (bestNExt = 0) or (tmUntil < nextEx) then begin
+            idx := t;
+            bestNext := tmUntil;
+          end;
+
+          crv := greaterof(1,lesserof(crv, bestNext));
+        end;
+        ColdRunInterval := crv;
+      finally
+        unlock;
+      end;
+
     end;
   finally
     FCurrent.Armed := false;
@@ -253,7 +293,26 @@ end;
 procedure TPeriodicEventAggregator.Init;
 begin
   inherited;
-  FEvents := TList<TPeriodicEvent>.create;
+  if FEvents = nil then
+    FEvents := TList<TPeriodicEvent>.create;
+
+end;
+
+procedure TPeriodicEventAggregator.InitFromPool;
+begin
+  inherited;
+  if FEvents = nil then
+    FEvents := TList<TPeriodicEvent>.create;
+
+
+end;
+
+procedure TPeriodicEventAggregator.RegisterLeaks;
+begin
+  var l := LockI;
+//  RegisterExpectedMemoryLeak(FEvents);
+//  for var t:= 0 to FList.count-1 do
+//    REgisterExpectedMemoryLeak(FEvents[t]);
 
 
 end;
@@ -321,6 +380,7 @@ procedure TPeriodicCommandEvent.Destroycommand;
 begin
   if cmd = nil then
     exit;
+  cmd.RaiseExceptions := false;
   cmd.WaitFor;
   cmd.free;
   cmd := nil;
@@ -344,6 +404,9 @@ end;
 
 procedure TPeriodicSingleTon.CleanupPE;
 begin
+  if FPE = nil then
+    exit;
+
   PEA.Remove(FPE);
   FPE.Free;
   FPE := nil;
@@ -416,3 +479,5 @@ initialization
 
 
 end.
+
+

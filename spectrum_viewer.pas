@@ -3,7 +3,7 @@ unit spectrum_viewer;
 interface
 
 uses
-  typex, soundinterfaces, systemx, advancedgraphics_dx, geometry, easyimage, colorconversion, graphics, direct3d9_jedi, soundtools, fftw_interface, math, advancedgraphics;
+  typex, colorblending, soundinterfaces, systemx, advancedgraphics_dx, geometry, easyimage, colorconversion, graphics, direct3d9_jedi, soundtools, fftw_interface, math, advancedgraphics;
 
 
 const
@@ -88,8 +88,8 @@ begin
     try
       // we have no imaginary data, so clear idata
       for u := low(lout) to high(lout) do begin
-        lout[u].r := 0;
-        lout[u].i := 0;
+        lout[u].re := 0;
+        lout[u].im := 0;
       end;
 
       //CLEAR BUCKETS
@@ -114,7 +114,7 @@ begin
         m := 0;
         for i := 1 to (iWindowLength-2) div SPLIT do begin
 
-          absval := (lout[i].r+lout[i].i)/iWindowLength;
+          absval := (lout[i].re+lout[i].im)/iWindowLength;
 //
 //          absval := abs(lout[i*2]);
           m := i ;

@@ -35,4 +35,10 @@ object frmBase: TfrmBase
     Left = 176
     Top = 16
   end
+  object tmFatMessage: TTimer
+    Interval = 15
+    OnTimer = tmFatMessageTimer
+    Left = 272
+    Top = 16
+  end
 end

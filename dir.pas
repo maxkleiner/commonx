@@ -1,6 +1,7 @@
 unit Dir;
 {$INCLUDE DelphiDefs.inc}
 {$DEFINE DISABLE_ASYNC}
+{$DEFINE INIT_COMPARE}
 interface
 uses
   tickcount, orderlyinit, systemx, Debug, BackGroundThreads, commandprocessor, Classes, numbers,
@@ -52,12 +53,17 @@ type
     FcontainsData: boolean;
     FEOF: boolean;
     FHandle: THandle;
+    function GetfileDate: TDateTime;
+    procedure SetFileDate(const Value: TDateTime);
+    function GetFileDatelocal: TDateTime;
+    procedure SetFileDateLocal(const Value: TDateTime);
   public
     property FileName: string read FFileName write FFileName;
     property StartBlock: int64 read FStartBlock write FStartBlock;
     property Length: int64 read FLength write FLength;
     property Buffer: PByte read FBuffer write FBuffer;
-    property FileDate: TDateTime read FFileDate write FFileDate;
+    property FileDateUTC: TDateTime read GetfileDate write SetFileDate;
+    property FileDateLocal: TDateTime read GetFileDatelocal write SetFileDateLocal;
     property ContainsData: boolean read FcontainsData write FContainsData;
     property EOF: boolean read FEOF write FEOF;
     property Handle: THandle read FHandle write FHandle;
@@ -83,6 +89,8 @@ type
     FError: boolean;
     FSort: boolean;
     FRecurse: boolean;
+    FFolderAttributes: integer;
+    FFolderAttributeMask: integer;
     function GetFile(index: integer): TfileInformation;
     function GetFolder(index: integer): TfileInformation;
     procedure FillList(prog: PVolatileProgression; strdirectory: string; Attr, AttrMask: Integer; List: TBetterList<TFileInformation>; bFolders: boolean);
@@ -119,8 +127,8 @@ type
     procedure AddFolderInfo(fi: Tfileinformation);
 
     constructor CreateFromRemote();
-    constructor Create(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean = false; bSort: boolean = true; brecurse: boolean = false); reintroduce; virtual;
-    class function CreateH(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean = false; bSort: boolean = true; brecurse: boolean = false): IHolder<TDirectory>; reintroduce; virtual;
+    constructor Create(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean = false; bSort: boolean = true; brecurse: boolean = false; folderAttributes: integer = faDirectory; folderAttributemask: integer = faDirectory); reintroduce; virtual;
+    class function CreateH(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean = false; bSort: boolean = true; brecurse: boolean = false; folderAttributes: integer = faDirectory; folderAttributemask: integer = faDirectory): IHolder<TDirectory>; reintroduce; virtual;
 
     destructor Destroy;override;
     procedure Refresh;
@@ -141,7 +149,7 @@ type
 
     property Attributes: integer read GetAttributes write SetAttributes;
     {Attributes of the current folder}
-    property FilterFolders: boolean read GetFilterFolders write SetfilterFolders;
+    property FilterFoldersLikeFiles: boolean read GetFilterFolders write SetfilterFolders;
     {}
     property Filecount: integer read Getfilecount;
     {The number of files in the directory}
@@ -158,10 +166,16 @@ type
     function GetNextFile(out fil: TfileInformation): boolean;
     function GetNextFolder(out fil: TfileInformation): boolean;
     procedure SortByDate;
+    procedure SortBySizeDesc;
+    procedure SortByCustom(f: TComparison<TFileinformation>);
     property Error: boolean read FError write FError;
     property Sort: boolean read FSort write fSort;
     property Recurse: boolean read FRecurse write Frecurse;
     property ParentFolder: string read GetParentFolder;
+    property FolderAttributes: integer read FFolderAttributes write FFolderAttributes;
+    property FolderAttributeMask: integer read FFolderAttributeMask write FFolderAttributeMask;
+    function ToArray(bFiles, bFolders, bRecurse: boolean): TArray<string>;
+    function ToFileList(bFiles, bFolders, bRecurse: boolean): IHolder<TBetterList<TFileInformation>>;
   end;
 
 
@@ -184,6 +198,7 @@ type
     FSource: string;
     FDest: string;
     fFilespec: string;
+    procedure GoSub(sFolder, sTargetFolder: string);
   public
     procedure InitExpense;override;
     procedure DoExecute; override;
@@ -207,11 +222,21 @@ type
     procedure DoExecute;override;
   end;
 
+  TMountInfo = class(TBetterObject)
+  public
+    path: string;
+    space: int64;
+    class function CreateH: IHolder<TMountInfo>;
+  end;
+
 function GetFileDate(FullName: string): TDateTime;
 function GetFolderSize(sFullPath: string; bRecurse: boolean = true):int64;
 function GetFileSize(sFileName: string): int64;
 procedure DeleteFolder(sFolder: string);
-procedure Deletefilespec(sFolder: string; sFileSpec: string);
+function FindSingleFileSpec(sDir: string; sFileSpec: string): string;
+procedure Deletefilespec(sFolder: string; sFileSpec: string; bRecurse: boolean = false);
+
+function DeletefilespecEx(sFolder: string; sFileSpec: string; olderthan: TDateTime; var deleted: ni; limit: ni; bRecurse: boolean = false): ni;
 function GetFileCount(sdir: string; sFileSpec: string = '*.*'): integer;
 function CompareThenCopyFile(sSource: string; sDest: string): boolean;
 function CopyFile(sSource: string; sDest: string): boolean;
@@ -231,20 +256,84 @@ function GetLargestFile(sdir: string; bRecurse: boolean = true): TFileInfoRec;
 function GetFileList(dir: string; filespec: string; attrres, attrmask: ni; bRecurse: boolean): TStringlist;
 function GetFileListH(dir: string; filespec: string; attrres, attrmask: ni; bRecurse: boolean): IHolder<TStringlist>;
 function GetLastSequentialFileName(sdir: string; sExt: string): string;
-function GetNextSequentialFileName(sdir: string; sExt: string): string;
+function GetNextSequentialFileName(sdir: string; sExt: string; iSubMod: int64 = 0): string;
 procedure IterateTree(sDir: string; sFileSpec: string; proc: TProc<TFileInformation>);
+function GetBestMount(sdir: string; msg:TProc<string> = nil): IHolder<TMountInfo>;
+function FindAnyExtension(sOriginalFile: string; exts: TArray<string>): string;
+
 
 var
-  DirCommands: TCommandProcessor;
+  DirCommands: TCommandProcessor = nil;
   filenamecomparison: TComparison<TFileInformation>;
   filenamehexcomparison: TComparison<TFileInformation>;
   filenamedatecomparison: TComparison<TFileInformation>;
+  filesizecomparisonDESC: TComparison<TFileInformation>;
 
 
 implementation
 
 uses
   commands_file;
+
+function FindAnyExtension(sOriginalFile: string; exts: TArray<string>): string;
+begin
+  result := '';
+  for var t := 0 to high(exts) do begin
+    var test := changefileext(sOriginalFile,exts[t]);
+    if fileexists(test) then
+      exit(test);
+  end;
+end;
+
+
+function FindSingleFileSpec(sDir: string; sFileSpec: string): string;
+begin
+  var dir := TDirectory.createh(sDir, sFileSpec, 0,0);
+  if dir.o.filecount = 0 then
+    exit('');
+  result := dir.o.files[0].fullname;
+
+end;
+
+function GetBestMount(sdir: string; msg:TProc<string> = nil): IHolder<TMountInfo>;
+begin
+  result := nil;
+  var best: int64 := 0;
+  var bestPath: string := '';
+  var fi: TFileInformation := nil;
+  var dir := TDirectory.createh(sdir, '*', 0,0,false,false,false,faSymLink, faSymLink);
+  while dir.o.GetNextFolder(fi) do begin
+    try
+      if fileexists(fi.Path+'avoid.txt') then
+        continue;
+      var fre := GetFreeSpaceOnPath(fi.fullname);
+      if assigned(msg) then
+        msg('`cE`'+commaize(fre)+'`cF` free on `cA`'+fi.FullName+'`n`');
+      if fre > best then begin
+        best := fre;
+        bestPath := fi.fullname;
+      end;
+
+    except
+      on E: Exception do begin
+        Debug.Log('coulnd''t check free space on mount '+fi.fullname);
+
+      end;
+    end;
+
+
+  end;
+
+  if bestPath <> '' then begin
+    if assigned(msg) then
+      msg('Will Use: `cE`'+commaize(best)+'`cF` free on `cA`'+bestPath+'`n`');
+    result := TMountInfo.createh;
+    result.o.path := bestPath;
+    result.o.space := best;
+  end;
+
+end;
+
 
 procedure IterateTree(sDir: string; sFileSpec: string; proc: TProc<TFileInformation>);
 var
@@ -371,20 +460,45 @@ begin
 end;
 
 
-procedure Deletefilespec(sFolder: string; sFileSpec: string);
+procedure Deletefilespec(sFolder: string; sFileSpec: string; bRecurse: boolean = false);
+begin
+  var limit: ni := 0;
+  var deleted: ni := 0;
+  DeleteFileSpecEx(sFolder, sFileSpec, 0.0, deleted, limit, bRecurse);
+end;
+
+function DeletefilespecEx(sFolder: string; sFileSpec: string; olderthan: TDateTime; var deleted: ni; limit: ni; bRecurse: boolean = false): ni;
 var
   dir: TDirectory;
   fil: TFileinformation;
   t: integer;
 begin
+  result := 0;
   dir := TDirectory.create(sFolder,sfileSpec,0,0,false, true);
   try
     while dir.GetNextFile(fil) do begin
-      DeleteFile(fil.fullname);
+      if fil.Date < olderthan then begin
+        DeleteFile(fil.fullname);
+        inc(deleted);
+        if (limit >0) and (deleted >=limit) then
+          exit(deleted);
+      end;
+    end;
+
+    if bRecurse then begin
+      while dir.getnextfile(fil) do
+        DeleteFileSpecEx(fil.FullName, sFileSpec, olderthan, deleted, limit, true);
+
+      if (limit >0) and (deleted >=limit) then
+        exit(deleted);
+
+
     end;
   finally
     dir.free;
   end;
+
+  exit(deleted);
 
 
 end;
@@ -434,7 +548,10 @@ begin
 
 end;}
 
-
+procedure DeleteUniqueTempFolder;
+begin
+  DeleteFolder(GetUniqueTempBase);
+end;
 
 procedure DeleteFolder(sFolder: string);
 var
@@ -445,7 +562,19 @@ begin
   dir := TDirectory.create(sFolder,'*.*',0,0,false);
   try
     while dir.GetNextFile(fil) do begin
-      DeleteFile(fil.fullname);
+      var tmStart := GetTicker;
+      try
+        FileSetReadOnly(fil.fullname,false);
+      except
+      end;
+      while not DeleteFile(fil.fullname) do begin
+        if gettimesince(tmStart) > 4000 then
+          break;
+        Debug.Log('Could not delete file '+fil.fullname+' because error '+GetLastError.tostring);
+        sleep(400);
+
+      end;
+
     end;
 
     for t:= 0 to dir.foldercount-1 do begin
@@ -457,7 +586,12 @@ begin
     dir.free;
   end;
 
-  REmoveDir(sFolder);
+  try
+    FileSetReadOnly(sFolder,false);
+  except
+  end;
+
+  RemoveDir(sFolder);
   //RemoveDirectory(PChar(sFolder));
 
 end;
@@ -537,13 +671,15 @@ begin
 
 end;
 
-constructor TDirectory.Create(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean; bSort: boolean; bRecurse: boolean);
+constructor TDirectory.Create(strpath, strFilespec: string; AttrResult, AttrMask: integer; bAsynchronous: boolean; bSort: boolean; bRecurse: boolean;folderAttributes: integer; folderAttributemask: integer);
 begin
   inherited Create;
 
   FRefreshing := false;
 
   iLastIndexOF := 0;
+  self.folderAttributes := folderAttributes;
+  self.FolderAttributeMask := folderAttributemask;
 
   FbFilterFolders := false;
   FFiles := TBetterList<TFileInformation>.create;
@@ -574,10 +710,11 @@ end;
 
 class function TDirectory.CreateH(strpath, strFilespec: string; AttrResult,
   AttrMask: integer; bAsynchronous, bSort,
-  brecurse: boolean): IHolder<TDirectory>;
+  brecurse: boolean;
+  folderAttributes: integer; folderAttributemask: integer): IHolder<TDirectory>;
 begin
   result := THolder<TDirectory>.create;
-  result.o := TDirectory.Create(strpath, strfilespec, attrresult, attrmask, bAsynchronous, bSort, bRecurse);
+  result.o := TDirectory.Create(strpath, strfilespec, attrresult, attrmask, bAsynchronous, bSort, bRecurse, folderAttributes, folderAttributeMask);
 
 end;
 
@@ -651,7 +788,8 @@ begin
 
 end;
 
-procedure TDirectory.FillList(prog: PVolatileProgression; strdirectory: string; Attr, AttrMask: Integer; List: TBetterList<TFileInformation>; bFolders: boolean);
+procedure TDirectory.FillList(prog: PVolatileProgression; strdirectory: string;
+  Attr, AttrMask: Integer; List: TBetterList<TFileInformation>; bFolders: boolean);
 var
   sRec: TSearchRec;
   FileInf: TfileInformation;
@@ -743,8 +881,8 @@ end;
 {------------------------------------------------------------------------------}
 procedure TDirectory.RefreshFolders;
 begin
-  if not FilterFolders then
-    FillList(@FolderProgression, slash(path)+FILE_WILDCARD_ANY, fadirectory, faDirectory , FFolders, true)
+  if not FilterFoldersLikeFiles then
+    FillList(@FolderProgression, slash(path)+FILE_WILDCARD_ANY, fadirectory or folderAttributes, faDirectory or folderAttributeMask, FFolders, true)
   else
     FillList(@FolderProgression, slash(path)+FileSpec, Attributes or faDirectory, AttributeMask or faDirectory,  FFolders, true);
 
@@ -1132,12 +1270,23 @@ begin
 
 end;
 
+procedure TDirectory.SortByCustom(
+  f: TComparison<TFileinformation>);
+begin
+  var ic := TComparer<TFileInformation>.Construct(f);
+  FFiles.Sort(ic);
+end;
+
 procedure TDirectory.SortByDate;
-var
-  t: integer;
 begin
   FFiles.Sort(TComparer<TFileInformation>.Construct(filenamedatecomparison));
 
+
+end;
+
+procedure TDirectory.SortBySizeDesc;
+begin
+  FFiles.Sort(TComparer<TFileInformation>.Construct(filesizecomparisonDESC));
 
 end;
 
@@ -1149,6 +1298,83 @@ begin
   for t:= 0 to FolderCount-1 do begin
     Fsubdirs.Add(Tdirectory.Create(folders[t].Path, self.FileSpec, self.Attributes, self.AttributeMask, self.Asynhronous, self.Sort, self.Recurse));
   end;
+
+end;
+
+function TDirectory.ToArray(bFiles, bFolders, bRecurse: boolean): TArray<string>;
+var
+  fi: TFileInformation;
+  idx: nativeint;
+begin
+  if bRecurse then
+    raise ENotImplemented.create('recursion is not yet implemented');
+
+
+
+  if bFiles then begin
+    idx := length(result);
+    setlength(result,length(result)+filecount);
+    while GetNextFile(fi) do begin
+      result[idx] := fi.FullName;
+      inc(idx);
+    end;
+  end;
+
+  if bfolders then begin
+    idx := length(result);
+    setlength(result,length(result)+foldercount);
+    while GetNextFolder(fi) do begin
+      result[idx] := fi.FullName;
+      inc(idx);
+    end;
+  end;
+end;
+
+
+
+function TDirectory.ToFileList(bFiles, bFolders,
+  bRecurse: boolean): IHolder<TBetterList<TFileInformation>>;
+var
+  fi: TFileInformation;
+begin
+  result := THolder<TBetterList<TFileInformation>>.create(TBetterList<TFIleInformation>.create);
+  result.o.OwnsObjects := true;
+
+
+
+  if bFiles then begin
+    result.o.Capacity := result.o.count+filecount;
+    while GetNextFile(fi) do begin
+      var nu := TFileInformation.copycreate(fi);
+      result.o.add(nu);
+    end;
+  end;
+
+  if bfolders then begin
+    result.o.Capacity := result.o.count+foldercount;
+    while GetNextFolder(fi) do begin
+      var nu := TFileInformation.copycreate(fi);
+      result.o.add(nu);
+
+    end;
+  end;
+
+  FFolderIndex := 0;
+  if bRecurse then begin
+    while GetNextFolder(fi) do begin
+      var subdir := TDirectory.CreateH(fi.FullName, self.FileSpec,self.Attributes,self.AttributeMask);
+      result.o.addList(subdir.o.ToFileList(bFiles,bFolders,bRecurse).o);
+    end;
+  end;
+
+  result.o.SortAnon(function (a,b: TFileInformation): ni begin
+    exit(comparetext(a.fullname,b.fullname));
+  end);
+
+
+
+
+
 
 end;
 
@@ -1308,6 +1534,27 @@ begin
   ContainsData := false;
 end;
 
+function TFileTransferReferenceObj.GetfileDate: TDateTime;
+begin
+  result := FFileDate;
+end;
+
+function TFileTransferReferenceObj.GetFileDatelocal: TDateTime;
+begin
+  result := GMTtoLocalTime(FFileDate);
+end;
+
+procedure TFileTransferReferenceObj.SetFileDate(const Value: TDateTime);
+begin
+  FFileDate := value;
+
+end;
+
+procedure TFileTransferReferenceObj.SetFileDateLocal(const Value: TDateTime);
+begin
+  FFileDate := LocalTimeToGMT(value);
+end;
+
 function CopyFile(sSource: string; sDest: string): boolean;
 begin
   result := true;
@@ -1344,23 +1591,35 @@ end;
 { Tcmd_CopyFolder }
 
 procedure Tcmd_CopyFolder.DoExecute;
-var
-  dir: TDirectory;
-  t: integer;
 begin
   inherited;
+  GoSub(Source, Dest);
+
+
+end;
+
+procedure Tcmd_CopyFolder.GoSub(sFolder, sTargetFolder: string);
+begin
   try
-    ForceDirectories(slash(dest));
+    ForceDirectories(slash(sTargetFolder));
   except
   end;
-  dir := Tdirectory.create(Source, FileSpec, 0,0, false);
+
+  var dir := Tdirectory.create(sFolder, FileSpec, 0,0, false);
   try
     StepCount := dir.filecount-1;
-    for t:= 0 to dir.filecount-1 do begin
+    for var t:= 0 to dir.filecount-1 do begin
       Step := t;
-      Status := 'Copying '+source;
-      Copyfile(slash(Source)+dir.files[t].name, slash(Dest)+dir.files[t].name);
+      Status := 'Copying '+sFolder;
+      Copyfile(slash(sFolder)+dir.files[t].name, slash(sTargetFolder)+dir.files[t].name);
     end;
+
+    for var t:= 0 to dir.foldercount-1 do begin
+      Step := t;
+      Status := 'Copying '+sFolder;
+      GoSub(slash(sFolder)+dir.folders[t].name, slash(sTargetFolder)+dir.folders[t].name);
+    end;
+
   finally
     dir.free;
   end;
@@ -1401,6 +1660,7 @@ end;
 procedure oinit;
 begin
   DirCommands := TCommandProcessor.create(BackgroundThreadMan, 'DirCommands');
+  DeleteUniqueTempFolder;
 end;
 procedure oafterinit;
 begin
@@ -1546,21 +1806,37 @@ begin
 
 end;
 
-function GetNextSequentialFileName(sdir: string; sExt: string): string;
+function GetNextSequentialFileName(sdir: string; sExt: string; iSubMod: int64 = 0): string;
 var
   t: ni;
 begin
   t := 0;
-  while fileexists(slash(sdir)+PadString(inttostr(t),'0', 20)+sExt) do begin
-    inc(t);
-  end;
+  if iSubMod=0 then begin
+    while fileexists(slash(sdir)+PadString(inttostr(t),'0', 20)+sExt) do begin
+      inc(t);
+    end;
 
-  result := slash(sdir)+PadString(inttostr(t),'0', 20)+sExt;
+    result := slash(sdir)+PadString(inttostr(t),'0', 20)+sExt;
+  end else begin
+    while fileexists(slash(sdir)+inttostr(t mod iSubMod)+'\'+PadString(inttostr(t),'0', 20)+sExt) do begin
+      inc(t);
+    end;
+
+    result := slash(sdir)+inttostr(t mod iSubMod)+'\'+PadString(inttostr(t),'0', 20)+sExt;
+  end;
 end;
 
 
+{ TMountInfo }
+
+class function TMountInfo.CreateH: IHolder<TMountInfo>;
+begin
+  result := THolder<TMountInfo>.create(create);
+end;
+
 initialization
-  init.RegisterProcs('Dir', oinit, oafterinit, nil, ofinal, nil, 'managedthread');
+{$IFDEF INIT_COMPARE}
+  init.RegisterProcs('Dir', oinit, ofinal, 'managedthread');
 
   //NOTE!: These things do NOT like being members of an object
   filenamecomparison := function(const Left, Right: TFileInformation): Integer
@@ -1589,6 +1865,17 @@ initialization
                              exit(0);
                           end;
 
+  filesizecomparisonDESC :=   function(const Left, Right: TFileInformation): Integer
+                          var s: int64;
+                          begin
+                            if right = nil then exit(1);
+                            if Left = nil then exit(-1);
+                             s := left.size-right.size;
+                             if (s<0) then exit(1);
+                             if (s>0) then exit(-1);
+                             exit(0);
+                          end;
+{$ENDIF}
 
 finalization
 
@@ -1599,5 +1886,6 @@ finalization
 
 
 end.
+
 
 

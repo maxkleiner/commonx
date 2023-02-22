@@ -58,6 +58,7 @@ type
     function GetEnableDebug: boolean;
     procedure SetEnableDebug(const Value: boolean);
 
+
     property nValuesByIndex[idx: ni]: TJSON read GetnValuesByIndex;
     property nNamesByIndex[idx: ni]: string read GetnNamesByIndex;
   public
@@ -113,9 +114,14 @@ type
     property json: string read getJSON write FromString;
     property enable_debug_json: boolean read GetEnableDebug write SetEnableDebug;
     procedure ForEachIndexed(proc: TSimpleJSONIterateProc);
+    procedure ForEachIndexedMT(proc: TSimpleJSONIterateProc);
     procedure ForEachMember(proc: TSimpleJSONIterateProc);
+    procedure ForEachMemberMT(proc: TSimpleJSONIterateProc);
     procedure ForEachChild(proc: TSimpleJSONIterateProc);
+    class function CreateFromString(s: string): IHolder<TJSON>;
   end;
+
+  TJSONDictionary = TJSON;
 
   IJSONHolder = IHolder<TJSON>;
 
@@ -296,6 +302,13 @@ begin
 //  Debug.Log(inttostr(cunt));
 end;
 
+class function TJSON.CreateFromString(s: string): IHolder<TJSON>;
+begin
+  result := THolder<TJSON>.create(TJSON.create);
+  result.o.FromString(s);
+
+end;
+
 procedure TJSON.Deletei(index: ni);
 var
   t: ni;
@@ -379,6 +392,12 @@ begin
 end;
 
 procedure TJSON.ForEachIndexed(proc: TSimpleJSONIterateProc);
+begin
+  for var n in indexed do
+    proc(n);
+end;
+
+procedure TJSON.ForEachIndexedMT(proc: TSimpleJSONIterateProc);
 {$IFNDEF MT_ITERATORS}
 begin
   for var n in indexed do
@@ -409,6 +428,14 @@ end;
 {$ENDIF}
 
 procedure TJSON.ForEachMember(proc: TSimpleJSONIterateProc);
+begin
+  for var t:= 0 to High(indexed) do begin
+    proc(named.ItemsByIndex[t]);
+  end;
+
+end;
+
+procedure TJSON.ForEachMemberMT(proc: TSimpleJSONIterateProc);
 var
   cl: TCommandList<Tcmd_JSONIterate>;
   ac: Tcmd_JSONIterate;
@@ -833,6 +860,22 @@ begin
           exit;//<<-----end
         end;
       end else
+      if c = 'r' then begin
+        if bEscape then begin
+          sValue := sValue + #13;
+          bEscape := false;
+        end else begin
+          sValue := sValue + c;
+        end;
+      end else
+      if c = 'n' then begin
+        if bEscape then begin
+          sValue := sValue + #10;
+          bEscape := false;
+        end else begin
+          sValue := sValue + c;
+        end;
+      end else
         sValue := sValue + c;
     end;
     inc(iPosition);
@@ -1033,7 +1076,13 @@ end;
 function JSONValueString(v: variant): string;
 begin
   if IsVarString(v) then begin
-    result := '"'+StringReplace(vartostr(v),'\','\\',[rfReplaceAll])+'"';
+    result := StringReplace(vartostr(v),'\','\\',[rfReplaceAll]);
+    result := StringReplace(result,#13#10,'\n',[rfReplaceAll]);
+    result := StringReplace(result,#13,'\n',[rfReplaceAll]);
+    result := StringReplace(result,#10,'\n',[rfReplaceAll]);
+    result := StringReplace(result,'’','''',[rfReplaceAll]);
+    result := StringReplace(result,'"','\"',[rfReplaceAll]);
+    result := '"'+result+'"';
   end
   else
   if VarType(v)=varBoolean then
@@ -1077,6 +1126,8 @@ begin
   result := s;
   result := stringreplace(result, '"', '\"', [rfReplaceAll]);
 end;
+
+
 
 function TJSON.AddIndexed: TJSON;
 var
@@ -1279,5 +1330,16 @@ initialization
 
 
 end.
+
+
+
+
+
+
+
+
+
+
+
 
 

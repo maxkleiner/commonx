@@ -8,28 +8,22 @@ uses
 
 const
 	libc = '/usr/lib/libc.dylib';
-
 type
 	PIOFile = Pointer;
-
 function popen(const Command: PAnsiChar; Modes: PAnsiChar): PIOFile; cdecl;	external libc name 'popen';
 function pclose(Stream: PIOFile): Integer; cdecl; external libc name 'pclose';
 function feof(Stream: PIOFile): Integer; cdecl; external libc name 'feof';
 function fread(Ptr: Pointer; Size: LongWord; N: LongWord; Stream: PIOFile): LongWord; cdecl; external libc name 'fread';
 function wait(__stat_loc: PInteger): Integer; cdecl; external libc name 'wait';
-
 procedure MakeFileExecutable(sFile: string);
 procedure Execute(sFile: string);
 procedure ExecCmdLine_Forget(const CmdLine: string);
-
 implementation
-
 
 procedure ExecCmdLine_Forget(const CmdLine: string);
 begin
 	popen(PAnsiChar(ansistring(CmdLine)), 'r');
 end;
-
 procedure ExecCmdLine(const CmdLine: string; CmdResult: TStrings);
 var
 	Output: PIOFile;
@@ -68,7 +62,7 @@ procedure MakefileExecutable(sfile: string);
 begin
   var sl:= TStrings.create;
   try
-    ExecCmdLine('chmod +x '+sFile+'', sl);
+    ExecCmdLine('chmod -R 777 '+sFile+'', sl);
   finally
     sl.free;
   end;
@@ -89,3 +83,4 @@ end;
 
 
 end.
+

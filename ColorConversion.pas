@@ -11,7 +11,7 @@ uses
 {$ELSE}
   vcl.Graphics,
 {$ENDIF}
-typex, validation, sysutils, numbers, debug;
+typex, validationx, sysutils, numbers, debug;
 
 
 
@@ -57,10 +57,10 @@ type
     class operator Divide(var a: TGiantColor; b: integer): TGiantColor;inline;
     class operator Multiply(var a: TGiantColor; b: nativefloat): TGiantColor;inline;
 
-    function ToColor: TColor;
-    function ToColorWithAlpha(bIs1Normal: boolean = true): TColor;
-    function ToColorAdditiveMultiplyAlpha: TColor;
-    procedure FromColor(c: TColor);
+    function ToColor(normal: single = 1.0): TColor;
+    function ToColorWithAlpha(normal: single = 1.0): TColor;
+    function ToColorAdditiveMultiplyAlpha(normal: single = 1.0): TColor;
+    procedure FromColor(c: TColor; normal: single = 1.0);
 
 {$IFDEF FMX}
     function ToAlphaColor: TAlphaColor;
@@ -590,44 +590,43 @@ begin
 end;
 {$ENDIF}
 
-function TGiantColor.ToColor: TColor;
+function TGiantColor.ToColor(normal: single = 1.0): TColor;
 var
   rr,gg,bb: integer;
 begin
-  rr := clamp(round(r * 255),0,255);
-  gg := clamp(round(g * 255),0,255);
-  bb := clamp(round(b * 255),0,255);
+  var maxval := 255/normal;
+  rr := clamp(round(r * maxval),0,255);
+  gg := clamp(round(g * maxval),0,255);
+  bb := clamp(round(b * maxval),0,255);
+
 
   result := (rr)+((gg) shl 8)+(((bb) shl 16));
 end;
 
-function TGiantColor.ToColorAdditiveMultiplyAlpha: TColor;
+function TGiantColor.ToColorAdditiveMultiplyAlpha(normal: single = 1.0): TColor;
 var
   rr,gg,bb: integer;
 begin
+  var maxval := 255/normal;
 
-  rr := clamp(round((r*a) * 255),0,255);
-  gg := clamp(round((g*a) * 255),0,255);
-  bb := clamp(round((b*a) * 255),0,255);
+  rr := clamp(round((r*a) * maxval),0,255);
+  gg := clamp(round((g*a) * maxval),0,255);
+  bb := clamp(round((b*a) * maxval),0,255);
 
   result := (rr)+((gg) shl 8)+(((bb) shl 16));
 end;
 
-function TGiantColor.ToColorWithAlpha(bIs1Normal: boolean = true): TColor;
+function TGiantColor.ToColorWithAlpha(normal: single = 1.0): TColor;
 var
   rr,gg,bb,aa: integer;
 begin
-  if bIs1Normal then begin
-    aa := clamp(round(a * 255),0,255);
-    rr := clamp(round(r * 255),0,255);
-    gg := clamp(round(g * 255),0,255);
-    bb := clamp(round(b * 255),0,255);
-  end else begin
-    aa := clamp(round(a),0,255);
-    rr := clamp(round(r),0,255);
-    gg := clamp(round(g),0,255);
-    bb := clamp(round(b),0,255);
-  end;
+  var maxval := 255/normal;
+
+  aa := clamp(round(a * maxval),0,255);
+  rr := clamp(round(r * maxval),0,255);
+  gg := clamp(round(g * maxval),0,255);
+  bb := clamp(round(b * maxval),0,255);
+
   result := (rr)+((gg) shl 8)+(((bb) shl 16))+(aa shl 24);
 end;
 
@@ -642,12 +641,12 @@ begin
 end;
 {$ENDIF}
 
-procedure TGiantColor.FromColor(c: TColor);
+procedure TGiantColor.FromColor(c: TColor; normal: single = 1.0);
 begin
-  r := ((c shr 0) and 255)/255;
-  g := ((c shr 8) and 255)/255;
-  b := ((c shr 16) and 255)/255;
-  a := 1.0;
+  r := normal * (((c shr 0) and 255)/255);
+  g := normal * (((c shr 8) and 255)/255);
+  b := normal * (((c shr 16) and 255)/255);
+  a := normal;
 end;
 
 
@@ -659,16 +658,7 @@ begin
   a := 1.0;
 end;
 
-
-
-
-
-
-
-
 { TColorRec }
-
-
 
 { TColorREcHelper }
 
@@ -705,10 +695,11 @@ end;
 function ColorFormat(c: TColor; const sIn, sOut: string): TColor;
   function FindByte(cc: Char): byte;
   begin
-    result := 255;
+    result := 0;
     for var t := low(sIn) to high(sIn) do begin
       if sIN[t] = cc then begin
         result := PByte(@c)[t-STRZ];
+        break;
       end;
     end;
   end;
@@ -718,8 +709,6 @@ begin
   for var x := low(sOut) to high(sOut) do begin
     pr[x-STRZ] := FindByte(sOut[x]);
   end;
-
-
 
 end;
 

@@ -91,7 +91,7 @@ type
   end;
 
 var
-  GUTF: TUnitTestFactory;
+  GUTF: TUnitTestFactory = nil;
 
 function UTF: TUnitTestFactory;
 
@@ -418,7 +418,8 @@ end;
 
 procedure ofinal;
 begin
-  GUTF.free;
+  if assigned(GUTF) then
+    GUTF.free;
 end;
 
 

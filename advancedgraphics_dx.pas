@@ -1,11 +1,17 @@
 unit advancedgraphics_DX;
 {x$INLINE AUTO}
+{$DEFINE MOUSE_OVER}//TODO 1: without this ApacheGantt fails... investigate, make it clearer
 {$DEFINE USE_ACTUAL_SURFACE_WIDTH}
 {$DEFINE ASS}
+{$R-}
 interface
 
 uses
-  typex, tickcount, generics.collections.fixed, betterobject, controls, sysutils, geometry, AdvancedGraphics, messages,
+{x$DEFINE BEEP_DEBUG}
+{$IFDEF BEEP_DEBUG}
+  beeper,
+{$ENDIF}
+  typex, tickcount, generics.collections.fixed, betterobject, controls, sysutils, geometry, AdvancedGraphics, messages, pxl.types,
   sharedobject, graphics, types, stdctrls, classes, direct3d9_jedi, dx9_tools, easyimage, exe, tools, colorconversion, colorblending, fastbitmap,
   extctrls, d3dutils, dxut, DXUTMisc, comctrls, systemx, d3dx9, windows, stringx, helpers_stream, stringx.ansi, numbers, orderlyinit, applicationparams, namevaluepair;
 
@@ -14,7 +20,7 @@ CONST
   CM_LAZY_DRAW = WM_USER+99;
   BOUND_SNAP = 1;
   BOUND_STACK_SIZE = 256;
-  PHYSICS_INCREMENT = 8;
+  PHYSICS_INCREMENT = 10;
   MAX_VERTEX_BATCH_SIZE = 20000;
   DX2D_DEFAULT_CHAR_WIDTH = 16;
   DX2D_DEFAULT_CHAR_HEIGHT =16;
@@ -60,6 +66,7 @@ type
     sect: _RTL_CRITICAL_SECTION;
     FVisible: boolean;
     FTargetTop: single;
+    FOver: boolean;
     FTargetLEft: single;
     FInMotion: boolean;
     FTargetWidth: single;
@@ -90,17 +97,21 @@ type
     mouse_buttons_down: array [0..2] of boolean;
 
     procedure Resized;virtual;
+{$IFDEF MOUSE_OVER}
     procedure MouseOver;
+{$ENDIF}
     procedure MouseClick;
     procedure MouseRightClick;
     procedure MouseDown;
     procedure MouseUp;
     procedure MouseOut;
     procedure MouseEnter;
-    procedure MouseLeave;
+
     procedure MouseCancel;
 
+{$IFDEF MOUSE_OVER}
     procedure DoMouseover;virtual;
+{$ENDIF}
     procedure DoMouseClick;virtual;
     procedure DoMouseRightClick;virtual;
     procedure DoMouseDown;virtual;
@@ -108,6 +119,7 @@ type
     procedure DoMouseEnter;virtual;
     procedure DoMouseLeave;virtual;
     procedure DoMouseOut;virtual;
+    procedure DoMouseMove;virtual;
 
     procedure MouseMove(x,y: single);virtual;
     function MouseEvent(dxme: TDXMouseEvent; screenx, screeny,x,y: single; ss: TShiftState): boolean;
@@ -115,6 +127,8 @@ type
     procedure CancelMouseButtons;
     property ClickOnMouseUp: boolean read FClickOnMouseUp write FClickOnMouseUp;
   public
+    tag: int64;
+    tag2: int64;
     constructor Create(aDX: TDX2d);reintroduce;virtual;
     destructor Destroy;override;
     procedure Assimilate;
@@ -122,6 +136,9 @@ type
     procedure AddChild(c: TDXControl);
     procedure RemoveChild(C: TDXControl);
     property Parent: TObject read FParent write SetParent;
+    procedure MouseLeave;
+    procedure MouseLeaveAll;
+
 
     property Left: single read FLeft write SetLeft;
     property Top: single read Ftop write SetTop;
@@ -165,7 +182,6 @@ type
 
   TDXButton = class(TDXControl)
   private
-    FOver: boolean;
     FState: TDXbuttonState;
     FOnClick: TNotifyEvent;
     FCaption: string;
@@ -183,6 +199,9 @@ type
     FAnimate: boolean;
     FColorPrism: TNativeFloatColor;
     FDrawIndirectStyle: boolean;
+    FOnChangeState: TNotifyEvent;
+    FOndePressed: TNotifyEvent;
+    FOnPressed: TNotifyEvent;
     function GetStuckDown: boolean;
     procedure SetStuckDown(const Value: boolean);
     function GetDown: boolean;
@@ -192,28 +211,39 @@ type
     procedure SEtCharWidth(const Value: single);
     procedure SetTargetCharWidth(const Value: single);
     procedure SetAnimate(const Value: boolean);
+    procedure SetState(const Value: TDXbuttonState);
   strict protected
     procedure DoClick;virtual;
     procedure DoRightClick;virtual;
-    property State: TDXbuttonState read FState write FState;
+    property State: TDXbuttonState read FState write SetState;
     procedure InternalAnimation(rDeltaTime: TDXTime);virtual;
     procedure OnStartAnimation;virtual;
     procedure OnStopAnimiation;virtual;
   protected
     procedure Resized; override;
   public
-    tag: int64;
-    procedure Init;override;
 
-    property Over: boolean read FOver write FOver;
+    procedure Init;override;
+    procedure ChangeState;
+    procedure Pressed;
+    procedure Depressed;
+    property OnChangeState: TNotifyEvent read FOnChangeState write FOnChangeState;
+    property OnPressed: TNotifyEvent read FOnPressed write FOnPressed;
+    property OnDepressed: TNotifyEvent read FOndePressed write FOndePressed;
+
+
     property OnClick: TNotifyEvent read FOnClick write FOnClick;
     property OnRightClick: TNotifyEvent read FOnRightClick write FOnRightClick;
+{$IFDEF MOUSE_OVER}
     procedure DoMouseOver;override;
+{$ENDIF}
     procedure DoMouseClick;override;
     procedure DoMouseRightClick;override;
     procedure DoMouseDown;override;
     procedure DoMouseUp;override;
     procedure DoMouseOut;override;
+    procedure DoMouseEnter;override;
+    procedure DoMouseLeave;override;
     procedure DoDraw;override;
     procedure DoDrawAnimation;virtual;
     property Caption: string read FCaption write FCaption;
@@ -227,7 +257,7 @@ type
     property CharHeight: single read FCharheight write SetCharHeight;
     property TArgetCharwidth: single read FTArgetCharWidth write SetTargetCharWidth;
     property TArgetCharHeight: single read FTArgetCharheight write FTArgetcharheight;
-
+    procedure SilentStateChange(bPressed: boolean);
     procedure HandlePhysics(rDeltaTime: TDXTime);override;
     property StepCount: ni read FStepCount write FStepCount;
     property Step: ni read FStep write FStep;
@@ -364,8 +394,8 @@ type
     procedure NextBatchVertex;inline;
     procedure EndVertexBatch;
     procedure CommitBatch;
-
     procedure MouseMove(Shift: TShiftState; X, Y: integer); override;
+    procedure DoMouseMove;virtual;
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState;
       X, Y: Integer); override;
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState;
@@ -373,7 +403,9 @@ type
 
     procedure CancelMouse;
 
+{$IFDEF MOUSE_OVER}
     procedure DoMouseover;virtual;
+{$ENDIF}
     procedure DoMouseClick;virtual;
     procedure DoMouseRightClick;virtual;
     procedure DoMouseDown;virtual;
@@ -391,6 +423,8 @@ type
     procedure VolatileTextureFromFastBitmap(var tex: IDirect3dTexture9; fbm: TFastbitmap);
     property CurrentFont: TFontInfo read GetCurrentFont;
     procedure DelayReset;
+    procedure HandleMessageQueue;virtual;
+
   public
     mouse_last_pos_for_wheel: TPoint;
     TextColor: Tcolor;
@@ -405,6 +439,7 @@ type
 
     TextPosition: TPoint;
     dx9window: dx9_tools.TDX9Window;
+    procedure MouseLeaveAll;
     function BatchMode: boolean;inline;
     procedure LoadTexture(sfile: string);
     procedure LoadFont(sfile: string; rOverdrawX: single = 1.0; rOverDrawY: single = 1.0);
@@ -432,7 +467,8 @@ type
     procedure Unloadfont(iSlot: integer);
 
     procedure Sprite(xCenter, yCenter: single; c: TColor;alpha: single; xSize: single; ySize: single = -1);overload;
-    procedure Sprite(xCenter, yCenter: single; c1,c2,c3,c4: TColor;alpha: single; xSize: single; ySize: single = -1);overload;
+    procedure Sprite(xCenter, yCenter: single; rotations: single; c: TColor;alpha: single; xSize: single; ySize: single = -1);overload;
+    procedure Sprite(xCenter, yCenter: single; rotations: single; c1,c2,c3,c4: TColor;alpha: single; xSize: single; ySize: single = -1);overload;
     procedure Quad(x1,y1,x2,y2,x3,y3,x4,y4: single; clr1,clr2,clr3,clr4: TColor; alpha: TDXFloat = 1.0);
 
     procedure canvas_Quad(x1,y1,x2,y2,x3,y3,x4,y4: single; clr1,clr2,clr3,clr4: TColor; alpha: TDXFloat = 1.0);
@@ -495,6 +531,8 @@ type
     procedure SetBounds(ALeft: Integer; ATop: Integer; AWidth: Integer;
       AHeight: Integer); override;
     procedure Invalidate; override;
+    property Action;
+
 
     property Frames: integer read FFrames write FFrames;
     procedure Initialize;
@@ -509,8 +547,8 @@ type
       Fill: boolean = false; bGradient: boolean = false;
       bgcolor: TColor = clBlack); overload; virtual;
 
-    function ScaleGlobalXtoScreen(Xdistance: TDXFloat): TDXFloat;
-    function ScaleGlobalYtoScreen(Ydistance: TDXFloat): TDXFloat;
+    function ScaleGlobalXtoScreen(Xdistance: TDXFloat;bKeepSign: boolean = false): TDXFloat;
+    function ScaleGlobalYtoScreen(Ydistance: TDXFloat;bKeepSign: boolean = false): TDXFloat;
     function ScaleGlobalXtoForm(Xdistance: TDXFloat): TDXFloat;
     function ScaleGlobalYtoForm(Ydistance: TDXFloat): TDXFloat;
     function ScaleScreenXtoGlobal(Xdistance: TDXFloat;
@@ -843,8 +881,8 @@ type
 
 function GetFullPathToAsset(sFile: string): string;
 
-
 var
+  dbgsprite: boolean = false;
   dxdx: integer;
   VERTEX_BATCH_SIZE: nativeint;
 
@@ -963,10 +1001,10 @@ begin
 
 
   InitializeCRiticalSection(sect);
-  FMinSurfaceWidth := 720;
-  FMaxSurfaceWidth := 1920*2;
-  FMinSurfaceHeight := 480;
-  FMaxSurfaceHeight := 1080*2;
+  FMinSurfaceWidth := 2;
+  FMaxSurfaceWidth := 1920*8;
+  FMinSurfaceHeight := 2;
+  FMaxSurfaceHeight := 1080*8;
 
   FDXControls := Tlist<TDXControl>.create;
   FDXChildren := Tlist<TDXControl>.create;
@@ -1275,15 +1313,22 @@ begin
   //dni
 end;
 
+procedure TDX2D.DoMouseMove;
+begin
+  //dni
+end;
+
 procedure TDX2D.DoMouseOut;
 begin
   //dni
 end;
 
+{$IFDEF MOUSE_OVER}
 procedure TDX2D.DoMouseover;
 begin
   //dni
 end;
+{$ENDIF}
 
 procedure TDX2D.DoMouseRightClick;
 begin
@@ -1634,6 +1679,11 @@ begin
 
 end;
 
+procedure TDX2D.HandleMessageQueue;
+begin
+  //no implementation required
+end;
+
 procedure TDX2D.Init;
 begin
   inherited;
@@ -1677,6 +1727,7 @@ end;
 
 procedure TDX2D.InternalDrawTimerExecute(sender: TObject);
 begin
+  HandleMessageQueue;
   UpdatePhysics;
   Draw;
 end;
@@ -1749,8 +1800,9 @@ procedure TDX2D.LoadTexture(sfile: string);
 var
   ftex: INativeTexture;
 begin
-  if not fileexists(sFile) then
+  if not fileexists(sFile) then begin
     halt(0);
+  end;
 
   if not isFunctional then
     exit;
@@ -1796,6 +1848,10 @@ begin
   try
   xx := FormToGlobalX(x);
   yy := FormToGlobalY(y);
+  if BroadcastMouseEvent(dxmeDown, shift, x,y,xx,yy) then begin
+    exit;
+  end;
+
   fLastMouseXX := xx;
   FLastMouseYY := yy;
   fLastMouseX := x;
@@ -1808,8 +1864,7 @@ begin
       mbRight: mouse_buttons_down[1] := true;
       mbMiddle: mouse_buttons_down[2] := true;
     end;
-    if not BroadcastMouseEvent(dxmeDown, shift, x,y,xx,yy) then
-      DoMouseDown;
+    DoMouseDown;
 
   finally
     for var t := 0 to high(mouse_buttons_were_down) do
@@ -1818,24 +1873,42 @@ begin
 
 end;
 
+
+procedure TDX2D.MouseLeaveAll;
+begin
+  for var t := 0 to FDXChildren.count-1 do
+    FDXChildren[t].MouseLeaveAll;
+end;
+
 procedure TDX2D.MouseMove(Shift: TShiftState; X, Y: integer);
 var
   xx,yy: single;
 begin
   inherited;
-  mouse_last_pos_for_wheel.x := x;
-  mouse_last_pos_for_wheel.Y := y;
   xx := FormToGlobalX(x);
   yy := FormToGlobalY(y);
+  if BroadcastMouseEvent(dxmeMove, shift, x,y,xx,yy) then begin
+    exit;
+  end;
+
+  mouse_last_pos_for_wheel.x := x;
+  mouse_last_pos_for_wheel.Y := y;
   fLastMouseXX := xx;
   FLastMouseYY := yy;
   fLastMouseX := x;
   FLastMouseY := y;
+  DoMouseMove;
 
+{$IFDEF MOUSE_OVER}
   if not BroadcastMouseEvent(dxmeMove, shift, x,y,xx,yy) then
     DoMouseOver;
+{$ENDIF}
+
+
+
 
 end;
+
 
 procedure TDX2D.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
@@ -1845,6 +1918,11 @@ begin
   try
   xx := FormToGlobalX(x);
   yy := FormToGlobalY(y);
+  if BroadcastMouseEvent(dxmeUp, shift, x,y,xx,yy) then begin
+    DoMouseUp;
+    exit;
+  end;
+
   fLastMouseXX := xx;
   FLastMouseYY := yy;
   fLastMouseX := x;
@@ -1857,8 +1935,6 @@ begin
   end;
 
 
-  if not BroadcastMouseEvent(dxmeUp, shift, x,y,xx,yy) then
-    DoMouseUp;
   //when mouse up is handled ANYWHERE, we need to make sure it only goes to the
   //control that had the mouse down event
 
@@ -2189,7 +2265,7 @@ begin
 
 end;
 
-function TDX2D.ScaleGlobalXtoScreen(Xdistance: TDXFloat): TDXFloat;
+function TDX2D.ScaleGlobalXtoScreen(Xdistance: TDXFloat;bKeepSign: boolean = false): TDXFloat;
 begin
   if FUseScreenCoordinates then
     result := (Xdistance)
@@ -2212,7 +2288,7 @@ begin
 
 end;
 
-function TDX2D.ScaleGlobalYtoScreen(Ydistance: TDXFloat): TDXFloat;
+function TDX2D.ScaleGlobalYtoScreen(Ydistance: TDXFloat;bKeepSign: boolean = false): TDXFloat;
 begin
   if FUseScreenCoordinates then
     result := (Ydistance)
@@ -2574,47 +2650,89 @@ begin
   AlphaOp := aoStandard;
 end;
 
-procedure TDX2D.Sprite(xCenter, yCenter: single; c: TColor; alpha, xSize,
-  ySize: single);
+procedure TDX2D.Sprite(xCenter, yCenter: single; rotations: single; c: TColor;alpha: single; xSize: single; ySize: single = -1);
 begin
-  Sprite(xCenter,yCenter,c,c,c,c,alpha, xSize, ysize);
+  Sprite(xCenter,yCenter,rotations,c,c,c,c,alpha, xSize, ysize);
 end;
 
-procedure TDX2D.Sprite(xCenter, yCenter: single; c1,c2,c3,c4: TColor; alpha: single; xSize,
+
+procedure TDX2D.Sprite(xCenter, yCenter: single; rotations: single; c1,c2,c3,c4: TColor; alpha: single; xSize,
   ySize: single);
 var
   x1,y1,x2,y2,x3,y3,x4,y4: single;
-  tmp: single;
+  pts: array [0..3] of pxl.types.TVector4;
 begin
+  if dbgSprite then
+    dbgSprite := false;//<-----------------trap here!
+
+{x$DEFINE BAD_SPRITE}
+{x$IFDEF BAD_SPRITE}
   if xSize < 0 then begin
     xSize := ScaleScreenXtoGlobal(ScaleGlobalYToScreen(ySize));
   end else
   if ysize < 0 then begin
-    tmp := ScaleGlobalXToScreen(xSize);
+    var tmp := ScaleGlobalXToScreen(xSize);
     ySize := ScaleScreenYtoGlobal(tmp);
   end;
+{x$ENDIF}
 
 
-  x1 := 0 - xSize;
-  x2 := 0 + xSize;
-  x3 := 0 - xSize;
-  x4 := 0 + xSize;
-  y1 := 0 - ySize;
-  y2 := 0 - ySize;
-  y3 := 0 + ySize;
-  y4 := 0 + ySize;
+  pts[0].x := 0 - xSize;
+  pts[1].x := 0 + xSize;
+  pts[2].x := 0 - xSize;
+  pts[3].x := 0 + xSize;
+  pts[0].y := 0 - ySize;
+  pts[1].y := 0 - ySize;
+  pts[2].y := 0 + ySize;
+  pts[3].y := 0 + ySize;
 
-  x1 := x1 + xCenter;
-  x2 := x2 + xCenter;
-  x3 := x3 + xCenter;
-  x4 := x4 + xCenter;
-  y1 := y1 + yCenter;
-  y2 := y2 + yCenter;
-  y3 := y3 + yCenter;
-  y4 := y4 + yCenter;
+  var preRotScale := ScaleMtx4(Vector3(1.0,xSize/ySize,1.0));
+  var rotate := RotateMtx4(Vector3(0,0,1), rotations);
+  var postRotScale  := ScaleMtx4(Vector3(1.0,ySize/xSize,1.0));
 
-  Quad(x1,y1,x2,y2,x3,y3,x4,y4, c1,c2,c3,c4, alpha);
+  var composite := preRotScale*rotate*postRotScale;
 
+  var nuCenter := Vector4(xCenter, yCenter,0,1);
+
+  for var t := 0 to high(pts) do begin
+    pts[t].w := 1;
+    pts[t].z := 0;
+  end;
+
+  for var t := 0 to high(pts) do begin
+    pts[t] := pts[t] * composite;
+//    pts[t] := pts[t] * preRotScale;
+//    pts[t] := pts[t] * rotate;
+//    pts[t] := pts[t] * postRotScale;
+  end;
+
+  //AFTER rotation they need to be SCALED to screen size in both dimensions
+  for var t := 0 to high(pts) do begin
+{$IFNDEF BAD_SPRITE}
+//    pts[t].x := ScaleGlobalXtoScreen(pts[t].x,true);
+//    pts[t].y := ScaleGlobalYToScreen(pts[t].y,true);
+{$ENDIF}
+  end;
+
+  //FInALLY move them to their final location
+  for var t := 0 to high(pts) do begin
+    pts[t] := pts[t] + nuCenter;
+  end;
+
+  Quad(
+    pts[0].x,pts[0].y,
+    pts[1].x,pts[1].y,
+    pts[2].x,pts[2].y,
+    pts[3].x,pts[3].y,
+    c1,c2,c3,c4, alpha);
+
+
+end;
+
+procedure TDX2D.Sprite(xCenter, yCenter: single; c: TColor; alpha,
+  xSize, ySize: single);
+begin
+  Sprite(xCenter, yCenter, 0.0, c,alpha, xSize, ySize);
 
 end;
 
@@ -3651,8 +3769,13 @@ end;
 
 destructor TDXControl.Destroy;
 begin
+  if self.IsDead then
+    raise ECritical.Create('self is already dead!');
   Parent := nil;
   FDX.RemoveControl(self);
+  while FDXChildren.Count > 0 do begin
+    FDXChildren[0].Parent := nil;
+  end;
   FDXChildren.Free;
   inherited;
   DeleteCriticalSection(sect);
@@ -3699,15 +3822,22 @@ begin
   //dni
 end;
 
+procedure TDXControl.DoMouseMove;
+begin
+  //
+end;
+
 procedure TDXControl.DoMouseOut;
 begin
   //dni
 end;
 
+{$IFDEF MOUSE_OVER}
 procedure TDXControl.DoMouseover;
 begin
   //dni
 end;
+{$ENDIF}
 
 procedure TDXControl.DoMouseRightClick;
 begin
@@ -3887,6 +4017,9 @@ end;
 procedure TDXControl.MouseEnter;
 begin
   inherited;
+
+  DX.MouseLeaveAll;
+  FMouseIsOver := true;
   DoMouseEnter;
 
 end;
@@ -3954,9 +4087,10 @@ begin
         MouseEnter
       else
         MouseLeave;
-
+{$IFDEF MOUSE_OVER}
       if FMouseIsOver then
         MouseOver;
+{$ENDIF}
 
     end;
   end else begin
@@ -4011,16 +4145,24 @@ end;
 
 procedure TDXControl.MouseLeave;
 begin
+  FMouseIsOver := false;
   CancelMouseButtons;
   //do not implement
   DoMouseLeave;
 end;
 
+procedure TDXControl.MouseLeaveAll;
+begin
+  if FMouseIsOver then
+    MouseLeave;
+  for var t := 0 to Fdxchildren.count-1 do
+    Fdxchildren[t].MouseLeaveAll;
+end;
+
 procedure TDXControl.MouseMove(x, y: single);
 begin
   //do not implement
-
-
+  DoMouseMove;
 
 
 end;
@@ -4029,16 +4171,19 @@ procedure TDXControl.MouseOut;
 begin
   inherited;
   //do not implement
+
   CancelMousebuttons;
   DoMouseOut;
 end;
 
+{$IFDEF MOUSE_OVER}
 procedure TDXControl.MouseOver;
 begin
   inherited;
-  //do not implement
+  DX.MouseLeaveAll;
   DoMouseOver;
 end;
+{$ENDIF}
 
 procedure TDXControl.MouseRightClick;
 begin
@@ -4176,6 +4321,7 @@ begin
 
 end;
 
+
 procedure TDXControl.Unlock;
 begin
   LeaveCriticalSection(sect);
@@ -4219,6 +4365,22 @@ begin
   charheight := charwidth;
 end;
 
+procedure TDXButton.ChangeState;
+begin
+  if assigned(FOnChangeState) then
+    FOnChangeState(self);
+  if Down then
+    Pressed
+  else
+    Depressed;
+end;
+
+procedure TDXButton.Depressed;
+begin
+  if assigned(FOnDepressed) then
+    FOnDepressed(self);
+end;
+
 procedure TDXButton.DoClick;
 begin
   if assigned(FOnclick) then
@@ -4235,6 +4397,7 @@ const
   margin = 5;
 begin
   inherited;
+  DX.alphaop := aoAdd;
   l := self.Left;
   w := self.width;
   t := self.Top;
@@ -4287,8 +4450,10 @@ begin
           FDX.Rectangle_Fill(a,b,c,d, clWhite, clWhite, Colorwhennotlit.ToColor, Colorwhennotlit.ToColor, 0.6*Colorwhenlit.a);
         end;
 
-        if FMouseIsOver then
+        if FMouseIsOver then begin
+          dx.AlphaOp := aoAdd;
           FDX.Rectangle_Fill(l+margin, t+margin, l+w-margin, t+h-margin, cL.ToColorAdditiveMultiplyAlpha, cL.ToColorAdditiveMultiplyAlpha);
+        end;
 
     end else begin
         cL := Colorwhennotlit;
@@ -4325,7 +4490,10 @@ begin
         end;
 
         if FMouseIsOver then
-          FDX.Rectangle_Fill(l+margin, t+margin, l+w-margin, t+h-margin, clBlack, clBlack, cL.ToColorAdditiveMultiplyAlpha, cL.ToColorAdditiveMultiplyAlpha);
+          FDX.Rectangle_Fill(l,t,l+w, t+h, clWhite, 0.3*Colorwhennotlit.a);
+
+//        if FMouseIsOver or Over then
+//          FDX.Rectangle_Fill(l+margin, t+margin, l+w-margin, t+h-margin, random($7fffffff), clWhite, cL.ToColorAdditiveMultiplyAlpha, cL.ToColorAdditiveMultiplyAlpha);
 
     end;
   end else begin
@@ -4388,7 +4556,12 @@ begin
   FDX.TextOffset.y := FDX.GlobalToScreenY(y);
   FDX.TextColor := clWhite;
 
-  FDX.canvas_Text(caption, [tfStroke, tfBold, tfShadow]);
+  if FMouseIsOver then
+    FDX.canvas_Text(caption, [tfStroke, tfBold ])
+  else
+    FDX.canvas_Text(caption, [tfStroke, tfShadow]);
+
+
   FDX.ResetText;
 
 
@@ -4470,15 +4643,36 @@ begin
 
 end;
 
-procedure TDXButton.DoMouseOut;
+procedure TDXButton.DoMouseEnter;
 begin
-  FOver := false;
+  inherited;
+//  debug.log('entered '+self.Caption);
+{$IFDEF BEEP_DEBUG}
+  Beep(1000,100);
+{$ENDIF}
+  //
 end;
 
+procedure TDXButton.DoMouseLeave;
+begin
+  inherited;
+  FMouseIsOver := false;
+{$IFDEF BEEP_DEBUG}
+  Beep(500,100);
+{$ENDIF}
+end;
+
+procedure TDXButton.DoMouseOut;
+begin
+  FMouseIsOver := false;
+end;
+
+{$IFDEF MOUSE_OVER}
 procedure TDXButton.DoMouseOver;
 begin
-  FOver := true;
+  FOver := true; //no... this is for moving, not entering
 end;
+{$ENDIF}
 
 procedure TDXButton.DoMouseRightClick;
 begin
@@ -4549,6 +4743,12 @@ begin
   //
 end;
 
+procedure TDXButton.Pressed;
+begin
+  if assigned(FOnpressed) then
+    FOnpressed(self);
+end;
+
 procedure TDXButton.Resized;
 begin
   inherited;
@@ -4586,6 +4786,20 @@ begin
     Down := value;
 end;
 
+procedure TDXButton.SetState(const Value: TDXbuttonState);
+begin
+  var bChange := value <> Fstate;
+  FState := Value;
+  if bChange then begin
+    if Down then
+      Pressed
+    else
+      Depressed;
+  end;
+
+
+end;
+
 procedure TDXButton.SetSticky(const Value: boolean);
 begin
   FSticky := Value;
@@ -4606,6 +4820,14 @@ begin
 //    raise ECritical.create('Char width cannot be 0');
   FTArgetCharWidth := Value;
 
+end;
+
+procedure TDXButton.SilentStateChange(bPressed: boolean);
+begin
+  if bPressed then
+    state :=bsStuckDown
+  else
+    state := bsUp;
 end;
 
 procedure TDXButton.HandlePhysics(rDeltaTime: TDXTime);

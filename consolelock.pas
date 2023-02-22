@@ -28,7 +28,7 @@ end;
 //------------------------------------------------------------------------------
 procedure oinit;
 begin
-  ICS(sectConsole);
+  ICS(sectConsole, 'consoleLock');
 end;
 //------------------------------------------------------------------------------
 procedure oprefinal;

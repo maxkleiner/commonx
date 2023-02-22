@@ -6,6 +6,7 @@ uses classes;
 
 type
   TInterfaceList = class
+  private
     //This class is like a TList, but it allows interfaces to be properly
     //reference counted.
     FSize : integer;

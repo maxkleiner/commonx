@@ -1,4 +1,0 @@
-object FrameBase: TFrameBase
-  Height = 240.000000000000000000
-  Width = 320.000000000000000000
-end

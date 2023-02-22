@@ -3,7 +3,7 @@ unit CommonRequests;
 
 interface
 
-uses numbers, RequestInfo, WebResource, WebString, HTTPClient, ErrorResource, systemx, xmltools, graphics, extctrls, jpeg, variants, sysutils, exceptions;
+uses typex, stringx, numbers, RequestInfo, WebResource, WebString, HTTPClient, ErrorResource, systemx, xmltools, graphics, extctrls, jpeg, variants, sysutils, exceptions;
 
 
 procedure WRQ_ServerTestGraphic(rqInfo: TRequestInfo);
@@ -1081,7 +1081,7 @@ var
 begin
   AssignFile(f, 'd:\bin.txt');
   rewrite(f);
-  writeln(f, copy(rqInfo.request.content, 1, strtoint(rqInfo.request['content-length'])));
+  writeln(f, copy(rqInfo.request.contentstring, STRZ, strtoint(rqInfo.request['content-length'])));
   closefile(f);
 end;
 

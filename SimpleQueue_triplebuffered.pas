@@ -1,4 +1,4 @@
-unit SimpleQueue;
+unit SimpleQueue_triplebuffered;
 //Prove:
 //[ ] Things are added to the queue, queue marked hot.
 //[ ] Queue runs
@@ -284,7 +284,6 @@ end;
 
 procedure TAbstractSimpleQueue.Detach;
 begin
-  inherited;
   if FCompletedItems.count > 0 then
     raise ECritical.create('It is bad to destroy TAbstractSimpleQueue while there are items waiting in the CompletedItems list.');
 
@@ -294,6 +293,7 @@ begin
   Faddeditems.free;
   FTmpList.free;
   DCS(FExecuteLock);
+  inherited;
 
 
 end;
@@ -438,7 +438,7 @@ procedure TAbstractSimpleQueue.SetStartingState;
 begin
   inherited;
 {$IFDEF WINDOWS}
-  priority := tphigher;
+//  priority := tphigher;
 {$ENDIF}
 
 end;
@@ -549,8 +549,9 @@ constructor TMultiQueue.Create;
 begin
   inherited;
   FList := TBetterList<TSimpleQueue>.create;
-  while FList.Count < GetnumberofProcessors do begin
-    FList.Add(TSimpleQueue.Create(nil, nil));
+  while FList.Count < GetEnabledCPUCount do begin
+    var nu := TPM.Needthread<TSimpleQueue_triplebuffered>(nil,nil)
+    FList.Add(nu);
     FList[FList.count-1].Name := 'MQ'+inttostr(FList.count-1);
     FList[FList.count-1].Start;
   end;

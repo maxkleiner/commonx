@@ -29,7 +29,9 @@ type
     function HasFlag(sFlag: string): boolean;
     function HasFlagEx(sShortFlag, sLongFlag: string): boolean;
     function GetUnnamedParameter(idx: ni; sDefault: string = ''): string;
-    function GetNamedParameterEx(sShortFlag, sLongFlag: string; sDefault: string = ''): string;
+    function GetUnnamedParam(idx: ni; sDefault: string = ''): string;
+    function GetNamedParameterEx(sShortFlag, sLongFlag: string; sDefault: string = ''): string;overload;
+    function GetNamedParameterEx(sShortFlag, sLongFlag: string; fDefault: double): double;overload;
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     function UnnamedCount: ni;
     function NamedCount: ni;
@@ -80,6 +82,19 @@ begin
   result := FNamedParams[idx];
 end;
 
+function TCommandLine.GetNamedParameterEx(sShortFlag, sLongFlag: string;
+  fDefault: double): double;
+begin
+  var s := GetNamedParameterEx(sShortflag,slongFlag,floattostr(fDefault));
+  result := strtofloat(s);
+
+end;
+
+function TCommandLine.GetUnnamedParam(idx: ni; sDefault: string): string;
+begin
+  exit(GetUnnamedParameter(idx, sDefault));
+end;
+
 function TCommandLine.GetUnnamedParameter(idx: ni; sDefault: string): string;
 begin
   if idx < 0 then
@@ -124,17 +139,22 @@ procedure TCommandLine.ParseCommandLine(sCmdLine: string);
 var
   h: IHolder<TStringList>;
 begin
-{$IFDEF MSWINDOWS}
-  if sCmdLine = '' then
-    sCmdLine := CmdLine;
-{$ELSE}
-  for var t:= 0 to ParamCount-1 do begin
-    if t > 0 then
-      sCmdLine := sCmdLine + ' '+paramstr(t)
-    else
-      sCmdline := paramstr(0);
+  if sCmdLine = '' then begin
+    {$IFDEF MSWINDOWS}
+      sCMDLine := CmdLine;
+    {$ELSE}
+
+      for var t:= 0 to ParamCount do begin
+        if t > 0 then
+          sCmdLine := sCmdLine + ' '+paramstr(t)
+        else
+          sCmdline := paramstr(0);
+      end;
+
+
+    {$ENDIF}
   end;
-{$ENDIF}
+
 
   h := ParseStringNotInH(sCmdLine, ' ', '"');
   if h.o.count = 0 then
@@ -151,7 +171,9 @@ begin
       SplitString(sParam,'=', l,r);
       AddNamed(trim(l), unquote(trim(r)));
     end else begin
-      AddUnnamed(unquote(trim(sParam)));
+      var un := trim(sParam);
+      if zcopy(un,0,1) <> '-' then
+        AddUnnamed(unquote(un));
     end;
   end;
 
@@ -162,6 +184,7 @@ begin
 
 
 end;
+
 
 function TCommandLine.UnnamedCount: ni;
 begin

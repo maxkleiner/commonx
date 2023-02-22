@@ -6,7 +6,7 @@ unit WebString;
 
 interface
 
-uses classes, systemx, sysutils, namevaluepair, stringx.ansi, debug;
+uses classes, systemx, sysutils, namevaluepair, stringx.ansi, debug, typex, iduri;
 
 type
   HTTPException = class(Exception);
@@ -28,8 +28,9 @@ type
 
 
 
+{$IFNDEF XXXX}
 function DecodeURLParams(sURL: string; out sDocument: string): TNameValuePairList;
-{$IFDEF WINDOWS}
+{$ELSE}
 function DecodeURLParams(sURL: HTTPString; out sDocument: string): TNameValuePairList;overload;
 {$ENDIF}
 function ApplyRelativeURL(sBaseURL: HTTPString; sURL: HTTPString): HTTPString;
@@ -432,7 +433,7 @@ begin
 //  sEscapeChar := '&#';
 //  s := StringReplace(s, '[[[', '&#091;&#091;&#091;', [rfReplaceAll]);
 
-  setlength(result, length(s)*3+1);
+  setlength(result, 1+((length(s)+1)*6));
 
 
 
@@ -517,13 +518,17 @@ function DecodeWebString(sOriginal: HTTPString; sEscapeChar: HTTPString): HTTPSt
 //Decodes a HTTPString that was URL encoded.  This function is the opposite of EncodeWebString.
 // parses a HTTPString and replaces '+' with ' ' and '%nn' with the
 // appropriate ASCII value
-
-var
-  sTemp: HTTPString;
-  nTemp: integer;
-  c : HTTPChar;
-  t: integer;
 begin
+  result := TIdURI.URLDecode(sOriginal);
+end;
+{$IFDEF OLD_DECODE_WEB_STRING}
+begin
+  var  sTemp: HTTPString;
+  var  nTemp: integer;
+  var  c : HTTPChar;
+  var  t: integer;
+
+
   if (sOriginal = (sEscapeChar+'02')) and not (sEscapeChar='%') then begin
 
     result := '';
@@ -534,7 +539,7 @@ begin
   sOriginal := StringReplace(sOriginal, '+', ' ', [rfReplaceAll]);
 
   result := '';
-  t:= 1;
+  t:= STRZ;
   while t <= length(sOriginal) do begin
     c := sOriginal [t];
 
@@ -568,6 +573,7 @@ begin
     END;
   end;
 end;
+{$ENDIF}
 //------------------------------------------------------------------------------
 procedure Decodeurl(sUrl: HTTPString; out sHostAndPort, sDocument: HTTPString);
 //Pulls a URL apart into Host and port and Document portions.
@@ -1123,6 +1129,8 @@ var
 const
   KEY = 'H@Ppìë%!##@%FJKQ9812';
 begin
+  if sHash = '' then
+    exit(0);
   try
     //How the hash works -- simple 8-bit encryption...
     //with the KEY in the hash itself (so that it can morph from page-to-page)
@@ -1708,6 +1716,7 @@ begin
   nvpl.free;
   nvpl := nil;
 end;
+{$IFNDEF XXXX}
 function DecodeURLParams(sURL: string; out sDocument: string): TNameValuePairList;
 var
   sLeft, sRight, sName, sValue: string;
@@ -1732,13 +1741,8 @@ begin
   if SplitString(sLeft, '=', sName,sVAlue) then begin
     result.Add(sName, sValue);
   end;
-
-
-
 end;
-
-
-{$IFDEF WINDOWS}
+{$ELSE}
 function DecodeURLParams(sURL: HTTPString; out sDocument: string): TNameValuePairList;
 var
   outS: HTTPString;

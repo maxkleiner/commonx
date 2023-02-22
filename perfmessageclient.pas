@@ -1,30 +1,33 @@
 unit PerfMessageClient;
 //!!!NOTE Don't call AddTarget before PeriodicEvents have been initialized
 
-
 interface
 
 uses
-  betterobject, PerfMessage, typex, orderlyinit, PeriodicEvents, numbers,
-  IdGlobal,IdBaseComponent, IdComponent, IdUDPBase, idudpclient, systemx, herro,
+  betterobject, PerfMessage, typex, orderlyinit, numbers, idsockethandle,
+  IdGlobal,IdBaseComponent, IdComponent, IdUDPBase, idudpclient, systemx, herro, managedthread,
   tickcount, debug, sysutils, generics.collections,  better_collections, skill;
 
 type
   TPerfMessageClient = class;//forward
 
-  Tpe_SendPerformanceData = class(TPeriodicEvent)
+  Tthr_SendPerformanceData = class(TManagedThread)
   protected
     procedure DoExecute; override;
   public
+    Interval: ticker;
     mypmc: TPerfMessageClient;
   end;
 
   THostAndEndpoint = record
+  public
     host: string;
     port: ni;
     lastSeen: ticker;
+    noexpire: boolean;
     class operator equal(a,b: ThostandEndpoint): boolean;
     procedure FromSkill(sk: TSkillinfo);
+    procedure Seen;
   end;
 
   TPerfMessageClient = class(TSharedObject)
@@ -33,7 +36,7 @@ type
     NewNodeId: ni;
     data: array[0..65535] of TPerfNode;
     desc: array[0..65535] of TPerfDescriptor;
-    pe: Tpe_SendPerformanceData;
+    pe: Tthr_SendPerformanceData;
     udpc: TIdUdpclient;
     csTargets: TCLXCriticalSection;
     FTargets: TList<THostAndEndpoint>;
@@ -47,15 +50,20 @@ type
     procedure CleanupClient;
     procedure initData;
     procedure SendToAllTargets(idb: TIDBytes);
+
     function IndexOfTarget(hap: THostAndEndpoint): ni;
+    procedure ScrubTargets;
   public
+    procedure ForwardToAllTargets(idb: TIDBytes; binding: TIDSocketHandle);
     function GetPerfHandle: TPerfHandle;
     procedure ReleasePerfHandle(var ph: TPerfHandle);
-    procedure AddTarget(host: string; endpoint:ni);//!!!NOTE Don't call AddTarget before PeriodicEvents have been initialized
+    procedure AddTarget(host: string; endpoint:ni; noexpire: boolean=false);//!!!NOTE Don't call AddTarget before PeriodicEvents have been initialized
+    procedure RemoveTarget(host: string; endpoint:ni);
     procedure Shutdown;
     constructor Create; override;
     destructor Destroy; override;
     procedure AddTargetsFromSkills;
+
   end;
 
 var
@@ -78,15 +86,18 @@ begin
   result := _PMC;
 end;
 
-procedure TPerfMessageClient.AddTarget(host: string; endpoint: ni);
+procedure TPerfMessageClient.AddTarget(host: string; endpoint: ni; noexpire: boolean=false);
 var
   hap:THostAndEndpoint;
 begin
+  hap.seen;
   hap.host :=host;
   hap.port := endpoint;
+  hap.noexpire := noexpire;
   ecs(csTargets);
   try
-    FTargets.Add(hap);
+    if FTArgets.IndexOf(hap) < 0 then
+      FTargets.Add(hap);
   finally
     lcs(csTargets);
   end;
@@ -100,11 +111,13 @@ begin
   ecs(csTargets);
   try
     sks := skill.Skills.FindAll('PerfNodeViewer');
-    FTargets.Clear;
+    ScrubTargets;
     for var t:= 0 to high(sks) do begin
       hap.FromSkill(sks[t]);
       if IndexOfTarget(hap) <0 then
-        AddTarget(hap.host, hap.port);
+        AddTarget(hap.host, hap.port)
+      else
+        FTargets[indexofTarget(hap)].Seen;
 
     end;
     tmSkillsChecked := getticker;
@@ -125,7 +138,7 @@ end;
 constructor TPerfMessageClient.Create;
 begin
   inherited;
-  ics(csTargets);
+  ics(csTargets, classname+'-targets');
   FTargets := TList<THostAndEndpoint>.create;
   InitData;
   StartPE;
@@ -140,6 +153,12 @@ begin
   dcs(csTargets);
 
   inherited;
+end;
+
+procedure TPerfMessageClient.ForwardToAllTargets(idb: TIDBytes;
+  binding: TIDSocketHandle);
+begin
+  SendToAllTargets(idb);
 end;
 
 function TPerfMessageClient.GetPerfHandle: TPerfHandle;
@@ -210,6 +229,15 @@ procedure TPerfMessageClient.ReleasePerfHandle(var ph: TPerfHandle);
 begin
   Lock;
   try
+    var ClearParentHandlesOf := ph.id;
+    for var t:= 0 to high(Self.desc) do begin
+      if desc[t].left = ClearParentHandlesOf then
+        desc[t].left := -1;
+      if desc[t].above = ClearParentHandlesOf then
+        desc[t].above := -1;
+
+    end;
+
     if ph.node <> nil then
       ph.node.Init;
     if ph.desc <> nil then
@@ -221,6 +249,33 @@ begin
   end;
 end;
 
+procedure TPerfMessageClient.RemoveTarget(host: string; endpoint: ni);
+var
+  hap:THostAndEndpoint;
+begin
+  hap.seen;
+  hap.host :=host;
+  hap.port := endpoint;
+//  hap.noexpire := noexpire;
+  ecs(csTargets);
+  try
+    if FTArgets.IndexOf(hap) >= 0 then
+      FTargets.Remove(hap);
+  finally
+    lcs(csTargets);
+  end;
+end;
+
+procedure TPerfMessageClient.ScrubTargets;
+begin
+  for var t:= FTargets.count-1 downto 0 do begin
+    if FTargets[t].lastSeen > 600000 then begin
+      FTargets.delete(t);
+    end;
+  end;
+
+end;
+
 procedure TPerfMessageClient.SendDescriptorData;
 var
   idb: TIdBytes;
@@ -229,7 +284,8 @@ var
   hap : THostAndEndpoint;
 begin
   if udpc = nil then exit;
-
+  hed.init;
+  hed.ComputerName := systemx.GetComputerName;
   hed.processid := GetCurrentProcessID_XPLatform;
   var cx := NewNodeIndex;
   var fx :=0;
@@ -239,7 +295,7 @@ begin
     hed.nodesinmessage := lesserof(cx, 20);
     hed.totalnodes := NewNodeIndex;
     if hed.totalnodes = 0 then begin
-      debug.log('no nodes');
+//      debug.log('no nodes');
       exit;
     end;
     hed.ticker := getticker;
@@ -267,13 +323,15 @@ begin
   var calculatedLength := sizeof(TPerfMessageHeader);
   calculatedLength := calculatedLength + (NewNodeIndex * SizeOf(TPerfNode));
   setlength(idb, calculatedLength);
+  hed.Init;
+  hed.ComputerName := systemx.GetComputerName;
   hed.processid := GetCurrentProcessID_XPLatform;
   hed.mtyp := MT_PERFORMANCE_DATA;
   hed.startnode := 0;
   hed.nodesinmessage := NewNodeIndex;
   hed.totalnodes := NewNodeIndex;
   if hed.totalnodes = 0 then begin
-    debug.log('no nodes');
+//    debug.log('no nodes');
     exit;
   end;
   hed.ticker := getticker;
@@ -311,10 +369,16 @@ procedure TPerfMessageClient.StartPE;
 begin
   InitClient;
 {$IFDEF ENABLE_PMC}
-  pe :=Tpe_SendPerformanceData.create;
-  pe.Frequency := 100;
+  pe :=tpm.Needthread<Tthr_SendPerformanceData>(nil);
+{$IFDEF SLOW_PMC}
+  pe.interval:= 1000;
+{$ELSE}
+  pe.interval:= 100;
+{$ENDIF}
   pe.mypmc := self;
-  PEA.add(pe);
+  pe.Loop := true;
+  pe.start;
+//  PEA.add(pe);
 {$ENDIF}
 end;
 
@@ -323,8 +387,11 @@ begin
   try
     CleanUpClient;
     if assigned(pe) then begin
-      PEA.Remove(pe);
-      pe.free;
+//      PEA.Remove(pe);
+      pe.stop;
+      pe.WaitFor;
+      tpm.NoNeedthread(pe)
+//      pe.free;
     end;
   finally
     pe := nil;
@@ -340,16 +407,26 @@ end;
 
 procedure ofinal;
 begin
-  PMC.shutdown; // LEAK the rest
+  if assigned(_PMC) then begin
+    PMC.shutdown; // LEAK the rest
+{$IFNDEF LINUX}
+    RegisterExpectedMemoryLeak(PMC);
+{$ENDIF}
+  end;
 end;
 
-{ Tpe_SendPerformanceData }
+{ Tthr_SendPerformanceData }
 
-procedure Tpe_SendPerformanceData.DoExecute;
+procedure Tthr_SendPerformanceData.DoExecute;
 begin
   inherited;
   try
-   mypmc.Go;
+//    Debug.Log('go');
+    var tmStart: ticker := GetTicker;
+    mypmc.Go;
+    var tmDif: ticker := gettimesince(tmStart);
+    runhot := false;
+    coldruninterval := interval;
   except
   end;
 end;
@@ -366,14 +443,19 @@ end;
 
 procedure THostAndEndpoint.FromSkill(sk: TSkillinfo);
 begin
-
+  seen;//sets ticker
   host := sk.Host;
   port := strtoint64(sk.endpoint);
 end;
 
+procedure THostAndEndpoint.Seen;
+begin
+  lastSeen := getticker;
+end;
+
 initialization
 
-init.RegisterProcs('PerfMessageClient', oinit, ofinal, 'PeriodicEvents');
+init.RegisterProcs('PerfMessageClient', oinit, ofinal, 'ManagedThread');
 
 
 end.

@@ -1,40 +1,47 @@
 unit rdtpdb;
+{$DEFINE NO_QUERY_LOGGING}
 {$I DelphiDefs.inc}
 {$DEFINE DO_WRITE_BEHIND}
 {$DEFINE QUERY_LOGGIng}
 {$IFDEF NO_QUERY_LOGGING}
 {$UNDEF QUERY_LOGGING}
 {$ENDIF}
+{x$DEFINE SHORT_POOL}
 
 
 interface
 
 uses
-  consolelock, abstractdb, sysutils, stringx, typex, systemx, tickcount, RDTPSQLconnectionClientEx, storageenginetypes, variants, debug, namevaluepair, rdtpkeybotclient, betterobject;
+  numbers, consolelock, abstractdb, sysutils, stringx, typex, systemx, tickcount, RDTPSQLconnectionClientEx, storageenginetypes, variants, debug, namevaluepair, rdtpkeybotclient, betterobject, commandprocessor, databasequeryengine, classes;
 type
   Trdtpdb = class(TAbstractDB)
+  private
   protected
     FIsMYSQL: boolean;
     FUseTCP: boolean;
     FUseTor: boolean;
-    FContext: string;
-    function Getcontext: string;
-    procedure Setcontext(Value: string);
+    function Getcontext: string;override;
+    procedure Setcontext(Value: string);override;
+
   public
+    clusternode: ni;
     cli: TRDTPSQLConnectionClientEx;
     tmLAstReadyCheck: ticker;
+    poolable: boolean;
     procedure Init;override;
     destructor Destroy;override;
     constructor CopyCreate(source: TRDTPDB);
     procedure Connect;override;
 //    function ReadQuery(sQuery: string): TdbCursor;
     procedure WriteQuery(sQuery: string);override;
+    function DeleteVerify(sTable, sCluster: string; sWhere: string; timeout: ticker = 0 ): boolean;
     procedure Writebehind(sQuery: string; bDontLog: boolean = false);override;
     procedure ReadQuery_Begin(sQuery: string);
     function ReadQuery_End: TSERowSet;
     function ReadQueryH_End: IHolder<TSERowSet>;
 
     function ReadQuery(sQuery: string): TSERowSet;override;
+    function ReadQuerySLH(sQuery: string): IHolder<TStringList>;
     function ReadQueryMultiTable(sQueryDotDotDot: string; postOrder: string): IHolder<TSERowSet>;
     procedure WriteQueryMultiTable(sQueryDotDotDot: string);
 
@@ -52,8 +59,9 @@ type
     function FunctionQuery(sQuery: string; rDefault: double): double;overload;override;
     function FunctionQuery(sQuery: string; sDefault: string): string;overload;override;
     procedure CleanupClient;
-    function GetNextID(sType: string): Int64; override;
+    function GetNextID(sType: string; iCount:int64 = 1): Int64; override;
     function SetNextID(sType: string; id: Int64): Boolean; override;
+    function ShouldGive: Boolean; override;
     property UseTCP: boolean read FUseTCP write FuseTCP;
     property UseTor: boolean read FUseTor write FuseTor;
     function Connected: boolean;override;
@@ -64,13 +72,22 @@ type
   end;
 
 
-
+function CanRetryOnError(sMessage: string): boolean;
 
 
 
 implementation
 
 { Trdtpdb }
+
+function CanRetryOnError(sMessage: string): boolean;
+begin
+  result := zpos('TOO_MANY_PARTS',sMessage) >=0;  if result then exit;
+  result := zpos('THREAD',sMessage) >=0;  if result then exit;
+
+
+
+end;
 
 function Trdtpdb.ArrayQuery(sQuery: string): TArray<string>;
 var
@@ -79,6 +96,7 @@ var
 begin
   rs := TSERowSet.Create;
   try
+    sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
     rs := ReadQuery(sQuery);
     setlength(result, rs.RowCount);
     for t:= 0 to rs.rowcount-1 do begin
@@ -118,7 +136,9 @@ begin
   cli.Host := self.MWHost;
   cli.endPoint := self.MWEndpoint;
   cli.UseTCP := self.UseTCP;
-  cli.UseTor := self.UseTor;
+{$IFDEF ALLOW_TOR}
+  //cli.UseTor := self.UseTor;
+{$ENDIF}
 
   if context <> '' then begin
     splitstringnocase(context, ';db=', sl,sr);
@@ -160,6 +180,18 @@ begin
   end;
 end;
 
+function Trdtpdb.DeleteVerify(sTable, sCluster, sWhere: string; timeout: ticker): boolean;
+begin
+  WriteQuery('alter table '+sTable+'_n on cluster '+sCluster+' delete where '+sWhere);
+  var tmStart := getticker;
+  while (timeout = 0) or (gettimesince(tmStart) < timeout )do begin
+    if FunctionQuery('select count(*) from '+sTable+' where '+sWhere,0)=0 then
+      exit(true);
+    sleep(lesserof(1000,timeout));
+  end;
+  exit(false);
+end;
+
 destructor Trdtpdb.Destroy;
 begin
   cleanupclient;
@@ -168,8 +200,23 @@ end;
 
 function Trdtpdb.FunctionQuery(sQuery: string; iDefault: int64): int64;
 begin
-  FunctionQueryDouble_Begin(sQuery);
-  result := FunctionQuery_End(iDefault);
+  while true do begin
+    try
+      FunctionQueryDouble_Begin(sQuery);
+      result := FunctionQuery_End(iDefault);
+      break;
+    except
+      on e:exception do begin
+        poolable := false;
+        if not CanRetryOnError(e.message) then begin
+          poolable := false;
+          raise;
+        end;
+
+      end;
+    end;
+  end;
+
 
 end;
 
@@ -177,12 +224,25 @@ end;
 
 function Trdtpdb.FunctionQuery(sQuery, sDefault: string): string;
 begin
-  FunctionQueryDouble_Begin(sQuery);
-  result := FunctionQuery_End(sDefault);
+  while true do begin
+    try
+      FunctionQueryDouble_Begin(sQuery);
+      result := FunctionQuery_End(sDefault);
+      break;
+    except
+      on e:exception do begin
+        poolable := false;
+        if not CanRetryOnError(e.message) then
+          raise;
+      end;
+    end;
+  end;
+
 end;
 
 procedure Trdtpdb.FunctionQueryDouble_Begin(sQuery: string);
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   ReadQuery_Begin(sQuery);
 
 
@@ -191,11 +251,13 @@ end;
 
 procedure Trdtpdb.FunctionQueryInt_Begin(sQuery: string);
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   ReadQuery_Begin(sQuery);
 end;
 
 procedure Trdtpdb.FunctionQueryString_Begin(sQuery: string);
 begin
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   ReadQuery_Begin(sQuery);
 end;
 
@@ -237,6 +299,7 @@ function Trdtpdb.FunctionQuery_End(rDefault: double): double;
 var
   rs: TSERowset;
 begin
+  try
   rs := nil;
   try
   rs := Readquery_End;
@@ -264,6 +327,11 @@ begin
     rs.free;
     rs := nil;
   end;
+  except
+    poolable := false;
+    raise;
+  end;
+
 
 
 end;
@@ -273,6 +341,7 @@ function Trdtpdb.FunctionQuery_End(sDefault: string): string;
 var
   rs: TSERowset;
 begin
+  try
   rs := Readquery_End;
   try
     if rs = nil then begin
@@ -297,6 +366,10 @@ begin
   finally
     rs.free;
   end;
+  except
+    poolable := false;
+    raise;
+  end;
 
 end;
 
@@ -305,20 +378,34 @@ begin
   result := FContext;
 end;
 
-function Trdtpdb.GetNextID(sType: string): Int64;
+function Trdtpdb.GetNextID(sType: string; iCount:int64 = 1): Int64;
 begin
-  Result := cli.GetNextId(sType);
+  CheckConnectedOrConnect;
+  Result := cli.GetNextIDEx(sType,'','', iCount);
 end;
 
 function Trdtpdb.FunctionQuery(sQuery: string; rDefault: double): double;
 begin
-  FunctionQueryDouble_Begin(sQuery);
-  result := FunctionQuery_End(rDefault);
+  while true do begin
+    try
+      FunctionQueryDouble_Begin(sQuery);
+      result := FunctionQuery_End(rDefault);
+      break;
+    except
+      on e:exception do begin
+        poolable := false;
+        if not CanRetryOnError(e.message) then
+          raise;
+      end;
+    end;
+  end;
+
 end;
 
 procedure Trdtpdb.Init;
 begin
   inherited;
+  poolable := true;
   FMWHost := 'localhost';
   FMWEndpoint := '235';
   Created := getticker;
@@ -335,16 +422,56 @@ var
   tm: ticker;
 begin
   result := nil;
+  try
+
   tm := GetTicker;
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
+  CheckConnectedOrConnect;
 {$IFDEF QUERY_LOGGING}  Debug.Log('Read Query: '+sQuery);{$ENDIF}
-  result := cli.ReadQuery(sQuery);
+  while true do begin
+    try
+      result := cli.ReadQuery(sQuery);
+      break;
+    except
+      on e:exception do begin
+        poolable := false;
+        if not CanRetryOnError(e.message) then
+          raise;
+      end;
+    end;
+  end;
 //  Debug.Log('Query Took: '+commaize(gettimesince(tm))+'ms.');
+  except
+    poolable := false;
+    raise;
+  end;
+
 end;
 
 function Trdtpdb.ReadQueryDBC(sQuery: string): TAbstractDBCursor;
 begin
-  result := TSERowSetCursor.create;
-  TSERowSetCursor(result).RS := ReadQuery(sQuery);
+  try
+    result := TSERowSetCursor.create;
+    sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
+    while true do begin
+      try
+
+        TSERowSetCursor(result).RS := ReadQuery(sQuery);
+        break;
+      except
+        on e:exception do begin
+          poolable := false;
+          if not CanRetryOnError(e.message) then
+            raise;
+        end;
+      end;
+    end;
+
+  except
+    poolable := false;
+    raise;
+  end;
+
 
 end;
 
@@ -363,7 +490,7 @@ var
   e: IHolder<TSERowSet>;
 begin
 
-
+  sQueryDotDotDot := ApplyContextVariablesToQuery(self.FContext, sQueryDotDotDot);
   s := sQueryDotDotDot;
   if not SplitString(s, '...', sl, sr) then
     raise ECritical.create('no ... found');
@@ -419,9 +546,21 @@ begin
 end;
 
 
+function Trdtpdb.ReadQuerySLH(sQuery: string): IHolder<TStringList>;
+begin
+  var rs := readqueryh(sQuery);
+  var slh := NewStringListH;
+  result := slh;
+  rs.o.Iterate(procedure begin
+    slh.o.add(rs.o.values[0,rs.o.cursor]);
+  end);
+end;
+
 procedure Trdtpdb.ReadQuery_Begin(sQuery: string);
 begin
 {$IFDEF QUERY_LOGGING}  Debug.Log('BEGIN Read Query: '+sQuery);{$ENDIF}
+  Connect;
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   cli.ReadQuery_Async(sQuery);
 end;
 
@@ -436,7 +575,7 @@ end;
 
 procedure Trdtpdb.Setcontext(Value: string);
 begin
-  Fcontext := value;
+  inherited;
   if zpos('provider=mysql', lowercase(FContext)) >=0 then
     FIsMYSQL := true;//todo 2: make this better...
 end;
@@ -447,9 +586,20 @@ begin
   result := true;
 end;
 
+function Trdtpdb.ShouldGive: Boolean;
+begin
+{$IFDEF SHORT_POOL}
+  result := (gettimesince(created) < 1000) and poolable;
+{$ELSE}
+  result := (gettimesince(created) < 10000) and poolable;
+{$ENDIF}
+end;
+
 procedure Trdtpdb.Writebehind(sQuery: string; bDontLog: boolean = false);
 begin
+  CheckConnectedOrConnect;
   inherited;
+  sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
   if not bDontLog then
 {$IFDEF QUERY_LOGGING}    Debug.Log('WriteBehind: '+sQuery);{$ENDIF}
 {$IFDEF DO_WRITE_BEHIND}
@@ -467,7 +617,36 @@ end;
 procedure Trdtpdb.WriteQuery(sQuery: string);
 begin
 {$IFDEF QUERY_LOGGING}  Debug.Log('Write: '+sQuery);{$ENDIF}
-  cli.WriteQuery(sQuery);
+  Connect;
+  try
+    sQuery := ApplyContextVariablesToQuery(self.FContext, sQuery);
+    repeat
+      try
+        cli.WriteQuery(sQuery);
+        break;
+      except
+        on E:Exception do begin
+          poolable := false;
+          if (zpos('TOO_MANY_PARTS',e.message) < 0)
+          and (zpos('THREAD',e.message) < 0) then
+            raise;
+          sleep(random(4000));
+        end;
+      end;
+    until false;
+{$IFDEF DONT_POOL_ALTER}
+    if 0=comparetext('alter', zcopy(trim(sQuery),0,length('alter'))) then begin
+      poolable := false;
+    end;
+    if 0=comparetext('optimize', zcopy(trim(sQuery),0,length('optimize'))) then begin
+      poolable := false;
+    end;
+{$ENDIF}
+  except
+    poolable := false;
+    raise;
+  end;
+
 end;
 
 
@@ -480,7 +659,7 @@ var
   e: IHolder<TSERowSet>;
 begin
 
-
+  sQueryDotDotDot := ApplyContextVariablesToQuery(self.FContext, sQueryDotDotDot);
   s := sQueryDotDotDot;
   if not SplitString(s, '...', sl, sr) then
     raise ECritical.create('no ... found');

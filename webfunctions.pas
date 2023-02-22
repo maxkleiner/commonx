@@ -1,11 +1,11 @@
 unit WebFunctions;
-
+{$DEFINE ALLOW_VCL}
 
 
 interface
 uses
-  Variants, Classes, RequestInfo, DataObject, extCtrls, jpeg, WebResource,
-  webstring, versioninfo, dialogs, glasscontrols, numbers;
+  Variants, Classes, RequestInfo, DataObject, jpeg, WebResource, extctrls,
+  webstring, versioninfo, dialogs, numbers, glasscontrols;
 
 type
   TShellButton = (sbBack, sbLogout, sbGroupTools, sbHome,
@@ -104,11 +104,13 @@ function GetBoundary(rqInfo: TRequestInfo; sBoundaryTag: string; iStartingLine: 
 procedure InfuseObjectPoolDebug(rqInfo: TRequestInfo);
 
 //==============================================================================
+{$IFDEF ALLOW_VCL}
 function ImageToJpeg(imageComponent: TImage): TJpegImage;overload;//todo 1: move and lock in easy image
 function ImageToJpeg(imageComponent: TGlassImage): TJpegImage;overload;//todo 1: move and lock in easy image
 procedure StreamImageAsJpeg(rqInfo: TREquestInfo; image: TImage);overload;
 procedure StreamImageAsJpeg(rqInfo: TREquestInfo; image: TGlassImage);overload;
 procedure StreamImageAsPNG(rqInfo: TREquestInfo; image: TGlassImage);
+{$ENDIF}
 
 procedure EncodeURLForInline(var sURL: string);
 
@@ -880,7 +882,7 @@ begin
     sl.add(sLineWithComments);*)
 
 end;
-
+{$IFDEF ALLOW_VCL}
 //------------------------------------------------------------------------------
 function ImageToJpeg(imageComponent: TImage): TJpegImage;
 begin
@@ -987,7 +989,7 @@ begin
     //note.... memory stream is freed by upper level TRequestInfo handler;
   end;
 end;
-
+{$ENDIF}
 //------------------------------------------------------------------------------
 function GetStringListArea(sl: TStringList; istartcol, iendcol: integer; iStartRow, iEndRow: integer): string;
 var
@@ -1239,6 +1241,9 @@ function HashToDataTierID(sHash: string; idxDataTier: integer): integer;
 var
   sTemp: string;
 begin
+  if sHash = '' then
+    exit(0);
+
     if idxDataTier > (GetDataTierCount(sHash)) then
 
     raise Exception.create('Session has '+inttostr(GetDataTierCount(sHash))+' databases defined.  Expecting '+inttostr(idxDataTier));
@@ -1283,6 +1288,10 @@ var
 const
   KEY = 'H@Ppìë%!';
 begin
+  if sHashin = '' then
+    exit(0);
+
+
   sHash := sHashIn;
   try
     //How the hash works -- simple 8-bit encryption...
@@ -1668,6 +1677,11 @@ function HashToDataTierIDs(sHash: string): TDataTierIDs;
 var
   i,t: integer;
 begin
+  setlength(result,0);
+  if sHash = '' then
+    exit();
+
+
     //Set the length of the result array to the first two digits
 
   i := GetDataTierCount(sHash);
@@ -1682,6 +1696,10 @@ end;
 //------------------------------------------------------------------------------
 function GetDataTierCount(sHash: string): integer;
 begin
+  if sHash = '' then
+    exit(0);
+
+
   result := ReadStringByte(sHash, 1);
 end;
 
@@ -1839,7 +1857,7 @@ begin
 
   sl := TstringList.create;
   try
-    sl.text := rqInfo.request.content;
+    sl.text := rqInfo.request.contentstring;
     //sl.SaveToFile('d:\fixme.txt');
     repeat
       sLine := sl[iLIne];
@@ -1868,7 +1886,7 @@ begin
   try
 
     if slAlternate=nil then
-      sl.text := rqInfo.request.content
+      sl.text := rqInfo.request.contentstring
     else
       sl.text := slAlternate.text;
 

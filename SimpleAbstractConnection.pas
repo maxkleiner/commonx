@@ -2,13 +2,14 @@ unit SimpleAbstractConnection;
 {x$DEFINE VERBOSE COMMUNICATION LOG}
 {$DEFINE READ_AHEAD}
 {$I 'DelphiDefs.inc'}
+{$DEFINE ALLOW_UTF8}
 
 interface
 uses
 {$IFDEF NEED_FAKE_ANSISTRING}
   ios.stringx.iosansi,
 {$ENDIF}
-  SysUtils, systemx, betterobject, sharedobject, debug, numbers, typex, tickcount, signals, ringbuffer, commandprocessor;
+  SysUtils, systemx, betterobject, sharedobject, debug, numbers, typex, tickcount, signals, ringbuffer, commandprocessor, classes;
 
 type
   ETransportError = class(Exception);
@@ -70,8 +71,11 @@ type
     function GetISDataAvailable: boolean;virtual;
   strict protected
     tmLastDebugTime: ticker;
+{$IFDEF ALLOW_UTF8}
+    FFailedReadLn: Tarray<byte>;
+{$ELSE}
     FFailedReadLn: ansistring;
-    function CheckForData: boolean;
+{$ENDIF}
     function DoCheckForData: boolean;virtual;abstract;
     function DoWaitForData(timeout: cardinal): boolean;virtual;abstract;//<---------------------------------------------
 
@@ -79,7 +83,14 @@ type
     function BufferStatusString: string;
     property PolledByReader: boolean read FPolledByReader write FPolledByReader;
     procedure UpdateBufferStatus;
+    function DoConnect: boolean; virtual;abstract;//<---------------------------------------------
+    procedure DoDisconnect; virtual;abstract;//<---------------------------------------------
+
   public
+    lastusage: ticker;
+    MaxConnectionTries: ni;
+    send_eol_cr: boolean;
+    send_eol_lf: boolean;
     readln_eol: ansichar;
     readln_ignore: ansichar;
     Disconnecting: boolean;
@@ -91,9 +102,9 @@ type
     property EndPoint: string read FEndPoint write SetEndPOint;
 
     function Connect: boolean;
-    function DoConnect: boolean; virtual;abstract;//<---------------------------------------------
     procedure Disconnect;
-    procedure DoDisconnect; virtual;abstract;//<---------------------------------------------
+    function CheckForData: boolean;
+
 
 
     function SendData(buffer: pbyte; length: integer; bSendAll: boolean = true): integer;
@@ -106,7 +117,9 @@ type
     procedure Flush;virtual;
     function ReadData(buffer: pbyte; length: ni; bReadAll: boolean; iTimeOut: ticker = 0): ni;overload;//override DoReadDAta
     function ReadData(buffer: pbyte; length: ni): ni;overload;
-    function GuaranteeReadData(buffer: pbyte; length: ni; iTimeOut: ticker): ni;
+    function GuaranteeReadData(buffer: pbyte; length: ni; iTimeOut: ticker; bThrowExceptions: boolean = true): ni;
+    procedure GuaranteeeSendata(buffer: pbyte; length: ni; iTimeOut: ticker);
+    procedure GuaranteeSendStream(s: TStream);
 
 
     property OnData: TDebugEvent read FOnData write FOnData;
@@ -125,6 +138,7 @@ type
     function CheckConnectedOrConnect: boolean;
     function ReadLn(out sLine: string; iTimeout: nativeint): boolean;
     procedure SendLn(sLine: string);
+    function GetUniqueID: int64;virtual;abstract;
   end;
 
 
@@ -195,11 +209,15 @@ begin
   Disconnecting := false;
 
   tmStart := getTicker;
+  var tries := 0;
   repeat
     result := DoConnect;
+
     if not result then
       sleep(random(500));
-  until result or (gettimesince(tmStart) > 8000);
+
+    inc(tries);
+  until result or (gettimesince(tmStart) > 8000) or (tries>MaxConnectionTries);
 
 
 end;
@@ -216,6 +234,9 @@ begin
   evData := TSignal.create;
   rbReadAhead := TRingBuffer.create;
   rbReadAhead.Size := 65536;
+  send_eol_cr := true;
+  send_eol_lf := true;
+  MaxConnectionTries := 8;
 
 end;
 
@@ -285,8 +306,40 @@ begin
   result := evData.IsSignaled;
 end;
 
+
+
+procedure TSimpleAbstractConnection.GuaranteeeSendata(buffer: pbyte; length: ni;
+  iTimeOut: ticker);
+var
+  pp: pbyte;
+  togo: ni;
+  ijust: ni;
+  tmStart: ticker;
+begin
+  pp := buffer;
+  togo := length;
+  tmStart := getticker;
+  while togo > 0 do begin
+    ijust := 0;
+    ijust:= SendData(pp, togo);
+    if iJust <=0 then begin
+      Disconnect;
+      raise ETransportError.Create(classname+' sent zero bytes!**');
+    end;
+    dec(togo, ijust);
+    inc(pp, ijust);
+    if ijust > 0 then begin
+      tmStart := getticker;
+    end;
+    if (gettimesince(tmStart) > iTimeOut) then begin
+      Disconnect;
+      raise ETransportError.Create(classname+' timeout during guaranteed write.');
+    end;
+  end;
+end;
+
 function TSimpleAbstractConnection.GuaranteeReadData(buffer: pbyte;
-  length: ni; iTimeOut: ticker): ni;
+  length: ni; iTimeOut: ticker; bThrowExceptions: boolean = true): ni;
 var
   pp: pbyte;
   togo: ni;
@@ -303,7 +356,9 @@ begin
       justread := ReadData(pp, togo);
       if justread <=0 then begin
         Disconnect;
-        raise ETransportError.Create(classname+' returned zero bytes!**');
+        if bThrowExceptions then
+          raise ETransportError.Create('socket disconnected, got '+inttostr(result)+' of '+inttostr(length)+' bytes requested of guarantee');
+        exit(0);
       end;
     end;
 
@@ -316,8 +371,26 @@ begin
       Disconnect;
       raise ETransportError.Create(classname+' timeout during guaranteed read.');
     end;
+    inc(result, justread);
   end;
   result := length;
+end;
+
+procedure TSimpleAbstractConnection.GuaranteeSendStream(s: TStream);
+var
+  temp: array of byte;
+begin
+  setlength(temp, 65535);
+  var cx := s.Size-s.Position;
+  while cx > 0 do begin
+    var iTo := lesserof(cx, 65536);
+    var iJust := s.Read(temp[0], iTo);
+    if iJust = 0 then
+      raise ECritical.Create('read 0 bytes from stream');
+    self.GuaranteeeSendata(@temp[0], iJust, 16000);
+  end;
+
+
 end;
 
 function TSimpleAbstractConnection.HasLeftOvers: boolean;
@@ -364,7 +437,10 @@ begin
       result := lesserof(tempread, length);
       MoveMem32(buffer, @temp[0], result);
       //save whatever is left
-      rbReadAhead.BufferData(@temp[result], tempread-result);
+      var tobuffer := tempread-result;
+      if tobuffer > 0 then begin
+        rbReadAhead.BufferData(@temp[result], tobuffer);
+      end;
       UpdateBufferStatus;
     end
     else
@@ -398,7 +474,7 @@ begin
   while iSent < length do begin
     iToSend := length-isent;
     ijustSent := DoSendData(@buffer[iSent], length-iSent);
-    if (iJustSent=0)(* and (not Connected)*) then
+    if (iJustSent<=0)(* and (not Connected)*) then
       raise ETransportError.Create('Connection dropped during send.');
     inc(iSent, iJustSent);
     if not bSendAll then break;
@@ -477,31 +553,70 @@ begin
 end;
 
 function TSimpleAbstractConnection.ReadLn(out sLine: string; iTimeout: nativeint): boolean;
+
 var
+{$IFDEF ALLOW_UTF8}
+  byt: TArray<byte>;
+
+{$ELSE}
   ansi: ansistring;
+
+{$endif}
 begin
   result := false;
   sline := '';
+{$IFDEF ALLOW_UTF8}
+  byt := FFailedReadLn;
+  setlength(FFailedReadln,0);
+{$ELSE}
   ansi := FFailedReadln;
   FFailedReadln := '';
+{$ENDIF}
+
   while true do begin
     if WaitforData(iTimeout) then begin
-      var b: ansichar;
+      var b: byte;
       if ReadData(@b, 1) = 0 then
         raise ETransportError.create('failed to read byte during ReadLn.  Connection dropped.');
 //      if b <> readln_ignore then begin
-        if b=readln_eol then begin
+        if b=ord(readln_eol) then begin
+{$IFDEF ALLOW_UTF8}
+          byt := systemx.ByteRemove(byt,ord(readln_ignore));
+          try
+            sline := TEncoding.UTF8.GetString(byt);
+          except
+            sline := TEncoding.ANSI.GetString(byt);
+            Debug.Log('UTF Dencode Error! String Treated as ANSI instead: '+sline);
+          end;
+{$ELSE}
           sline := StringReplace(string(ansi), readln_ignore, '', [rfReplaceAll]);
+{$ENDIF}
+
           exit(true);
         end;
-        ansi := ansi + b;
+{$IFDEF ALLOW_UTF8}
+        setlength(byt, length(byt)+1);
+        byt[high(byt)] := b;
+{$ELSE}
+        ansi := ansi + ansichar(b);
+{$ENDIF}
 //      end;
     end else begin
+{$IFDEF ALLOW_UTF8}
+      FFailedReadLn := byt;
+{$ELSE}
       FFailedReadLn := ansi;
+{$ENDIF}
+
       //if we call readln but fail to get even a PARTIAL line, then the connection
       //dropped presumably because we called WaitForData before this
+{$IFDEF ALLOW_UTF8}
+      if length(FFailedReadLn) = 0  then
+        raise ETransportError.create('connection broken during readln()');
+{$ELSE}
       if FFailedReadLn = '' then
         raise ETransportError.create('connection broken during readln()');
+{$ENDIF}
       exit(false);
     end;
 
@@ -510,12 +625,25 @@ begin
 end;
 
 procedure TSimpleAbstractConnection.SendLn(sLine: string);
+var
+  eolstr: ansistring;
 begin
-  var ansi := ansistring(sLine)+readln_eol+readln_ignore;
-{$IFDEF NEED_FAKE_ANSISTRING}
-  SendData(ansi.addrof[strz],length(ansi), true);
+  eolstr := '';
+  if send_eol_cr then
+    eolstr := #13;
+  if send_eol_lf then
+    eolstr := eolstr+#10;
+{$IFDEF ALLOW_UTF8}
+  var bytes := TEncoding.UTF8.GetBytes(sLine+string(eolstr));
+  SendData(@bytes[0], length(bytes), true);
 {$ELSE}
-  SendData(@ansi[strz],length(ansi), true);
+  var ansi := ansistring(sLine)+eolstr;
+
+  {$IFDEF NEED_FAKE_ANSISTRING}
+    SendData(ansi.addrof[strz], length(ansi), true);
+  {$ELSE}
+    SendData(@ansi[strz],       length(ansi), true);
+  {$ENDIF}
 {$ENDIF}
 end;
 

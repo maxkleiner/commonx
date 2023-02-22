@@ -100,6 +100,7 @@ begin
   try
     idstack.GStack.GetLocalAddressList(addrs);
     for t:= 0 to addrs.Count-1 do begin
+
       addr := addrs.items[t] as TIDStackLocalAddress;
       if addr is TIdStackLocalAddressIPv4 then begin
         a := TIdStackLocalAddressIPv4(addr).IPAddress;
@@ -136,6 +137,7 @@ Begin
       if aNetInterfaceList[i].BroadcastSupport
       and aNetInterfaceList[i].IsInterfaceUp
       and (not aNetInterfaceList[i].IsLoopback) then begin
+        debug.log('Found local address:'+aNetInterfaceList[i].AddrDirectedBroadcast);
         result.o.Add (aNetInterfaceList[i].AddrDirectedBroadcast);
       end;
     end;

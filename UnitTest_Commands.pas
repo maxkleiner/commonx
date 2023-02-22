@@ -5,13 +5,14 @@ unit UnitTest_Commands;
 interface
 
 
-uses managedthread, commandprocessor, windows, stringx,  classes, sysutils, commands_system, commandtypes, faststrings, stringx.fast;
+uses managedthread, commandprocessor, windows, stringx,  classes, sysutils, commands_system, commandtypes, faststrings, stringx.fast, tickcount;
 
 const
-  STRING_SPLIT_TEST_SIZE = 600000;
+  STRING_SPLIT_TEST_SIZE = 6000;
 type
   Tcmd_RandomStringSplit = class(TFunctionCommand<ansistring>)
   public
+    divisor: nativeint;
     procedure DoExecute;override;
     procedure InitExpense;override;
   end;
@@ -24,6 +25,10 @@ type
 
   Tcmd_RandomAllocations = class(TFunctionCommand<ansistring>)
   public
+    testcount: int64;
+    sizelimit: int64;
+    ops: int64;
+    TIME_LIMIT: int64;
     procedure DoExecute;override;
     procedure InitExpense;override;
   end;
@@ -214,22 +219,32 @@ begin
   inherited;
   sl := Tstringlist.create;
 
-  setlength(s, STRING_SPLIT_TEST_SIZE);
-  for t:= low(s) to high(s) do begin
-    s[t] := char(ansichar(ord('a')+random(72)));
+  var tests := 50000 div divisor;
+
+  stepcount := tests;
+
+  for var x := 1 to tests do begin
+    sl.Clear;
+    step := x;
+
+    setlength(s, STRING_SPLIT_TEST_SIZE);
+    for t:= low(s) to high(s) do begin
+      s[t] := char(ansichar(ord('a')+random(72)));
+    end;
+
+
+    s3 := s;
+//    stepcount := length(s);
+
+
+    while splitString(s3, 'a', s1,s3) do begin
+//      step := length(s)-length(s3);
+      sl.Add(s1);
+
+    end;
+    result := sl.Text;
+
   end;
-
-
-  s3 := s;
-  stepcount := length(s);
-
-
-  while splitString(s3, 'a', s1,s3) do begin
-    step := length(s)-length(s3);
-    sl.Add(s1);
-
-  end;
-  result := sl.Text;
   sl.Free;
 
 end;
@@ -243,44 +258,51 @@ end;
 
 procedure Tcmd_RandomAllocations.DoExecute;
 var
-  l: TList;
+//l:TList;
+  a: array [0..255] of pointer;
   t: integer;
   p: pointer;
   r: integer;
   mm: TMemoryManager;
 begin
   inherited;
-  l := Tlist.create;
+//  l := Tlist.create;
+  var sz := sizelimit;
   try
+    FillMemory(@a[0], length(a)*sizeof(pointer),0);
 
     GetMemoryManager(mm);
 
-    stepcount := 40000000;
-    for t:= 0 to stepcount do begin
-      step := t;
-      r := random(100);
+    stepcount := TIME_LIMIT;
+    var tmStart := GEtticker;
+    var tmDif := gettimesince(tmStart);
+    t := 0;
+    repeat
+      tmDif := gettimesince(tmStart);
+      step := tmDif;
+      r := t and 255;
 
-      if r > 50 then begin
-        p := mm.GetMem(random(1024)+1);
-//        OutputDebugString(pchar('Got '+inttohex(nativeint(p),16)));
-        if p <> nil then
-          l.add(p);
-      end else begin
-        r := random(l.count);
-        if r> (l.count-1) then continue;
-//        OutputDebugString(pchar('Freeing '+inttohex(nativeint(l[r]),16)));
-        mm.FreeMem(l[r]);
-        l.delete(r);
+
+      if a[r] = nil then begin
+        a[r] := mm.GetMem(random(sz)+1);
+      end else
+      begin
+        mm.FreeMem(a[r]);
+        a[r] := nil;
       end;
+      inc(ops);
+      inc(t);
+    until tmDif > TIME_LIMIT;
+
+
+    for t := 0 to high(a) do begin
+      if a[t] <> nil then
+        mm.freemem(a[t]);
     end;
 
-    while l.count > 0 do begin
-      mm.FreeMem(l[0]);
-      l.delete(0);
-    end;
 
   finally
-    l.free;
+//    l.free;
   end;
 
 end;

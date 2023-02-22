@@ -109,7 +109,7 @@ uses
   skill, herro,
   sysutils,
   managedthread,
-  AdminAlert,
+  AdminAlert, perfmessageclient, PerfMessage,
   ringstats, virtualdiskconstants,
   ApplicationParams, numbers, debugpinger, VirtualDisk_Advanced, scsi, classes, commonconstants,netbytes, Sharedobject,
   endian,  stringx, namevaluepair, betterobject, generics.collections.fixed,
@@ -483,11 +483,13 @@ type
   public
     last_good_command: ni;
     rsTCP1, rsTCP2, rsTCP3, rsTCP4, rsTCP5: TRingStats;
+    phIO: TPerfHandle;
     function MaxDataSize(const ctx: TiSCSIContext): nativeint;
     constructor Create;override;
     destructor Destroy;override;
     procedure Start;
     procedure Stop;
+    procedure SetPerfMessageTree;
     procedure OntcpsExecute(AContext: TiSCSIContext);
     function Dispatch(const context: TiSCSIContext; var common: TISCSI_CommonHeader): boolean;
     //---------------------------------------
@@ -722,7 +724,7 @@ var
   cmddebug: TCommandDebug;
 
 var
-  scsi_session_manager: TiSCSISessionManager;
+  scsi_session_manager: TiSCSISessionManager = nil;
 //  scsi_session: TiSCSI_Session;
   longfound: boolean;
   iscsidebug: boolean = false;
@@ -813,6 +815,8 @@ end;
 constructor TiSCSITargetPortal.Create;
 begin
   inherited;
+  phIO := PMC.GetPerfHandle;
+  phIO.desc.Desc := 'iSCSI';
   rsTCP1 := TRingStats.create;
   rsTCP2 := TRingStats.create;
   rsTCP3 := TRingStats.create;
@@ -823,7 +827,7 @@ begin
   rstcp3.setsize(2048);
   rstcp4.setsize(2048);
   rstcp5.setsize(2048);
-
+  SetPerfMessageTree;
 
 end;
 
@@ -844,7 +848,7 @@ begin
   rsTCP4 := nil;
   rsTCP5 := nil;
 
-
+  PMC.ReleasePerfHandle(phIO);
 
 
   inherited;
@@ -1187,7 +1191,7 @@ begin
 
       end;
       else begin
-        LocalDebug('unknown login stage!!!!!!!!!!!!!!!!!!');
+        LocalDebug('unknown login stage ('+ContextData(context).loginstage.tostring+')!!!!!!!!!!!!!!!!!!');
         sResp := '';
         resp.Flag_Login_NSG := 3;
         resp.Flag_Login_CSG := 1;
@@ -1377,7 +1381,7 @@ const
     ( $00,$00,$04,$12, $5b,$00,$00,$02,
       $41,$44,$56,$41, $4e,$43,$45,$44,//ROCKET   //ADVA NCED
       $20,$56,$41,$54, $46,$49,$4c,$45,//IMAGEFIL // VAT FILE
-      $20,$20,$20,$20, $20,$20,$20,$20,//E
+      $20,$20,$20,$20, $20,$20,$20,$20,//
 
       $30,$30,$30,$31, $00,$00,$00,$00,$00,$00,                        //0001
       $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,
@@ -1445,7 +1449,7 @@ begin
       //[ page                                                                 |
       //  length                                                               ]
       s := systemx.GetComputerName+'00';
-      iCount := 1;//vdh.vdlist.count;
+      iCount := vdh.vdlist.count;
       iLen := 4+(iCount * ((length(s)*sizeof(ansichar))+sizeof(TSCSIIdentificationDescriptorHeader)));
       pRes := getmemory(iLen);
       pp := @pres[0];
@@ -1794,6 +1798,16 @@ begin
 
 end;
 
+procedure TiSCSITargetPortal.SetPerfMessageTree;
+begin
+  var l : ILock := vdh.LockI;
+
+  for var t:= 0 to vdh.vdlist.Count-1 do begin
+    if vdh.vdlist[t] is TVirtualDisk_Advanced then
+      TVirtualDisk_Advanced(vdh.vdlist[t]).PerfNode_SetLeft(phIO.id);
+  end;
+end;
+
 function TiSCSITargetPortal.Dispatch_SCSI_Read32(var opcode: TSCSILeadingBytes; const context: TiSCSIContext;
   var common: TISCSI_CommonHeader): TSCSI_CommandResponse;
 var
@@ -1966,7 +1980,34 @@ function TiSCSITargetPortal.Dispatch_SCSI_SynchronizeCache16(
   var scsirec: TSCSI_SynchronizeCache16): TSCSI_CommandResponse;
 begin
   result := TSCSI_CommandResponse.Create;
+  if common.lun < 0 then begin
+    result.success := false;
+    exit;
+  end;
+  if common.lun >= vdh.vdlist.count then begin
+    result.success := false;
+    exit;
+  end;
+  var vd := vdh.vdlist[common.LUN];
+  if vd is TVirtualdisk_advanced then begin
+    var vda := vd as TvirtualDisk_Advanced;
+    vda.ACtiveUseTime := GetTicker;
+{$IFDEF WAIT_FOR_FLUSH}
+
+
+    var o := vda.FlushDataBegin;
+    while not o.WAitFor(4000) do begin
+        Debug.Log(self, 'NOP in Flush');
+      SendNOPIn(context, common, false);
+    end;
+    vda.FlushDataEnd(o);
+{$ELSE}
+    vda.BeginAcidFlush;
+{$ENdIF}
+  end else
+    vd.BeginAcidFlush;
   result.Success := true;
+
 end;
 
 function TiSCSITargetPortal.Dispatch_SCSI_TestUnitReady(

@@ -9,8 +9,8 @@ type
   TDataLink = record
     VarType: integer;
     DataSet: TDataSet;
-    TableName: ansistring;
-    FieldName: ansistring;
+    TableName: string;
+    FieldName: string;
     Component: TComponent;
   end;
 

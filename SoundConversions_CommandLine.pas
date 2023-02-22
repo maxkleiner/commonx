@@ -82,9 +82,9 @@ begin
 
 
   if bUseAsyncFlag then
-    result.Params := '-y -vsync 1 -async 1 -ab '+br+' -i "' + sFile + '" "' + sOutFile + '"'
+    result.Params := '-y -vsync 1 -i "' + sFile + '" -async 1 -ab '+br+' "' + sOutFile + '"'
   else
-    result.Params := '-y -vsync 1 -ab '+br+' -i "' + sFile + '" "' + sOutFile + '"';
+    result.Params := '-y -vsync 1 -i "' + sFile + '" -ab '+br+' "' + sOutFile + '"';
 
   result.Hide := true;
   result.Start;

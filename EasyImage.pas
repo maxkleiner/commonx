@@ -1,4 +1,5 @@
 unit EasyImage;
+{$R-}
 {$MESSAGE '*******************COMPILING EasyImage.pas'}
 //TODO 2: Run Queue in Service Mode
 {x$INLINE AUTO}
@@ -8,17 +9,12 @@ unit EasyImage;
 {$DEFINE NATIVE_RES_TEXT}
 interface
 
-uses system.uitypes, system.types, system.rtlconsts, gdipapi, betterobject, ColorConversion, beeper, generics.collections.fixed,tickcount,
+uses system.uitypes, system.types, system.rtlconsts, gdipapi, betterobject,
+    ColorConversion, beeper, generics.collections.fixed,tickcount,
     vcl.graphics, typex, sysutils, classes, GDIPOBJ, winapi.windows, math, orderlyinit, numbers, colorblending, vcl.imaging.pngimage, controls, extctrls,
     Vcl.Imaging.GIFImg, sharedobject, debug, geometry, commandprocessor, dir, dirfile, systemx, helpers_stream, fastbitmap, vcl.imaging.jpeg, graphicsx;
 
 
-const primary_hues: array[0..8] of TColor = ($FF, $7fFF, $FFFF, $FF00, $FFFF00, $FF0000, $FF009F, $FF00FF,$FFFFFF);
-const Chart_colors: array[0..8] of Tcolor = ($0000FF,$00ff00,$ff0000, $7f00ff, $ff00ff, $FFFF00, $ffffff,$007fFF,$00ffff);
-
-const clOrange = $007fFF;
-const clCyan = $FFFF00;
-const clMagenta = $FF00FF;
 
 
 
@@ -175,7 +171,7 @@ function CanvasResample(canvas: TCanvas; x,y: nativefloat): TColor;overload;
 function CanvasResample(canvas: TfastCanvas; x,y: nativefloat): TColor;overload;
 procedure REsizeImages(sInputDir, sFileSpec: string; w,h: nativeint);
 function RBSwap(c: TColor): TColor;
-function CreateBlankBitmap(w,h: integer; pixel_format: TPixelformat = pf24bit): Vcl.Graphics.TBitmap;//ok
+function CreateBlankBitmap(w,h: integer; pixel_format: Vcl.Graphics.TPixelformat = pf24bit): Vcl.Graphics.TBitmap;//ok
 function CopyCreateBitmap(bmsource: Tgraphic): Vcl.Graphics.TBitmap;//ok
 procedure GobbleBlack(bm: Vcl.Graphics.TBitmap);//ok
 procedure Darken(bm: Vcl.Graphics.TBitmap; x1,y1,x2,y2: integer; rPercent: nativefloat);//ok
@@ -187,7 +183,7 @@ procedure RemoveColorTotalWhite(bm: TFastBitmap; grayBound: integer = 0; lowInte
 procedure Invert(bm: Vcl.Graphics.TBitmap; x1,y1,x2,y2: integer);overload;//ok
 procedure Invert(bm: TfastBitmap; x1,y1,x2,y2: integer; bPreserveOriginalAlpha: boolean = true);overload;//ok
 procedure ResizeImage(png: TPNGImage; newwidth: integer; newheight: integer);overload;//ok
-procedure ResizeImage(bm: TFastBitmap; newwidth: integer; newheight: integer; bProportional: boolean = true);overload;//ok
+procedure ResizeImage(bm: TFastBitmap; newwidth: integer; newheight: integer; bProportional: boolean = true; bNearest: boolean= false);overload;//ok
 
 procedure ResizeImage(bm: Vcl.Graphics.TBitmap; newwidth: integer; newheight: integer);overload;//ok
 procedure ResizeImage(bm: TJpegimage; newwidth: integer; newheight: integer);overload;//ok
@@ -234,8 +230,8 @@ function Minimum(ary: array of TFastBitmap): TFastBitmap;
 
 
 var
-  GifQueue : TGifConversionQueue;
-  MainThreadID: DWORD;
+  GifQueue : TGifConversionQueue = nil;
+  MainThreadID: DWORD = 0;
 
 implementation
 
@@ -351,7 +347,7 @@ var
 begin
   result := Vcl.Graphics.TBitmap.create;
   result.canvas.lock;
-  bm.PixelFormat := graphicsx.TPixelFormat.pf32Bit;
+  bm.PixelFormat := vcl.graphics.TPixelFormat.pf32bit;
   bm.canvas.lock;
   try
     result.Width := x2-x1+1;
@@ -1117,7 +1113,7 @@ begin
 end;
 
 
-procedure ResizeImage(bm: TFastBitmap; newwidth: integer; newheight: integer; bProportional: boolean = true);
+procedure ResizeImage(bm: TFastBitmap; newwidth: integer; newheight: integer; bProportional: boolean = true; bNearest: boolean= false);
 //Implmements a simple web page request that performs a high-quailty resize of
 //a larger jpeg image.  Not used or dispatched, too CPU intensive currently.
 //An experiment for use in the future potentially.
@@ -1221,15 +1217,21 @@ begin
             sx2 := x; sy2 := y;
             if sx1 < 0 then sx1 := 0;
             if sy1 < 0 then sy1 := 0;
-            if (x=0) and (y=0) then
-              Debug.Log('Original UpperLeft: '+inttohex(imgOriginal.Canvas.pixels[x,y],8));
+//            if (x=0) and (y=0) then
+//              Debug.Log('Original UpperLeft: '+inttohex(imgOriginal.Canvas.pixels[x,y],8));
 
 
             //determine four colors for interpolation
             ulc := imgOriginal.canvas.pixels[sx1,sy1];
-            urc := imgOriginal.canvas.pixels[sx2,sy1];
-            llc := imgOriginal.canvas.pixels[sx1,sy2];
-            lrc := imgOriginal.canvas.pixels[sx2,sy2];
+            if bNearest then begin
+              urc := ulc;
+              llc := ulc;
+              lrc := ulc;
+            end else begin
+              urc := imgOriginal.canvas.pixels[sx2,sy1];
+              llc := imgOriginal.canvas.pixels[sx1,sy2];
+              lrc := imgOriginal.canvas.pixels[sx2,sy2];
+            end;
 
             for yy := oy to newy do begin
               //color blend from top to bottom
@@ -1304,9 +1306,9 @@ begin
       for y:=0 to image1.height-1 do begin
         for x:=0 to image1.width-1 do begin
           var ccccc := pix[y,x].color;
-          image1.Canvas.pixels[x,y] := ccccc.ToColorWithAlpha(false);
-          if (x=0) and (y=0) then
-            Debug.Log('UpperLeft: '+inttohex(image1.Canvas.pixels[x,y],8));
+          image1.Canvas.pixels[x,y] := ccccc.ToColorWithAlpha(255.0);
+//          if (x=0) and (y=0) then
+//            Debug.Log('UpperLeft: '+inttohex(image1.Canvas.pixels[x,y],8));
         end;
       end;
 
@@ -2536,7 +2538,7 @@ begin
   canvas[y][x] := value;
 end;
 
-function CreateBlankBitmap(w,h: integer; pixel_format: TPixelformat = pf24bit): Vcl.Graphics.TBitmap;
+function CreateBlankBitmap(w,h: integer; pixel_format: Vcl.Graphics.TPixelformat = pf24bit): Vcl.Graphics.TBitmap;
 begin
   result := Vcl.Graphics.TBitmap.create;
   result.canvas.lock;

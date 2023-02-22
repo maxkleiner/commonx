@@ -3,7 +3,7 @@ unit rdtp_gen_client_template;
 interface
 
 uses
-  {USES}packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  {USES}packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 

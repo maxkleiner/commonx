@@ -1,11 +1,13 @@
-unit pascalcompiler;
+﻿unit pascalcompiler;
 // This unit contains classes for parsing object pascal source code. See individual units for details.
 {$DEFINE MATURE_RECORD}
-
+{x$DEFINE ALLOW_FIREHOSE}
 interface
 
-uses debug, contnrs, namevaluepair, sysutils, classes, diagram, stringx,
-  sharedobject, stringx.ansi, generics.collections, betterobject;
+uses debug,
+{$IFDEF ALLOW_FIREHOSE}consoleglobal,{$ENDIF}
+  contnrs, namevaluepair, sysutils, classes, diagram, stringx,multibuffermemoryfilestream,
+  sharedobject, stringx.ansi, generics.collections, betterobject, typex, helpers_stream;
 
 type
   EDocCompile = class(Exception);
@@ -59,7 +61,7 @@ type
     { 24 } pcComment, // the compiler is in a standard comment
     { 25 } pcLineComment, // the compiler is a end-of-line line comment
     { 26 } pcCodeComment, // the compiler is in a comment that begins with (*
-    { 27 } pcString, // the compiler is parsing a ansistring
+    { 27 } pcString, // the compiler is parsing a string
     { 28 } pcParens, // the compiler is parsing someting in parens
     { 29 } pcPropertyDeclaration,
     { 30 } pcPropertyDeclarationName,
@@ -87,8 +89,12 @@ type
     // not implemeneted for pascal, represents the context in which the system tries to determine if it is a variable, function being declared
     { 52 } pcAncestorList,
     { 53 } pcTypeTypeParameters,
-    { 53 } pcAncestorTypeParameters,
-    { 53 } pcFunctionTypeParameters);
+    { 54 } pcAncestorTypeParameters,
+    { 55 } pcFunctionTypeParameters,
+    { 56 } pcClassOrMetaOrForward,
+    { 57 } pcMetaClassOf,
+    { 58 } pcEmbeddedType
+           );
 
   TContext = class(TBetterObject)
   public
@@ -100,12 +106,13 @@ type
     function GetParentContext: string;
   end;
 
+  TDebugContextSwitch = procedure (s: string; color: integer) of object;
+
   // ----------------------------------------------------------------------------
   TContextStack = class(TObject)
-    // the context stack class works similar to the stack in a CPU.
-    // it maintains a hierarchy of contexts that the compiler has parsed
-    // use Push to push a context on the stack
-    // use pop to remove a context from the stack
+    // maintains a hierarchy of contexts that the compiler has parsed
+    // use Push() to push a context on the stack
+    // use Pop() to remove a context from the stack
     // used to get current context read the current context
   private
     Fcontexts: TList<TContext>;
@@ -113,6 +120,7 @@ type
     FPreviousContext: TParseContext;
     FonStackPop: TStackPopEvent;
     FonStackPush: TStackPushEvent;
+    procDebugContextSwitch: TDebugContextSwitch;
     function GetCurrentcontext: TParseContext;
     procedure SetCurrentContext(const Value: TParseContext);
     function GetParentcontext: TParseContext;
@@ -126,6 +134,7 @@ type
     function FindContextByType(ParseContextType: TParseContext): TContext;
     procedure Push(context: TParseContext; symbolcontext: TSymbol = nil);
     function Pop: TParseContext;
+    procedure DebugContextSwitch(s: string; color: integer);
     procedure Clear;
     property CurrentParseContext: TParseContext read GetCurrentcontext
       write SetCurrentContext;
@@ -159,10 +168,11 @@ type
     // a compilation loop that can be overridden to trigger defense in sub-classes
   private
     FOnProgress: TCompilerProgressEvent;
-    FFileName: ansistring;
+    FFileName: string;
     FpreviousPosition: integer;
     function GetAdvanceWasBlocked: boolean;
   protected
+    debugstream: TMultiBufferMemoryFileStream;
     column: nativeint;
     linenumber: nativeint;
     position: nativeint;
@@ -171,43 +181,51 @@ type
 
     FLastCommittedFunction: TFunctionDefinition;
     FLastCommittedProperty: TPropertyDefinition;
-    FcurrentFunction: ansistring;
-    FBuffer: ansistring;
-    FInput: ansistring;
-    FOutput: ansistring;
+    FcurrentFunction: string;
+    FBuffer: string;
+    FInput: string;
+    FOutput: string;
     FOnDebug: TNotifyEvent;
     FOnContextChange: TNotifyEvent;
     FProject: TUMLProject;
-    procedure SetInput(sValue: ansistring);
-    function GetInput: ansistring;
-    function GetOutput: ansistring;
+    debugcolor: integer;
+    FSymbolStack: TList<TSymbol>;
+    procedure SetInput(sValue: string);
+    function GetInput: string;
+    function GetOutput: string;
     procedure Comment;
-    function GetCurChar: AnsiChar;
-    function AtWord(sWord: ansistring; bCaseSensitive: boolean = false)
+    function GetCurChar: Char;
+    function PrevWordIs(s: string): boolean;
+    function AtWord(sWord: string; bCaseSensitive: boolean = false)
       : boolean;
-    function GetCurrentWord: ansistring;
-    function GetPreviousWord: ansistring;
+    function GetCurrentWord: string;
+    function CurrentWordIs(word: string): boolean;
+    function GetPreviousWord: string;
 
     procedure DispatchContext; virtual; abstract;
 
-    procedure Write(sString: ansistring);
-    procedure BufferWrite(sString: ansistring);
+    procedure Write(sString: string);
+    procedure BufferWrite(sString: string);
     procedure ClearBuffer;
 
-    property CurChar: AnsiChar read GetCurChar;
+    property CurChar: Char read GetCurChar;
     function AtWordBreak: boolean;
-    function AtEndOfPattern(sPattern: ansistring;
+    function AtEndOfPattern(sPattern: string;
       bCaseSensitive: boolean = false): boolean;
-    function AtEndOfWord(sWord: ansistring;
+    function AtEndOfWord(sWord: string;
       bCaseSensitive: boolean = false): boolean;
-    function AtBeginningOfPattern(sPattern: ansistring;
+    function AtBeginningOfPattern(sPattern: string;
       bCaseSensitive: boolean = false): boolean;
     procedure debug;
     procedure BufferChar;
+    procedure SetDebugOutput(sFile: string);
+    procedure DebugWrite(s: string; clr: integer);
+    procedure DebugContextSwitch(s: string; clr: integer);
   public
+
     constructor Create; override;
     destructor Destroy; override;
-    function Compile(sFile: ansistring): boolean; virtual;
+    function Compile(sFile: string): boolean; virtual;
     property Stack: TContextStack read FStack;
   published
     property Project: TUMLProject read FProject write FProject;
@@ -217,42 +235,45 @@ type
       read FLastCommittedProperty write FLastCommittedProperty;
     procedure BlockAdvance;
     procedure Advance(iBy: nativeint);
-    property CurrentFunction: ansistring read FcurrentFunction
+    property CurrentFunction: string read FcurrentFunction
       write FcurrentFunction;
-    property Buffer: ansistring read FBuffer;
-    property Input: ansistring read GetInput write SetInput;
-    property Output: ansistring read GetOutput;
+    property Buffer: string read FBuffer;
+    property Input: string read GetInput write SetInput;
+    property Output: string read GetOutput;
     property OnDebug: TNotifyEvent read FOnDebug write FOnDebug;
     property OnContextChange: TNotifyEvent read FOnContextChange
       write FOnContextChange;
-    property CurrentWord: ansistring read GetCurrentWord;
-    property PreviousWord: ansistring read GetPreviousWord;
-    procedure OpenFont(scolor: ansistring);
+    property CurrentWord: string read GetCurrentWord;
+    property PreviousWord: string read GetPreviousWord;
+    procedure OpenFont(scolor: string);
     procedure CloseFont;
 
     procedure HandleOnStackChange;
     procedure HandleOnStackPush;
     procedure HandleOnStackPop;
-    property filename: ansistring read FFileName write FFileName;
+    property filename: string read FFileName write FFileName;
     property OnProgress: TCompilerProgressEvent read FOnProgress
       write FOnProgress;
-    procedure DebugEvent(sMessage: ansistring; scolor: ansistring = '#0000FF');
+    procedure DebugEvent(sMessage: string; scolor: string = '#0000FF');
     property AdvanceWasBlocked: boolean read GetAdvanceWasBlocked;
     property LastPosition: integer read FpreviousPosition
       write FpreviousPosition;
-    procedure MOveThroughPattern(sPattern: ansistring);
+    procedure MOveThroughPattern(sPattern: string);
   end;
 
   // ----------------------------------------------------------------------------
   TPascalCompiler = class(TCompiler)
-    // the Pascal compiler class is a compiler for the object Pascal language
-    // this class is implemented the work with the irrational project only
+    // The Pascal compiler class is a compiler for the object Pascal language.
+    // This class is implemented to work with the docsrv. project only
+    // There is another PascalCompiler unit (somewhere) that was intended to
+    // be a Pascal->C++ cross compiler.
   private
+    maturetype: string;
     FCurrentSymbol: TSymbol;
     FCurrentUnit: TunitDefinition;
-    FLastTypeName: ansistring;
-    FCurrentSignature: ansistring;
-    FCurrentProperty: ansistring;
+    FLastTypeName: string;
+    FCurrentSignature: string;
+    FCurrentProperty: string;
     FCurrentFunctionDef: TFunctionDefinition;
     FCurrentScope: TScope;
     FCurrentTypeTypeParameters: string;
@@ -260,12 +281,7 @@ type
 
     function GetCurrentClass: TMatureConstruct;
     procedure SetCurrentUnit(const Value: TunitDefinition);
-    procedure SetCurrentClass(const Value: TMatureConstruct);
 
-  public
-    constructor Create; override;
-
-    procedure DispatchContext; override;
     procedure DispatchRoot;
     procedure DispatchComment;
     procedure DispatchCodeComment;
@@ -293,41 +309,61 @@ type
     procedure DispatchAncestorList;
     procedure DispatchTypeTypeParameters;
     procedure DispatchAncestorTypeParameters;
+    procedure DispatchClassOrMetaOrForward;
+    procedure DispatchMetaClassOf;
+    procedure DispatchEmbeddedType;
 
     procedure DispatchRecordDefinition;
     procedure DispatchUses;
 
+  public
+    firehosedebug: boolean;
+    constructor Create; override;
+
+    procedure AssertCurrentUnitState;
+    //Useful for debugging, this procedure will raise an exception
+    //if the Compiler is in an invalid state, e.g. There's no unit defined at
+    //the root of the context stack or something else is amiss.
+    procedure DispatchContext; override;
+    //[KEY] This is the main State-Machine Dispatch.  It calls other
+    //dispatch functions e.g. DispatchUnit(), DispatchUses()
+    //depending on the current state of the state engine.
+    //Each dispatcher handles compilation states and can transition
+    //into other states.
+
     // remote control functions
-    procedure Doc(sString: ansistring);
+    procedure Doc(sString: string);
+    //When documentation is found through the parser, aggregates the
+    //documentation into the final structure.
     procedure DocNewLine;
-    procedure FuncDoc(sString: ansistring);
+    procedure FuncDoc(sString: string);
     procedure FuncDocNewLine;
-    procedure PropDoc(sString: ansistring);
+    procedure PropDoc(sString: string);
     procedure PropDocNewLine;
 
-    procedure CatalogueType(sName: ansistring);
-    procedure CommitType(sName: ansistring);
-    procedure CommitClass(sName: ansistring);
+    procedure CatalogueType(sName: string);
+    procedure CommitType(sName: string);
+    procedure CommitClass(sName: string);
     procedure CommitFunction;
     procedure CommitProperty;
     procedure RecommitFunction;
     procedure DebugInline(sMessage: string);
 
-    property CurrentProperty: ansistring read FCurrentProperty
+    property CurrentProperty: string read FCurrentProperty
       write FCurrentProperty;
-    procedure FindFunction(sName: ansistring);
+    procedure FindFunction(sName: string);
 
-    function Compile(sFile: ansistring): boolean; override;
+    function Compile(sFile: string): boolean; override;
 
     property CurrentUnit: TunitDefinition read FCurrentUnit
       write SetCurrentUnit;
     property CurrentSymbol: TSymbol read FCurrentSymbol write FCurrentSymbol;
-    property CurrentClass: TMatureConstruct read GetCurrentClass
-      write SetCurrentClass;
-    property LastTypeName: ansistring read FLastTypeName write FLastTypeName;
-    property CurrentSignature: ansistring read FCurrentSignature
+    property CurrentClass: TMatureConstruct read GetCurrentClass;
+    procedure PushSymbolContext(sym: TSymbol);
+    property LastTypeName: string read FLastTypeName write FLastTypeName;
+    property CurrentSignature: string read FCurrentSignature
       write FCurrentSignature;
-    procedure DefineUnit(sName: ansistring);
+    procedure DefineUnit(sName: string);
     property CurrentScope: TScope read FCurrentScope write FCurrentScope;
 
   end;
@@ -340,12 +376,27 @@ const
     '\', '<', '>', '{', '}', ';', ',', '.', #10, #13, #0, #9];
   // oprerators = ['+', '-', '=', '=='];
 
-function ContextToString(pc: TParseContext): ansistring;
+function ContextToString(pc: TParseContext): string;
 
 implementation
 
 // ------------------------------------------------------------------------------
-procedure TCompiler.SetInput(sValue: ansistring);
+procedure TCompiler.SetDebugOutput(sFile: string);
+begin
+  debugcolor := -1;
+  if assigned(debugstream) then begin
+    debugstream.free;
+    debugstream := nil;
+  end;
+
+  if sFile = '' then
+    exit;
+
+  debugstream := TMultiBufferMemoryFileStream.Create(sFile, fmCreate);
+
+end;
+
+procedure TCompiler.SetInput(sValue: string);
 begin
   FInput := sValue;
   FBlockAdvance := false;
@@ -356,27 +407,28 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.GetInput: ansistring;
+function TCompiler.GetInput: string;
 begin
   result := FInput;
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.GetOutput: ansistring;
+function TCompiler.GetOutput: string;
 begin
   result := FOutput;
 
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.Compile(sFile: ansistring): boolean;
+function TCompiler.Compile(sFile: string): boolean;
 var
   iLen: integer;
   prevcontext: TParseContext;
   sym: TSymbol;
-  sPrevFunction: ansistring;
+  sPrevFunction: string;
 
 begin
+  SetDebugOutput(sFile+'.debug.txt');
   self.Stack.Clear;
   filename := sFile;
   Input := LoadStringFromFile(sFile);
@@ -386,7 +438,7 @@ begin
     LastPosition := 0;
     position := 1;
     iLen := length(FInput);
-    // for each AnsiCharacter process context changes
+    // for each Character process context changes
     if iLen = 0 then
       exit;
     if iLen > 500000 then
@@ -470,16 +522,23 @@ end;
 constructor TCompiler.Create;
 begin
   inherited;
+  FSymbolStack := TList<TSymbol>.create;
   FBlockAdvance := false;
   FOnDebug := nil;
   FBuffer := '';
   FOutput := '';
   FInput := '';
   FStack := TContextStack.Create;
+  FStack.procDebugContextSwitch := self.DebugContextSwitch;
   FStack.OnStackChange := self.HandleOnStackChange;
   FStack.OnStackPush := self.HandleOnStackPush;
   FStack.OnStackPop := self.HandleOnStackPop;
 
+end;
+
+function TCompiler.CurrentWordIs(word: string): boolean;
+begin
+  result := comparetext(currentword,word)=0;
 end;
 
 { TTagInfo }
@@ -506,6 +565,14 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
+procedure TContextStack.DebugContextSwitch(s: string;color: integer);
+begin
+  if assigned(procDebugContextSwitch) then
+    procDebugContextSwitch(s,color);
+
+end;
+
+
 destructor TContextStack.Destroy;
 begin
   Fcontexts.free;
@@ -584,6 +651,7 @@ function TContextStack.Pop: TParseContext;
 var
   c: Tcontext;
 begin
+  var poppedcontext := GetcurrentContext;
   FPreviousContext := GetCurrentcontext;
   c := FContexts[FContexts.count-1];
   Fcontexts.Delete(Fcontexts.count - 1);
@@ -591,6 +659,7 @@ begin
   c := nil;
   result := GetCurrentcontext;
   Popped;
+  DebugContextSwitch('■'+ContextToString(poppedcontext)+'->'+ContextToString(result)+'▪',9);
 end;
 
 procedure TContextStack.Popped;
@@ -616,6 +685,7 @@ begin
 
   FPreviousContext := context;
   Fcontexts.Add(c);
+  DebugContextSwitch(ContextToString(context),15);
   Pushed;
 end;
 
@@ -630,6 +700,8 @@ end;
 destructor TCompiler.Destroy;
 begin
   FStack.free;
+  FSymbolStack.free;
+  SetDebugOutput('');
   inherited;
 end;
 
@@ -641,16 +713,16 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-procedure TCompiler.Write(sString: ansistring);
+procedure TCompiler.Write(sString: string);
 begin
   FOutput := FOutput + sString;
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.AtEndOfPattern(sPattern: ansistring;
+function TCompiler.AtEndOfPattern(sPattern: string;
   bCaseSensitive: boolean): boolean;
 var
-  sScope: ansistring;
+  sScope: string;
 begin
   sScope := copy(FInput, position - length(sPattern), length(sPattern));
 
@@ -670,22 +742,24 @@ begin
   result := LastPosition = position;
 end;
 
-function TCompiler.GetCurChar: AnsiChar;
+function TCompiler.GetCurChar: Char;
 begin
+  if position > high(Finput) then
+    exit(#0);
   result := FInput[position];
 end;
 
 // ------------------------------------------------------------------------------
-procedure TCompiler.BufferWrite(sString: ansistring);
+procedure TCompiler.BufferWrite(sString: string);
 begin
   FBuffer := FBuffer + sString;
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.AtBeginningOfPattern(sPattern: ansistring;
+function TCompiler.AtBeginningOfPattern(sPattern: string;
   bCaseSensitive: boolean): boolean;
 var
-  sScope: ansistring;
+  sScope: string;
 begin
   sScope := copy(FInput, position, length(sPattern));
 
@@ -729,15 +803,35 @@ begin
 
 end;
 
-procedure TCompiler.DebugEvent(sMessage, scolor: ansistring);
+
+procedure TCompiler.DebugContextSwitch(s: string; clr: integer);
+begin
+  DebugWrite(s,clr);
+end;
+
+procedure TCompiler.DebugEvent(sMessage, scolor: string);
 begin
   Write('<font color="' + scolor + '">&lt;debug msg="' + sMessage +
     '"/&gt;</font>');
 
 end;
 
+procedure TCompiler.DebugWrite(s: string; clr: integer);
+begin
+  if clr <> debugcolor then begin
+    s := '`c'+inttohex(clr)+'`'+s;
+    debugcolor := clr;
+  end;
+
+{$IFDEF ALLOW_FIREHOSE}
+  con.AutoCRLF := false;
+  con.writeex(s);
+{$ENDiF}
+  helpers_stream.Stream_GuaranteeWrite(debugstream, @s[low(s)], length(s)*sizeof(char));
+end;
+
 // ------------------------------------------------------------------------------
-function ContextToString(pc: TParseContext): ansistring;
+function ContextToString(pc: TParseContext): string;
 begin
   case pc of
     pcNone:
@@ -844,6 +938,12 @@ begin
       result := 'pcAncestorTypeParameters';
     pcFunctionTypeParameters:
       result := 'pcFunctionTypeParameters';
+    pcClassOrMetaOrForward:
+      result := 'pcClassOrMetaOrForward';
+    pcMetaClassOf:
+      result := 'pcMetaClassOf';
+    pcEmbeddedType:
+      result := 'pcEmbeddedType';
 
   else
     result := 'unknown ' + inttostr(ord(pc));
@@ -860,6 +960,8 @@ end;
 constructor TPascalCompiler.Create;
 begin
   inherited;
+  FsymbolStack := TList<TSymbol>.create;
+  firehosedebug := true;
   FProject := nil;
   FCurrentUnit := nil;
   FCurrentSymbol := nil;
@@ -877,7 +979,7 @@ begin
   BufferWrite(CurChar);
 end;
 
-procedure TPascalCompiler.CommitClass(sName: ansistring);
+procedure TPascalCompiler.CommitClass(sName: string);
 var
   sym: TClassDefinition;
 begin
@@ -890,6 +992,12 @@ begin
     raise Exception.Create('Class Name cannot match unit name: ' + sName);
 
   sym := TClassDefinition.Create(Trim(sName), Project, self.CurrentUnit);
+  sym.MatureType := maturetype;
+  sym.fil := extractfilename(filename);
+  sym.col := 0;
+  sym.row := 0;
+  sym.position := self.position;
+
   sym.TypeParameters := FCurrentTypeTypeParameters;
 
   Project.Symbols.Add(sym);
@@ -897,11 +1005,22 @@ begin
   ClearBuffer;
   self.LastTypeName := '';
   self.CurrentSymbol := sym;
+  Fsymbolstack.add(sym);
 
 end;
 
 // ------------------------------------------------------------------------------
-procedure TPascalCompiler.CatalogueType(sName: ansistring);
+procedure TPascalCompiler.AssertCurrentUnitState;
+begin
+  if (not (stack.Current in [pcNone, pcUnitName, pcComment, pcCodeComment, pcLineComment])) and (CurrentUnit = nil) then
+    raise Exception.Create('unit can only by nil in pcNone, pcUnitName, pcCodeComment, pcComment, and pcLineComment states');
+
+  if (not (stack.Current in [pcNone, pcUnitName, pcComment, pcCodeComment, pcLineComment])) and (CurrentUnit.Name ='') then
+    raise Exception.Create('unit is trashed');
+
+end;
+
+procedure TPascalCompiler.CatalogueType(sName: string);
 var
   sym: TSymbol;
   s: string;
@@ -909,7 +1028,7 @@ begin
   if sName = '' then
     exit;
 
-  s := stack.currentcontext.GetFullyQualifiedNameSpaceName;
+  s := sName;//stack.currentcontext.GetFullyQualifiedNameSpaceName;
   if s <> '' then
     sName := s+'.'+sName;
 
@@ -924,14 +1043,27 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-procedure TPascalCompiler.CommitType(sName: ansistring);
+procedure TPascalCompiler.CommitType(sName: string);
 var
   sym: TClassDefinition;
 begin
   if sName = '' then
     exit;
 
+  var slh := ParseStringh(sName,'.');
+  sName := slh.o[slh.o.Count-1];
+
+  if zpos('TBetterList', sName)>=0 then
+    log('trap');
+
+  if currentunit.Name = '' then begin
+    raise Exception.create('cannot commit type '+sName+' because current unit name is blank (for some reason)');
+
+  end;
+
+
   write('&lt;***TYPE COMMITED:' + sName + '***&gt;');
+
 
   if not assigned(FCurrentUnit) then
     raise Exception.Create('No Current Unit defined, parsing: ' + sName);
@@ -939,7 +1071,16 @@ begin
   if (lowercase(sName) = lowercase(self.FCurrentUnit.Name)) then
     raise Exception.Create('Type Name cannot match unit name: ' + sName);
 
+  if not CurrentUnit.isgood then
+    raise Exception.Create('Wild pointer detected');
+
+
   sym := TClassDefinition.Create(Trim(sName), Project, self.CurrentUnit);
+  sym.MatureType := maturetype;
+  sym.fil := extractfilename(filename);
+  sym.col := 0;
+  sym.row := 0;
+  sym.position := self.position;
   FCurrentAncestor := '';
 
   Project.Symbols.Add(sym);
@@ -948,6 +1089,7 @@ begin
   self.LastTypeName := '';
   sym.TypeParameters := FCurrentTypeTypeParameters;
   self.CurrentSymbol := sym;
+  Fsymbolstack.add(sym);
 
 end;
 
@@ -959,7 +1101,7 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-procedure TPascalCompiler.DefineUnit(sName: ansistring);
+procedure TPascalCompiler.DefineUnit(sName: string);
 var
   sym: TunitDefinition;
 begin
@@ -969,6 +1111,7 @@ begin
       ' already exists in project');
 
   sym := TunitDefinition.Create(sName, Project, nil);
+  sym.fil := extractfilename(filename);
 
   stack.currentcontext.namespacename := sName;
   sym.FullyQualifiedName := sName;
@@ -990,8 +1133,10 @@ begin
   if CurChar = '(' then
     Stack.Push(pcParens);
 
-  if AtEndOfWord('type') then
-    Stack.Push(pcType);
+  if AtEndOfWord('type') then begin
+    Stack.Push(pcEmbeddedType);
+    DebugWrite ('**entering pcEmbeddedType with '+FSymbolStack.Count.ToString+' on the stack***',13);
+  end;
 
   if AtEndOfWord('public') then
   begin
@@ -1117,8 +1262,9 @@ end;
 // ------------------------------------------------------------------------------
 procedure TPascalCompiler.DispatchContext;
 begin
-  // GLOG.Debug('ln:'+inttostr(linenumber)+' col:'+inttostr(column)+' Ctx: '+ContextToString(stack.Current));
-  // if anything but ansistring, determine comment states
+
+   // GLOG.Debug('ln:'+inttostr(linenumber)+' col:'+inttostr(column)+' Ctx: '+ContextToString(stack.Current));
+  // if anything but string, determine comment states
   if not(Stack.Current in [pcString, pcComment, pcLineComment, pcCodeComment])
   then
   begin
@@ -1141,6 +1287,8 @@ begin
       exit;
     end;
   end;
+
+  AssertCurrentUnitState;
 
   // dispatch contexts
   case Stack.Current of
@@ -1202,9 +1350,57 @@ begin
       DispatchAncestorTypeParameters;
     pcFunctionTypeParameters:
       DispatchFunctionTypeParams;
-
+    pcClassOrMetaOrForward:
+      DispatchClassOrMetaOrForward;
+    pcMetaClassOf:
+      DispatchMetaClassOf;
+    pcEmbeddedType:
+      DispatchEmbeddedType;
   else
     raise Exception.Create('Context not handled');
+  end;
+  if firehosedebug then begin
+    DebugWrite(self.CurChar,10);
+  end;
+end;
+
+procedure TPascalCompiler.DispatchEmbeddedType;
+begin
+  if AtWord('procedure') or AtWord('function') or AtWord('constructor') or
+    AtWord('destructor') or AtWord('initialization') or AtWord('finalization')
+    or AtWord('public')
+    or AtWord('private')
+    or AtWord('protected')
+    or AtWord('const') or AtWord('var') then
+  begin
+    CurrentSignature := '';
+    ClearBuffer;
+    Stack.Pop;
+    BlockAdvance;
+    if FSymbolStack.count = 0 then
+      raise Exception.Create('error, context stack should have something in it, but it doesn''t');
+
+
+
+    exit;
+  end;
+
+  if CurChar in validnames then
+    BufferWrite(CurChar);
+
+  if CurChar in wordbreaks then
+  begin
+    CatalogueType(Buffer);
+  end;
+
+  if CurChar = '<' then
+  begin
+    Stack.Push(pcTypeTypeParameters);
+    FCurrentTypeTypeParameters := '<';
+  end
+  else if CurChar = '=' then
+  begin
+    Stack.Push(pcTypeDefinition);
   end;
 end;
 
@@ -1392,18 +1588,32 @@ end;
 procedure TPascalCompiler.DispatchTypeDefinition;
 
 begin
-  if AtEndOfWord('class') and not AtEndOfWord('class of') then
+  if AtEndOfWord('class') then
   begin
+    maturetype := 'class';
     Stack.Pop;
-    Stack.Push(pcClassDefinitionHeader);
-    CommitType(LastTypeName);
-
-    if CurChar = '(' then
-      Stack.Push(pcAncestorList);
-
+    Stack.Push(pcClassOrMetaOrForward);
+    BlockAdvance;
+  end else
+  if AtEndOfWord('interface') then
+  begin
+    maturetype := 'interface';
+    Stack.Pop;
+    Stack.Push(pcClassOrMetaOrForward);
+    BlockAdvance;
   end
+
   else if AtWord('record') then
   begin
+    maturetype := 'record';
+    Stack.Pop;
+    Stack.Push(pcRecordDefinition);
+    CommitType(LastTypeName);
+    // CommitType(LastTypeName);
+  end
+  else if AtWord('object') and (not PrevWordIs('of')) then
+  begin
+    maturetype := 'object';
     Stack.Pop;
     Stack.Push(pcRecordDefinition);
     CommitType(LastTypeName);
@@ -1412,6 +1622,8 @@ begin
   else if CurChar = ';' then
   begin
     Stack.Pop;
+    //todo 1: declare type aliases as generalizations
+    //---FSymbolStack.delete(FSymbolStack.count-1);    //no, type aliases are not mature constructs and this terminates a type alias
     // CommitType(LastTypeName);
   end
   else if CurChar = '(' then
@@ -1438,11 +1650,11 @@ begin
   // if in the unitname part of the unit then:
   if self.Stack.CurrentParseContext = pcUnitName then
   begin
-    // if name AnsiCharacters
+    // if name Characters
     if (CurChar in validnames) then
       BufferWrite(CurChar);
 
-    // if wordbreak AnsiCharacterrs
+    // if wordbreak Characterrs
     if CurChar in wordbreaks then
     begin
       // pop off to the previous context (program, unit, library)
@@ -1456,6 +1668,10 @@ begin
   if AtEndOfWord('uses') then
     Stack.Push(pcUses);
 
+  if AtEndOfPattern('end.') then
+    Stack.pop;
+
+
   if AtEndOfWord('interface') then
   begin
     self.CurrentSymbol := nil;
@@ -1468,11 +1684,11 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.AtEndOfWord(sWord: ansistring;
+function TCompiler.AtEndOfWord(sWord: string;
   bCaseSensitive: boolean): boolean;
 var
-  sScope: ansistring;
-  sPrev: ansistring;
+  sScope: string;
+  sPrev: string;
 begin
   // prevent error at beginning of file
   // if position = 1 then begin
@@ -1480,8 +1696,8 @@ begin
   // exit;
   // end;
 
-  // copy X AnsiCharacters out of code to check against pattern
-  // copy up to PreVIOUS AnsiCharacter
+  // copy X Characters out of code to check against pattern
+  // copy up to PreVIOUS Character
   sScope := copy(FInput, (position) - length(sWord), length(sWord));
 
   if position - length(sWord) <= 1 then
@@ -1505,11 +1721,11 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.AtWord(sWord: ansistring; bCaseSensitive: boolean): boolean;
+function TCompiler.AtWord(sWord: string; bCaseSensitive: boolean): boolean;
 var
-  sScope: ansistring;
-  cAfter: AnsiChar;
-  sAfter: ansistring;
+  sScope: string;
+  cAfter: Char;
+  sAfter: string;
 begin
   // prevent error at beginning of file
   // if position = 1 then begin
@@ -1517,7 +1733,7 @@ begin
   // exit;
   // end;
 
-  // copy X AnsiCharacters out of code to check against pattern
+  // copy X Characters out of code to check against pattern
   sScope := copy(FInput, position, length(sWord));
 
   // convert if case-insensitivity required
@@ -1537,7 +1753,7 @@ begin
   result := (sScope = sWord) and (cAfter in wordbreaks);
 
   // one last check
-  // if still good, check to make sure the AnsiCharacter before the word is a wordbreak.
+  // if still good, check to make sure the Character before the word is a wordbreak.
   if (self.position = 1) or (self.Input[position - 1] in wordbreaks) then
     result := result
   else
@@ -1563,17 +1779,31 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.GetCurrentWord: ansistring;
+function TCompiler.GetCurrentWord: string;
 var
   t: integer;
+  wentback: boolean;
 begin
   t := position;
+  wentback := false;
+
+  //rewing until we hit a word break
+  while (t > low(FInput)) and not(FInput[t] in wordbreaks) do
+  begin
+    dec(t);
+    wentback := true;
+  end;
+  if wentback then
+    inc(t);
+
+  var strt := t;
+
   while (t < length(FInput)) and not(FInput[t] in wordbreaks) do
   begin
     inc(t);
   end;
 
-  result := copy(FInput, position, t - position);
+  result := copy(FInput, strt, t - strt);
 
 end;
 
@@ -1623,7 +1853,11 @@ end;
 // ------------------------------------------------------------------------------
 function TPascalCompiler.GetCurrentClass: TMatureConstruct;
 begin
-  result := TMatureConstruct(FCurrentSymbol);
+  result := nil;
+  for var t:=FSymbolStack.Count-1 downto 0 do begin
+    if FSymbolstack[t] is TMatureConstruct then
+      exit(FSymbolStack[t] as TMatureConstruct);
+  end;
 
 end;
 
@@ -1661,7 +1895,7 @@ begin
 
 end;
 
-procedure TPascalCompiler.Doc(sString: ansistring);
+procedure TPascalCompiler.Doc(sString: string);
 begin
   if self.CurrentSymbol <> nil then
   begin
@@ -1672,7 +1906,7 @@ end;
 
 procedure TPascalCompiler.DocNewLine;
 var
-  sTemp: ansistring;
+  sTemp: string;
 begin
   if self.CurrentSymbol <> nil then
   begin
@@ -1701,7 +1935,6 @@ end;
 
 procedure TPascalCompiler.DispatchClassDefinitionHeader;
 begin
-  // forward declaration
   if AtWord('public') or AtWord('private') or AtWord('protected') or
     AtWord('published') then
   begin
@@ -1718,16 +1951,71 @@ begin
   if CurChar = '(' then
     Stack.Push(pcAncestorList);
 
+  // forward declaration
   IF CurChar = ';' then
     Stack.Pop;
+
+end;
+
+procedure TPascalCompiler.DispatchMetaClassOf;
+begin
+  if CurChar = ';' then begin
+    stack.Pop;
+    CommitType(LastTypeName);
+    CurrentSymbol.MetaOf := PreviousWord;
+  end;
+end;
+
+procedure TPascalCompiler.DispatchClassOrMetaOrForward;
+begin
+  if AtEndOfWord('of') then begin
+    Stack.Pop;
+//    CommitType(LastTypeName);
+    Stack.Push(pcMetaClassOf);
+    exit;
+  end;
+
+  if AtWord('public') or AtWord('private') or AtWord('protected') or
+    AtWord('published') then
+  begin
+    Stack.Pop;
+    Stack.Push(pcClassDefinition);
+  end;
+
+  if (CurChar in validnames) and (not CurrentWordIs('of')) then
+  begin
+    Stack.Pop;
+    Stack.Push(pcClassDefinition);
+  end else
+
+  if CurChar = '(' then begin
+    Stack.Pop;
+    Stack.Push(pcClassDefinitionHeader);
+    CommitType(LastTypeName);
+    Stack.Push(pcAncestorList);
+  end;
+  if CurChar = ';' then begin
+    Stack.pop;//forward declaration
+  end;
+
 
 end;
 
 // ------------------------------------------------------------------------------
 procedure TPascalCompiler.SetCurrentUnit(const Value: TunitDefinition);
 begin
+  FSymbolStack.Clear;
+  if value.Name = 'DataObject' then begin
+    log('turning on firehose');
+    firehosedebug := true;
+  end;
+  Log('Current Unit: '+value.Name);
   FCurrentUnit := Value;
+  if FCurrentunit.Name = '' then
+    raise ECritical.create('current unit does not appear to be valid');
   self.CurrentSymbol := FCurrentUnit;
+  FSymbolStack.Add(FCurrentUnit);
+
 end;
 
 // ------------------------------------------------------------------------------
@@ -1793,12 +2081,22 @@ begin
   if CurrentFunction = '' then
     exit;
 
+  if currentclass = nil then
+    raise ECritical.Create('cannot commit function in nil class/unit context');
+
+  DebugWrite('$commit "' + CurrentClass.Name + '.' +
+    CurrentFunction + '"$',13);
   write('<font color="#007F00">$commit "' + CurrentClass.Name + '.' +
     CurrentFunction + '"$</font>');
   // frmDebug.ShowMessage(currentSignature);
 
   func := self.CurrentClass.AddFunction(CurrentFunction);
   func.Signature := CurrentSignature;
+  func.fil := extractfilename(filename);
+  func.col := 0;
+  func.row := 0;
+  func.position := self.position;
+
 
   self.LastCommittedFunction := func;
 
@@ -1824,7 +2122,7 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-function TCompiler.GetPreviousWord: ansistring;
+function TCompiler.GetPreviousWord: string;
 var
   t: integer;
 begin
@@ -1834,14 +2132,22 @@ begin
     exit;
   end;
 
+  //movethrough all wordbreaks until we find a word
   t := position - 1;
-  while (t < length(FInput)) and not(FInput[t] in wordbreaks) do
+  while (t > low(FInput)) and (FInput[t] in wordbreaks) do
+  begin
+    dec(t);
+  end;
+
+  var endofword := t;
+
+  while (t > low(FInput)) and not(FInput[t] in wordbreaks) do
   begin
     dec(t);
   end;
   inc(t);
 
-  result := copy(FInput, t, position - t);
+  result := copy(FInput, t, (endofword+1) - t);
 
 end;
 
@@ -1868,20 +2174,25 @@ begin
 
 end;
 
-procedure TCompiler.MOveThroughPattern(sPattern: ansistring);
+procedure TCompiler.MOveThroughPattern(sPattern: string);
 begin
   write(sPattern);
   Advance(length(sPattern));
 
 end;
 
-procedure TCompiler.OpenFont(scolor: ansistring);
+procedure TCompiler.OpenFont(scolor: string);
 begin
   Write('<font color="' + scolor + '">');
 end;
 
+function TCompiler.PrevWordIs(s: string): boolean;
+begin
+  result := comparetext(PreviousWord,s)=0;
+end;
+
 // ------------------------------------------------------------------------------
-procedure TPascalCompiler.FuncDoc(sString: ansistring);
+procedure TPascalCompiler.FuncDoc(sString: string);
 begin
   if self.CurrentSymbol <> nil then
   begin
@@ -1895,8 +2206,8 @@ end;
 // ------------------------------------------------------------------------------
 procedure TPascalCompiler.FuncDocNewLine;
 var
-  sTemp: ansistring;
-  sLeft, sRight: ansistring;
+  sTemp: string;
+  sLeft, sRight: string;
 begin
   if self.LastCommittedFunction <> nil then
   begin
@@ -1982,10 +2293,15 @@ begin
   then
     self.CurrentProperty := self.CurrentProperty + CurChar;
 
+  //todo 1: this is a little dumb in that it basically just waits for a semicolon
+  //handling  the read and write declarations of all properties
   if CurChar = ';' then
   begin
+    AssertCurrentUnitState;
     CommitProperty;
+    AssertCurrentUnitState;
     Stack.Pop;
+    AssertCurrentUnitState;
   end;
 
   // TODO: Enhance
@@ -2077,6 +2393,8 @@ procedure TPascalCompiler.CommitProperty;
 var
   prop: TPropertyDefinition;
 begin
+  if currentproperty = 'DataObject' then
+    log('trap');
   write('$commit$');
   // frmDebug.ShowMessage(currentSignature);
 
@@ -2098,14 +2416,20 @@ begin
   IF self.CurrentClass = nil then
     raise Exception.Create('wtf, SELF.currentclass is nil!');
 
-  prop := self.CurrentClass.AddProperty(CurrentProperty);
+  var cc := self.CurrentClass;
+
+  prop := cc.AddProperty(CurrentProperty, self);
+  prop.fil := extractfilename(filename);
+  prop.col := 0;
+  prop.row := 0;
+  prop.position := self.position;
   prop.Signature := CurrentSignature;
 
   self.LastCommittedProperty := prop;
 
 end;
 
-procedure TPascalCompiler.PropDoc(sString: ansistring);
+procedure TPascalCompiler.PropDoc(sString: string);
 begin
   if self.CurrentSymbol <> nil then
   begin
@@ -2117,7 +2441,7 @@ end;
 
 procedure TPascalCompiler.PropDocNewLine;
 var
-  sTemp: ansistring;
+  sTemp: string;
 begin
   if self.LastCommittedProperty <> nil then
   begin
@@ -2136,6 +2460,11 @@ begin
     end;
   end;
 
+end;
+
+procedure TPascalCompiler.PushSymbolContext(sym: TSymbol);
+begin
+  FSymbolStack.Add(sym);
 end;
 
 procedure TPascalCompiler.DispatchFunction;
@@ -2176,11 +2505,11 @@ begin
 end;
 
 // ------------------------------------------------------------------------------
-procedure TPascalCompiler.FindFunction(sName: ansistring);
+procedure TPascalCompiler.FindFunction(sName: string);
 var
   iPos: integer;
-  sClassName: ansistring;
-  sFunctionName: ansistring;
+  sClassName: string;
+  sFunctionName: string;
 begin
   // set t
   iPos := pos('.', sName);
@@ -2202,10 +2531,6 @@ begin
 
 end;
 
-procedure TPascalCompiler.SetCurrentClass(const Value: TMatureConstruct);
-begin
-  FCurrentSymbol := Value;
-end;
 
 procedure TPascalCompiler.DispatchVarConst;
 begin
@@ -2245,14 +2570,21 @@ begin
   // TODO -cunimplemented: unimplemented block
 end;
 
-function TPascalCompiler.Compile(sFile: ansistring): boolean;
+function TPascalCompiler.Compile(sFile: string): boolean;
 var
   sym: TSymbol;
 begin
-  result := inherited Compile(sFile);
+  try
+    result := inherited Compile(sFile);
 
-  if assigned(FCurrentUnit) then
-    FCurrentUnit.DebugHTML := Output;
+    if assigned(FCurrentUnit) then
+      FCurrentUnit.DebugHTML := Output;
+  except
+    on E: Exception do begin
+      log(e.Message);
+      FCurrentUnit.DebugHTML := E.message+' -- could not compile '+sFile;
+    end;
+  end;
 
 end;
 

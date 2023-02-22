@@ -1,11 +1,15 @@
 unit OrderlyInit;
+{x$DEFINE LOG_UNIT_INIT}
+
 {$INCLUDE DelphiDefs.inc}
 {$MESSAGE '*******************COMPILING OrderlyInit.pas'}
-
+{$D+}
+{x$DEFINE DEBUG_INIT}
+{x$DEFINE OI_NOCHECK}
 interface
 
 uses
-  typex, systemx, stringx,debug, classes, betterobject;
+  typex, systemx, stringx,debug, classes, betterobject, sysutils;
 const
   LOCAL_DEPENDENCIES = '';
 type
@@ -15,6 +19,10 @@ type
   TPair = record
     ord: TOrderlyInitializer;
     name: string;
+{$IFDEF ALLOW_ANON_INIT}
+    Anoninit: TProc;
+    AnonFinal: TProc;
+{$ENDIF}
     init: TInitProc;
     AfterInit: TInitProc;
     prefinalize: TInitProc;
@@ -44,6 +52,7 @@ type
   private
     function GEtProc(idx: nativeint): PPair;
     procedure SetInitialized(const Value: boolean);
+    function GetUnitByName(sName: string): PPair;
   protected
     didAfterInit: boolean;
     Finitialized: boolean;
@@ -61,9 +70,16 @@ type
     destructor Destroy;override;
     function IndexOfUnit(sNAme: string): nativeint;
     function HasUnit(sName: string): boolean;
+    property unitByName[sname: string]: PPair read GetUnitByName;
     function RegisterProcs(name: string; init, finalize: TInitProc; sDependenciesSeparatedByCommas: string = ''): PPair;overload;
     function RegisterProcs(name: string; init, prefinalize, finalize, late_finalize: TInitProc; sDependenciesSeparatedByCommas: string = ''): PPair;overload;
     function RegisterProcs(name: string; init, afterinit, prefinalize, finalize,late_finalize: TInitProc; sDependenciesSeparatedByCommas: string = ''): PPair;overload;
+
+    function RegisterProcs(name: string; anoninit, anonfinal: TProc; init, afterinit, prefinalize, finalize,late_finalize: TInitProc; sDependenciesSeparatedByCommas: string = ''): PPair;overload;
+{$IFDEF ALLOW_ANON_INIT}
+    function RegisterProcs(name: string; anoninit, anonfinal: TProc; sDependenciesSeparatedByCommas: string = ''): PPair;overload;
+{$ENDIF}
+
     property Procs[idx: nativeint]: PPair read GEtProc;
     function Count: nativeint;
     function CheckAllMet: boolean;
@@ -86,11 +102,11 @@ implementation
 
 
 
-uses
 {$IFDEF WINDOWS}
-  windows,
+uses
+  windows;
 {$ENDIF}
-  {miscroutines, stringutilities,shareddebuglog,}sysutils;
+  {miscroutines, stringutilities,shareddebuglog,sysutils;}
 
 { TOrderlyInitializer }
 
@@ -128,21 +144,50 @@ var
 begin
   DoAfterInit;
   result := true;
+  var initcount := 1;
+  while initcount > 0  do begin
+    initcount := 0;
+    result := true;
   for t:= 0 to Self.Count-1 do begin
     if not procs[t].initialized then begin
-{$IFDEF DEBUG_INIT}      Debug.ConsoleLog('Checking Dependencies for '+procs[t].name);{$ENDIF}
+{$IFDEF DEBUG_INIT}      Debug.Log('Checking Dependencies for '+procs[t].name);{$ENDIF}
       if Procs[t].AllDependenciesAvailable then begin
-        if procs[t].DependenciesMet then
+        if procs[t].DependenciesMet then begin
           procs[t].doinit;
+          inc(initcount);
+        end;
       end;
       if not procs[t].initialized then begin
-{$IFDEF DEBUG_INIT}              ConsoleDebug('**'+procs[t].name+' is still not initialized');{$ENDIF}
+{$IFDEF DEBUG_INIT}
+{$IFDEF LOG_UNIT_INIT}
+        Debug.Log('**'+procs[t].name+' is still not initialized because:');
+{$ENDIF}
+        var slh := ParseStringh(procs[t].cs_dependencies, ',');
+        for var y := 0 to slh.o.Count-1 do begin
+          var dep := slh.o[y];
+          if not HasUnit(dep) then begin
+            ConsoleDebug('****'+dep+' not yet registered');
+          end else
+          if unitbyname[dep].initialized then begin
+            ConsoleDebug('****'+dep+' not initialized');
+          end;
+        end;
+        Debug.Log('*******************************************');
+
+
+
+{$ENDIF}
+
         result := false;
       end;
     end;
   end;
+  end;
 
   initialized := result;
+{$IFDEF LOG_UNIT_INIT}
+  debug.Log('finished checkallmet');
+{$ENDIF}
 end;
 
 procedure TOrderlyInitializer.CheckAllMetFatal;
@@ -210,9 +255,12 @@ begin
           p.finalized := true;
           if assigned(p.finalize) then
             p.Finalize();
+{$IFDEF ALLOW_ANON_INIT}
+          if assigned(p.AnonFinal) then
+            p.AnonFinal();
+{$ENDIF}
         end;
       end;
-
     end;
   end;
 
@@ -233,6 +281,11 @@ begin
       result := result + procs[t].name+' ';
   end;
 
+end;
+
+function TOrderlyInitializer.GetUnitByName(sName: string): PPair;
+begin
+  result := procs[indexofunit(sName)];
 end;
 
 function TOrderlyInitializer.GetUnmetRequirements: string;
@@ -260,6 +313,7 @@ function TOrderlyInitializer.HasUnit(sName: string): boolean;
 begin
   result := IndexOfUnit(sName) >= 0;
 end;
+
 
 function TOrderlyInitializer.IndexOfUnit(sNAme: string): nativeint;
 var
@@ -321,6 +375,9 @@ end;
 function TOrderlyInitializer.RegisterProcs(name: string; init,
   finalize: TInitProc; sDependenciesSeparatedByCommas: string): PPair;
 begin
+{$IFDEF LOG_UNIT_INIT}
+  Debug.Log('call contains latefinalize');
+{$ENDIF}
   result := RegisterProcs(name, init, nil, finalize, nil, sDependenciesSeparatedByCommas);
 end;
 
@@ -330,10 +387,82 @@ begin
 end;
 
 function TOrderlyInitializer.RegisterProcs(name: string; init, afterinit, prefinalize, finalize, late_finalize: TInitProc; sDependenciesSeparatedByCommas: string = ''): PPair;
+begin
+  result := RegisterProcs(name, nil,nil, init, afterinit, prefinalize, finalize, late_finalize,sDependenciesSeparatedByCommas);
+
+end;
+
+
+procedure TOrderlyInitializer.RememberRequiredUnits(s: string);
+var
+  sl: IHolder<TStringlist>;
+  t: ni;
+  ss: string;
+begin
+  sl := ParseStringH(s, ']');
+
+  for t:= 0 to sl.o.count-1 do begin
+    ss := sl.o[t];
+    ss := StringReplace(ss, '[', '', [rfReplaceAll]);
+    ss := StringReplace(ss, ']', '', [rfReplaceAll]);
+    if ss <> '' then begin
+      if FRequiredUnits.IndexOf(ss) < 0 then begin
+        FRequiredUnits.add(lowercase(ss));
+      end;
+    end;
+
+
+
+  end;
+
+
+end;
+
+procedure TOrderlyInitializer.SetInitialized(const Value: boolean);
+begin
+  Finitialized := Value;
+{$IFDEF LOG_UNIT_INIT}
+  if value then
+    Debug.Log(self,'OrderlyInit.INITIALIZED!************************');
+{$ENDIF}
+
+
+end;
+
+
+function init: TOrderlyInitializer;
+begin
+  if ginit = nil then
+    ginit := TOrderlyInitializer.create;
+
+  result := gInit;
+end;
+
+{$IFDEF ALLOW_ANON_INIT}
+function TOrderlyInitializer.RegisterProcs(name: string; anoninit,
+  anonfinal: TProc; sDependenciesSeparatedByCommas: string): PPair;
+begin
+  result := RegisterProcs(name, anoninit, anonfinal, nil, nil, nil, nil, nil,  sDependenciesSeparatedByCommas);
+
+end;
+{$ENDIF}
+
+
+function TOrderlyInitializer.RegisterProcs(name: string; anoninit,
+  anonfinal: TProc; init, afterinit, prefinalize, finalize,
+  late_finalize: TInitProc; sDependenciesSeparatedByCommas: string): PPair;
 var
   s1,s2: string;
   bAllStarted: boolean;
 begin
+{$IFDEF DEBUG_INIT}
+  Debug.Log(extractfilename(DLLName)+': Registering '+name);
+{$ENDIF}
+{$IFDEF LOG_UNIT_INIT}
+  if assigned(late_finalize) then
+    Debug.Log('contains latefinalize');
+{$ENDIF}
+
   if @afterinit <> nil then begin
     Debug.Log('*********** NOTE NOTE NOTE NOTE NOTE*****');
     Debug.Log('*********** NOTE NOTE NOTE NOTE NOTE*****');
@@ -350,18 +479,20 @@ begin
   //add an entry to the list
   setlength(FProcs, length(FProcs)+1);
 
-  result := @FProcs[count-1];
+  result := @FProcs[high(FProcs)];
   result.ord := self;
+  result.initorder := -1;
 
   result.name := name;
   result.init := init;
+{$IFDEF ALLOW_ANON_INIT}
+  result.Anoninit := anoninit;
+  result.AnonFinal := anonfinal;
+{$ENDIF}
   result.afterinit := afterInit;
   result.finalize := finalize;
   result.prefinalize := prefinalize;
   result.late_finalize := late_finalize;
-{$IFDEF DEBUG_INIT}
-  Debug.Log(extractfilename(DLLName)+': Registering '+result.name);
-{$ENDIF}
 
 
   //record the dependencies for the unit and also check to see if each dependency
@@ -420,65 +551,34 @@ begin
 
   //if all dependencies have been started then we can just go ahead and init now
   if bAllStarted then begin
+{$IFNDEF OI_NOCHECK}
     if not IsDLL then
       result.DoInit;
+{$ENDIF}
     self.FmetRequirements.Add(lowercase(result.name));
   end else begin
     RememberRequiredUnits(result.dependencies);
+{$IFNDEF OI_NOCHECK}
+  {$IFDEF LOG_UNIT_INIT}
     Debug.Log(extractfilename(DLLName)+': Deferring initialization of '+result.name+' which has dependencies: '+result.dependencies);
+  {$ENDIF}
+{$ENDIF}
 
   end;
 
   //if this unit was depended on by any other units then, initialize those units.
-  if not IsDLL then
+{$IFNDEF OI_NOCHECK}
+  if not IsDLL then begin
     CheckAllMet;
-
-end;
-
-
-procedure TOrderlyInitializer.RememberRequiredUnits(s: string);
-var
-  sl: IHolder<TStringlist>;
-  t: ni;
-  ss: string;
-begin
-  sl := ParseStringH(s, ']');
-
-  for t:= 0 to sl.o.count-1 do begin
-    ss := sl.o[t];
-    ss := StringReplace(ss, '[', '', [rfReplaceAll]);
-    ss := StringReplace(ss, ']', '', [rfReplaceAll]);
-    if ss <> '' then begin
-      if FRequiredUnits.IndexOf(ss) < 0 then begin
-        FRequiredUnits.add(lowercase(ss));
-      end;
-    end;
-
-
+{$IFDEF LOG_UNIT_INIT}
+    Debug.Log(extractfilename(DLLName)+': Tried initialization of '+result.name+' which has dependencies: '+result.dependencies);
+{$ENDIF}
 
   end;
+{$ENDif}
 
 
 end;
-
-procedure TOrderlyInitializer.SetInitialized(const Value: boolean);
-begin
-  Finitialized := Value;
-  if value then
-    Debug.Log(self,'OrderlyInit.INITIALIZED!************************');
-
-
-end;
-
-
-function init: TOrderlyInitializer;
-begin
-  if ginit = nil then
-    ginit := TOrderlyInitializer.create;
-
-  result := gInit;
-end;
-
 
 { TPair }
 
@@ -538,10 +638,19 @@ begin
     exit;
   end;
 
+{$IFDEF LOG_UNIT_INIT}
   ConsoleDebug(extractfilename(DLLName)+': Initialize '+name);
+{$ENDIF}
 
-//  if @init <> nil then
+  if assigned(init) then
     init();
+{$IFDEF ALLOW_ANON_INIT}
+  if assigned(anoninit) then
+    anoninit();
+{$ENDIF}
+{$IFDEF LOG_UNIT_INIT}
+  ConsoleDebug(extractfilename(DLLName)+': Finished Initialize '+name);
+{$ENDIF}
 
   initialized := true;
   waiting_for_dependent_initialization := false;

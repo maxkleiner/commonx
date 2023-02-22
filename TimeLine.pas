@@ -4,7 +4,7 @@ interface
 
 uses
   tickcount, typex, windows, beeper,dialogs,messages, sysutils, classes, advancedgraphics_DX, advancedgraphics, graphics, forms,
-  generics.Collections, betterobject, ColorConversion, easyimage, colorblending,
+  generics.Collections, betterobject, ColorConversion, easyimage, colorblending, graphicsx,
   stringx, controls, types, direct3d9_jedi, generics.defaults, numbers, geometry;
 
 
@@ -222,18 +222,20 @@ type
     procedure SetPosition(const Value: nativefloat);
     function GetTimeLineLIne(idx: integer): TTimeLineLine;
     procedure StartDrag(var DragObject: TDragObject);
+  protected
+    procedure LoadTextures;override;
+    procedure DoDraw; override;
+
   public
     mouse_down_at: TPoint;
     mouse_op_mode: TmouseOpmode;
     mouse_last_buttons: integer;
 
-    procedure LoadTextures;override;
     constructor Create(Aowner: TComponent); override;
     destructor Destroy; override;
-    procedure DoDraw; override;
     property Lines[idx: integer]: TTimeLineLine read GetTimeLineLIne;
     function LineCount: integer;
-    function AddLIne: TTimeLineLine;
+    function AddLine: TTimeLineLine;
     function AddDivider: TTimeLineDivider;
     procedure ClearElements;
 

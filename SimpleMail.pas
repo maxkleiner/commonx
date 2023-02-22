@@ -1,4 +1,10 @@
 unit SimpleMail;
+//NOTE:
+//The unit MailDefaults.pas is NOT included.  You'll have to define your
+//needed constants in your own MailDefaults.pas file
+//The default constants used in this unit are implementation specific.
+
+
 //This unit simplifies sending email
 //it assumes there is an SMTP server running on local host (a wild assumption)
 //# Sprint PCS <10 digit number>@messaging.sprintpcs.com
@@ -10,19 +16,27 @@ unit SimpleMail;
 interface
 
 uses
-  typex, IDSMTP, IDMESSAGE, IDEmailAddress, sysutils, simplewinsock, better_sockets2, stringx, scktcomp, classes, textsocket, applicationparams;
+  systemx, numbers, typex, idattachment, IDSMTP, IDMESSAGE, IDEmailAddress, sysutils, simplewinsock, better_sockets2, stringx, scktcomp, classes, textsocket, applicationparams, idtext, idattachmentmemory, idattachmentfile, mimetype,
+  maildefaults {note: not included in commonx, make your own maildefaults.pas with required constants};
+
+
 
 type
   TCellCarrier = (ccTMobile, ccVirgin, ccCingular, ccSprint, ccVerizon, ccNextel, ccUsCellular, ccSunCom, ccPowerTel, ccAtt, ccAlltel, ccMetroPCS);
 
-const
-  DEFAULT_GLOBAL_MAIL_SENDER = '192.168.101.125';
 
+
+
+type
+  TMailRecipient = record
+    email, name: string;
+  end;
 
 procedure RaiseSMTPError(sCode, sMessage: string);
 procedure SendMailDirect(msg: TIDMessage);
 procedure SendMail(sFrom: string; sTo: string; sSubject: string; sBody: string); overload;
-procedure SendMail(sFromName: string; sFrom: string; sTOName: string; sTo: string; sSubject: string; sBody: string; sReplyto: string = ''; sCC: string = ''; sServer: string = DEFAULT_GLOBAL_MAIL_SENDER); overload;
+procedure SendMailHTML(sFromName: string; sFrom: string; sToEmailThenName: Tarray<TArray<string>>; sSubject: string; sBody: string; attachments: TArray<string>; sReplyto: string = ''; sCC: string = ''; sServer: string = ''); overload;
+procedure SendMail(sFromName: string; sFrom: string; sTOName: string; sTo: string; sSubject: string; sBody: string; sReplyto: string = ''; sCC: string = ''; sServer: string = ''); overload;
 procedure PageSprint(sToNumber: string; sFrom: string; sMessage: string);
 procedure SendSMS(sPhoneNumber: string; sMessage: string; carrier: TCellCarrier = ccSprint);
 function GetEmailSuffixForCarrier(cc: TCellCarrier): string;
@@ -35,21 +49,120 @@ uses HTTPCLient, webstring;
 
 procedure SendMail(sFrom: string; sTo: string; sSubject: string; sBody: string);
 begin
-  SendMail('', sFrom, '', sTo, sSubJect, sBody);
+  SendMail(sFrom, sFrom, sto, sTo, sSubJect, sBody);
 end;
 
-procedure SendMail(sFromName: string; sFrom: string; sTOName: string; sTo: string; sSubject: string; sBody: string; sReplyto: string = ''; sCC: string = ''; sServer: string = DEFAULT_GLOBAL_MAIL_SENDER); overload;
+procedure SendMailHTML(sFromName: string; sFrom: string; sTOEmailThenName: TArray<Tarray<string>>; sSubject: string; sBody: string; attachments: TArray<string>; sReplyto: string = ''; sCC: string = ''; sServer: string = ''); overload;
 var
   smtp: TIDSMTP;
   msg: TIDMessage;
   add: TIDEmailAddressItem;
 begin
+  if sServer = '' then
+    sServer := DEFAULT_GLOBAL_MAIL_SENDER;
+
   smtp := nil;
   msg := nil;
   add := nil;
   try
     smtp := TIDSMTP.create(nil);
     msg := TIDMessage.create(nil);
+    msg.Date := now;
+
+    for var t:= 0 to high(sToEmailThenName) do begin
+      add := msg.Recipients.Add;
+      if length(sToEmailThenName[t]) = 0 then
+        continue;
+      add.Address := sToEmailThenName[t][0];
+      if length(sToEmailThenName[t]) < 2 then
+        add.Name := sToEmailThenName[t][0]
+      else
+        add.Name := sToEmailThenName[t][1];
+    end;
+
+
+    if sReplyTo <> '' then begin
+      add := msg.ReplyTo.Add;
+      add.Address := sReplyTo;
+    end;
+
+    begin
+      var lTextPart := TIdText.Create(msg.MessageParts);
+      lTextPart.ContentType := 'text/html';
+      lTextPart.Body.Text := sBody;
+    end;
+//    begin
+//      var lTextPart := TIdAttachmentMemory.Create(msg.MessageParts);
+//      lTextPart.ContentType := 'text/html';
+//      lTextPart.FileName := 'report.html';
+//
+//      var ss := TStringStream.Create;
+//      try
+//      ss.WriteString(sBody);
+//      ss.Seek(0,soBeginning);
+//
+//      lTextPart.LoadFromStream(ss);
+//      finally
+//        ss.free;
+//      end;
+//
+//    end;
+    for var t:=0 to high(attachments) do begin
+      var att := TIdAttachmentfile.create(msg.messageparts);
+      att.contenttype := MimeTypeFromExt(extractfileext(attachments[t]));
+      att.LoadFromFile(attachments[t]);
+      att.filename := extractfilename(attachments[t]);
+    end;
+
+
+//    begin
+//      var lTextPart := TIdText.Create(msg.MessageParts);
+//      lTextPart.ContentType := 'text/plain';
+//      lTextPart.Body.Text := 'This email requires HTML/SVG Capable mail viewer';
+//    end;
+
+
+
+
+    msg.From.Address := sFrom;
+    msg.From.Name := sFromName;
+    //msg.Body.text := 'This message is in HTML-format and requires an SVG capable HTML mail reader.';
+
+
+
+
+    msg.Subject := sSubject;
+
+
+
+    smtp.Username := DEFAULT_MAIL_USER;
+    smtp.Password := DEFAULT_MAIL_PW;
+    smtp.Host := sServer;
+    smtp.Port := DEFAULT_MAIL_PORT;
+    smtp.Connect;
+    smtp.Send(msg);
+  finally
+    smtp.free;
+  end;
+
+end;
+
+procedure SendMail(sFromName: string; sFrom: string; sTOName: string; sTo: string; sSubject: string; sBody: string; sReplyto: string = ''; sCC: string = ''; sServer: string = ''); overload;
+var
+  smtp: TIDSMTP;
+  msg: TIDMessage;
+  add: TIDEmailAddressItem;
+begin
+  if sServer = '' then
+    sServer := DEFAULT_GLOBAL_MAIL_SENDER;
+
+  smtp := nil;
+  msg := nil;
+  add := nil;
+  try
+    smtp := TIDSMTP.create(nil);
+    msg := TIDMessage.create(nil);
+    msg.Date := now;
     add := msg.Recipients.Add;
     add.Address := sTo;
     add.Name := sToName;
@@ -64,7 +177,10 @@ begin
     msg.Body.text := sBody;
     msg.Subject := sSubject;
 
+    smtp.Username := DEFAULT_MAIL_USER;
+    smtp.Password := DEFAULT_MAIL_PW;
     smtp.Host := sServer;
+    smtp.Port := DEFAULT_MAIL_PORt;
     smtp.Connect;
     smtp.Send(msg);
   finally

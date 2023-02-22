@@ -4,11 +4,12 @@ unit herro;
 {x$DEFINE MCAST}
 {$DEFINE REUSE}
 {x$DEFINE SEND_ONLY_TO_MCAST}
+{$D+}
 interface
 
 
 uses
-  IdUDPClient, IdIPMCastClient, IdIPMCastServer, betterobject, classes,systemx, idsockethandle, idglobal, skill, typex, stringx, better_indy,IdUDPServer, orderlyinit, tickcount, simplequeue, networkx, PeriodicEvents;
+  IdUDPClient, IdIPMCastClient, IdIPMCastServer, betterobject, classes,systemx, idsockethandle, idglobal, skill, typex, stringx, better_indy,IdUDPServer, orderlyinit, tickcount, simplequeue, networkx, PeriodicEvents, commandprocessor;
 
 
 const
@@ -83,10 +84,21 @@ type
 
   end;
 
-  TPeriodicGreeting = class(TPeriodicEvent)
+
+  TcmdLookForSkills = class(TCommand)
+  protected
+    procedure DoExecute; override;
+  public
+
+
+  end;
+
+  TPeriodicGreeting = class(TPeriodicCommandEvent)
   public
     procedure DoExecute; override;
   end;
+
+
 
 
 
@@ -121,9 +133,8 @@ procedure TPeriodicGreeting.DoExecute;
 begin
   inherited;
   Frequency := 8000;
-  greeter.LookForSkills();
-  greeter.scrubskills;
-
+  cmd := TcmdLookForSkills.Create;
+  cmd.start;
 
 end;
 
@@ -180,17 +191,25 @@ end;
 
 procedure TGreeter.CheckValid(var sk: TSkillInfo);
 var
+{$IFNDEF NEED_FAKE_ANSISTRING}
   s: ansistring;
+{$ELSE}
+  s: TDynByteArray;
+{$ENDIF}
   h: TGreeterPacketHeader;
   b: TIDBytes;
 begin
   h.init;
   h.SetCheck;
+{$IFNDEF NEED_FAKE_ANSISTRING}
   s := ansistring(sk.ToString);
+{$ELSE}
+  s := StringToBytes(sk.ToString);
+{$ENDIF}
   setlength(b, HERRO_PAYLOAD_START+length(s));
   movemem32(@b[0], @h, sizeof(h));
 {$IFDEF NEED_FAKE_ANSISTRING}
-  movemem32(@b[HERRO_PAYLOAD_START], s.addrof[STRZ], length(s));
+  movemem32(@b[HERRO_PAYLOAD_START], @s[0], length(s));
 {$ELSE}
   movemem32(@b[HERRO_PAYLOAD_START], @s[STRZ], length(s));
 {$ENDIF}
@@ -213,7 +232,10 @@ begin
   sender.BroadcastEnabled := true;
   sender.defaultport := 0;
   sender.OnUDPRead := self.DoUDPRead;
+{$IFDEF ALLOW_DISCOVERY}
   sender.active := true;
+{$ENDIF}
+  sender.ThreadedEvent := true;
 
 
 
@@ -257,7 +279,8 @@ end;
 {$ELSE}
 destructor TGreeter.Destroy;
 begin
-  sender.active := false;
+  if sender.active then
+    sender.active := false;
   sender.free;
   sender := nil;
 
@@ -333,21 +356,26 @@ begin
 {$ELSE}
   greeter.BroadcastEnabled := true;
 {$ENDIF}
+{$IFDEF ALLOW_DISCOVERY}
   greeter.Active := true;
+
 
   periodicGreeting := TPeriodicGreeting.Create;
   PEA.Add(periodicGreeting);
   periodicGreeting.Enabled := true;
+{$ENDIF}
 
 end;
 
 procedure oprefinal;
 begin
 
+{$IFDEF ALLOW_DISCOVERY}
   PEA.Remove(periodicGreeting);
   periodicGreeting.free;
   periodicGreeting := nil;
   greeter.Active := false;
+{$ENDIF}
 
 
 end;
@@ -395,6 +423,7 @@ var
   sk: ansistring;
 begin
   sk := GetSkillFromXData(XData);
+//  Debug.Log('Valid skill '+sk);
   skills.MarkValid(sk, abinding.peerip, abinding.peerport, true);
 
 
@@ -407,8 +436,11 @@ var
 begin
   s := GetSkillFromXData(XData);
 
-  skills.RegisterSkill(s, abinding.PeerIP, abinding.peerport);
-//  Debug.Log(self,CLRC+'Wassup!'+abinding.peerip+':'+s);
+//  if (abinding.peerip = '192.168.101.198') and (zpos('198',s) >=0) then
+//    Debug.Log(self,CLRC+'Wassup!'+abinding.peerip+':'+s);
+
+  skills.RegisterSkill(string(s), abinding.PeerIP, abinding.peerport);
+
 
 
 end;
@@ -593,6 +625,16 @@ begin
   hi[2] := ord(char('s'));
   hi[3] := ord(char('u'));
   hi[4] := ord(char('p'));
+end;
+
+{ TcmdLookForSkills }
+
+procedure TcmdLookForSkills.DoExecute;
+begin
+  inherited;
+  greeter.LookForSkills();
+  greeter.scrubskills;
+
 end;
 
 initialization

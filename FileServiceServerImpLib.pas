@@ -1,27 +1,29 @@
 unit FileServiceServerImpLib;
-
+{$inline off}
 {GEN}
 {TYPE IMPLIB}
 {RQFILE FileServiceRQs.txt}
 {END}
+{x$DEFINE ALLOW_GPU}
 
 
 interface
 uses
-  windows, memoryfilestream, FileTransfer, FileServiceServer, nvidiatools,
-    sysutils, rdtpprocessor, dir, dirfile, classes, systemx, debug,
-    betterobject, spam, stringx, exe, rdtpserverlist,orderlyinit,
-    helpers_stream, consolelock, commandprocessor, rdtp_file, sharefinder,
-    SoundConversion_Windows, SoundConversions_CommandLine, numbers;
+  windows, memoryfilestream, FileTransfer, FileServiceServer, nvidiatools, tickcount,
+    sysutils, rdtpprocessor, dir, dirfile, classes, systemx, debug, Tools,
+    betterobject, spam, stringx, exe, rdtpserverlist,orderlyinit, netlogclient,
+    helpers_stream, consolelock, commandprocessor, rdtp_file, sharefinder, ThreadStatus,
+    SoundConversion_Windows, SoundConversions_CommandLine, numbers, NetShare;
 
   type
   TFileServiceServer = class(TFileServiceServerBase)
-  private
-  protected
   public
+    function RQ_PutFileADAPTED(oFile:TFileTransferReference; bGMTTimes: boolean):boolean;inline;
+    function RQ_GetFileADAPTED(var oFile:TFileTransferReference; bGMTTimes: boolean):boolean;inline;
+    function RQ_GetFileListADAPTED(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer; bGMTTimes: boolean):TRemoteFileArray;
   {INTERFACE_START}
-    function RQ_PutFile(oFile:TFileTransferReference):boolean;overload;override;
-    function RQ_GetFile(var oFile:TFileTransferReference):boolean;overload;override;
+    function RQ_PutFileDEPRECATED(oFile:TFileTransferReference):boolean;overload;override;
+    function RQ_GetFileDEPRECATED(var oFile:TFileTransferReference):boolean;overload;override;
     function RQ_OpenFile(sFile:string; out oFile:TFileTransferReference; iMode:integer):boolean;overload;override;
     function RQ_CloseFile(oFile:TFileTransferReference):boolean;overload;override;
     function RQ_Dir(sRemotePath:string):TDirectory;overload;override;
@@ -37,7 +39,7 @@ uses
     function RQ_AppendTextFile(filename:string; text:string):boolean;overload;override;
     function RQ_GetFileSize(filename:string):int64;overload;override;
     function RQ_ExecuteAndCapture(sPath:string; sProgram:string; sParams:string):string;overload;override;
-    function RQ_GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;override;
+    function RQ_GetFileListDEPRECATED(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;override;
     function RQ_StartExeCommand(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single):int64;overload;override;
     function RQ_GetCommandStatus(handle:int64; out status:string; out step:int64; out stepcount:int64; out finished:boolean):boolean;overload;override;
     function RQ_EndCommand(handle:int64):boolean;overload;override;
@@ -52,6 +54,11 @@ uses
     function RQ_StartExeCommandExFFMPEG(sPath:string; sProgram:string; sParams:string; sGPUParams:string; cpus:single; memgb:single; gpu:single):int64;overload;override;
     function RQ_FileExists(sFile:string):boolean;overload;override;
     function RQ_PathExists(sPath:string):boolean;overload;override;
+    function RQ_Sign(sFile:string; signconfig:string):boolean;overload;override;
+    function RQ_ReadyForEncoding():boolean;overload;override;
+    function RQ_PutFile(oFile:TFileTransferReference):boolean;overload;override;
+    function RQ_GetFile(var oFile:TFileTransferReference):boolean;overload;override;
+    function RQ_GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;override;
 
 {INTERFACE_END}
   end;
@@ -64,20 +71,23 @@ function FindExeCommandResource(proc: TRDTPProcessor; handle: int64): Tcmd_RunEx
 function ResolveSharePath(sFile: string): string;
 
 var
-  CPWerk: TcommandProcessor;
+  CPWerk: TcommandProcessor = nil;
+
+
+procedure NetUse;
 
 implementation
 
 uses
-  soundtools, servervideoparser;
+  soundtools, servervideoparser, EncoderMaster;
 function GetGPUnUsage(gpu: integer): single;
 begin
   result := 0.0;
-  var l := BGCmd.Locki;
+  var l : ILock := BGCmd.Locki;
   for var t:= 0 to BGCmd.commandcount-1 do begin
     var c := BGCmd.Commands[t];
     if not c.iscomplete then begin
-      result := result + c.Resources.GetResourceUsage('GPU'+gpu.ToString);
+      result := result + c.Resources.GetResourceUsage('GPU'+inttostr(gpu)).usage;
     end;
   end;
 end;
@@ -175,7 +185,13 @@ begin
   result := DirectoryExists(resolvesharepath(sPath));
 end;
 
-function TFileServiceServer.RQ_putFile(ofile: TFileTransferReference): boolean;
+function TFileServiceServer.RQ_PutFile(oFile: TFileTransferReference): boolean;
+begin
+  result := RQ_PutFileADAPTED(oFile,true);
+end;
+
+
+function TFileServiceServer.RQ_putFileADAPTED(ofile: TFileTransferReference; bGMTTimes: boolean): boolean;
 var
   fs: TMemoryFileStream;
   //a: array [0..512000] of byte;
@@ -196,6 +212,7 @@ begin
   //    GetMem(b, ofile.Length);
       b := ofile.o.Buffer;
 //      MoveMem32(@aa[0],b, oFile.Length);
+
       iWritten := 0;
       repeat
         iJustWritten := fs.Write(b[iWritten], oFile.o.Length-iWritten);
@@ -203,7 +220,10 @@ begin
         inc(iWritten, iJustWritten);
       until iWritten = oFile.o.length;
       if oFile.o.EOF then begin
-        FileSetDAte(fs.handle,DateTimeToFileDate(oFile.o.FileDate));
+        if bGMTTimes then
+          FileSetDateFromGMT(fs.handle,oFile.o.FileDateUTC)
+        else
+          FileSetDAte(fs.handle,DateTimeToFileDate(oFile.o.FileDateUTC));
       end;
 
     finally
@@ -219,6 +239,17 @@ begin
 end;
 
 
+
+function TFileServiceServer.RQ_PutFileDEPRECATED(
+  oFile: TFileTransferReference): boolean;
+begin
+  result := RQ_PutfileAdapted(oFile, false);
+end;
+
+function TFileServiceServer.RQ_ReadyForEncoding: boolean;
+begin
+  result := netshares_ready;
+end;
 
 function TFileServiceServer.RQ_GetCommandResourceConsumption(out cpusUsed:single; out cpuMax:single; out memGBUsed:single; out memGBMax:single):boolean;
 begin
@@ -248,7 +279,7 @@ begin
     if not c.iscomplete then begin
       cpusUsed := cpusUsed + c.CPUExpense;
       memgbused := memgbUsed + c.MemoryExpenseGB;
-      GPUsUsed := GPUsUsed + c.Resources.GetResourceUsage('GPUExpense');
+      GPUsUsed := GPUsUsed + c.Resources.GetResourceUsage('GPUExpense').usage;
     end;
   end;
 
@@ -259,7 +290,11 @@ begin
 
   cpuMax := GetEnabledCPUCount;
   memGBMax := GetPhysicalMemory / (1000000000.0);
+{$IFDEF ALLOW_GPU}
   gpumax := BGCMd.GetResourceLimit('GPUExpense');
+{$ELSE}
+  gpumax := 0.0;
+{$ENDIF}
 
 
 end;
@@ -296,9 +331,17 @@ begin
 
 end;
 
+function TFileServiceServer.RQ_Sign(sFile, signconfig: string): boolean;
+begin
+  result := false;
+  raise Exception.create('unimplemented');
+//TODO -cunimplemented: unimplemented block
+end;
+
 function TFileServiceServer.RQ_StartExeCommand(sPath, sProgram, sParams: string;
   cpus, memgb: single): int64;
 begin
+//  threadstatus.TVSetThreadName('RQ_StartExeCommand '+sProgram);
   result := RQ_StartExeCommandEx(resolvesharepath(sPath), sProgram, sParams, cpus, memgb, '');
 
 end;
@@ -322,7 +365,7 @@ begin
   for var t:= 0 to slh.o.count-1 do begin
     c.Resources.SetResourceUsage(slh.o.KeyNames[t], strtofloat(slh.o.ValueFromIndex[t]));
   end;
-  var gu :=c.Resources.GetResourceUsage('GPUExpense');
+  var gu :=c.Resources.GetResourceUsage('GPUExpense').usage;
   if gu > 0.0 then begin
     var g := GetBestGPU;
     c.resources.setresourceUsage('GPU'+g.tostring,gu);
@@ -338,16 +381,30 @@ function TFileServiceServer.RQ_StartExeCommandExFFMPEG(sPath, sProgram,
 var
   c: Tcmd_RunExe;
 begin
+  NetUse;
+{$IFNDEF ALLOW_GPU}
+  sGPUParams := '';
+{$endIf}
+
+
   sPath := resolvesharepath(sPath);
   c := Tcmd_Runexe.create;
-  c.Prog := slash(sPath)+sProgram;
-  c.prog := stringreplace(c.prog, '%dllpath%', dllpath, [rfReplaceAll, rfIgnoreCase]);
+  c.prog := sProgram;
+  c.prog := stringreplace(c.prog, '%dllpath%\', dllpath, [rfReplaceAll, rfIgnoreCase]);
+  c.prog := findtool(c.prog);
+//  if IsRelativePath(c.Prog) then
+//    c.Prog := slash(sPath)+c.prog;
+
   c.Params := sParams;
   c.WorkingDir := extractfilepath(c.Prog);
   c.Hide := true;
   c.CPUExpense := cpus;
   c.MemoryExpenseGB := memgb;
   c.CaptureConsoleoutput := true;
+  try
+    //SaveStringAsFile(dllpath+'diagnose.bat',c.prog+' '+c.params);
+  except
+  end;
 //  var slh := stringToStringListH(ext_resources);
 //  for var t:= 0 to slh.o.count-1 do begin
 //    c.Resources.SetResourceUsage(slh.o.KeyNames[t], strtofloat(slh.o.ValueFromIndex[t]));
@@ -365,13 +422,22 @@ begin
       end;
     end;
   end;
+  EM.objlog('Local Execution: '+c.Prog+' '+c.Params);
   c.Start;
+
 //  self.Resources.Add(c);
   result := int64(pointer(c));
 
 end;
 
-function TFileServiceServer.RQ_GetFile(var oFile:TFileTransferReference):boolean;
+
+function TFileServiceServer.RQ_GetFile(
+  var oFile: TFileTransferReference): boolean;
+begin
+  result := RQ_GetfileAdapted(oFile, true);
+end;
+
+function TFileServiceServer.RQ_GetFileADAPTED(var oFile:TFileTransferReference; bGMTTimes: boolean):boolean;
 var
   fs: TMemoryFileStream;
 //  a: array [0..512000] of byte;
@@ -400,7 +466,11 @@ begin
     oFile.o.containsData := true;
     oFile.o.buffer := b;
     if oFile.o.eof then begin
-      oFile.o.FileDate := FileDateToDateTime(FileGetDate(fs.handle));
+      if bGMTTimes then
+        oFile.o.FileDateUTC := FileGetDateAsGMT(fs.handle)
+      else
+        oFile.o.FileDateUTC := FileDateToDateTime(FileGetDate(fs.handle));//legacy ... INTENTIONAL UTC mismatch
+        //INTENTIONAL   ^^^  MISMATCH
     end;
 
 
@@ -418,6 +488,9 @@ var
   r: TMemoryFileStream;
 begin
   Debug.Log('open file transfer '+sFile);
+//  threadstatus.TVSetThreadName('RQ_OpenFile '+sFile);
+//  threadstatus.TVSetThreadStatus('OPEN '+sFile);
+
   if iMode = fmCreate then
     ForceDirectories(extractfilepath(resolvesharepath(sFile)));
 
@@ -440,12 +513,68 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
+var
+  tmLastShareCheck: TDatetime;
+procedure NetUse;
+begin
+{
+  var testfile := '\\192.168.101.123\media\'+getcomputername+'_'+GetCurrentThreadID.tostring+'.txt';
+  if fileexists(testfile) then begin
+    if (now-tmLastShareCheck) < 0.5 then
+      exit;
+
+
+    deletefile(testfile);
+    if not fileexists(testfile) then begin
+      SaveStringAsFile(testfile,'poop');
+      if not fileexists(testfile) then begin
+        debug.log('test file was created '+testfile);
+        tmLastShareCheck := now();
+        exit;
+      end;
+    end;
+  end;
+ }
+
+//  netshare.ProcessUseFile;
+(*
+  var c := Tcmd_Runexe.create;
+  c.prog := slash(GetSystemDir)+'net.exe';
+  c.Params := ' use '+MEDIA_USE;
+
+  c.WorkingDir := extractfilepath(c.Prog);
+  c.Hide := true;
+  c.CPUExpense := 0.0;
+  c.CaptureConsoleoutput := true;
+  c.start;
+  try
+    c.WaitFor;
+    var sContents := getticker.tostring;
+    SaveStringAsFile(testfile,sContents);
+    if fileexists(testfile) then  begin
+      var check := LoadFileAsstring(testfile);
+      if check = sContents then begin
+        debug.log('test file was created '+testfile);
+        tmLastShareCheck := now();
+      end else begin
+        debug.log('failed to authenticate with network directory or security settings invalid');
+      end;
+    end;
+
+  finally
+    c.Free;
+  end;
+  *)
+
+end;
+
 function TFileServiceServer.RQ_AppendTextFile(filename, text: string): boolean;
 var
   fs: TFileStream;
   bytes: TBytes;
   fullname: string;
 begin
+  result := true;
   LockConsole;
   try
     fullname := resolvesharepath(filename);
@@ -572,6 +701,8 @@ begin
     o := TObject(self.resources[t]);
     if o is TMemoryFileStream then with o as TMemoryFileStream do begin
       if handle = oFile.o.handle then begin
+//        threadstatus.TVSetThreadStatus('RQ_CloseFile '+oFile.o.FileName);
+//        threadstatus.TVSetThreadStatus('CLOSED '+oFile.o.FileName);
         self.resources.remove(o);
         Free;
       end;
@@ -593,6 +724,7 @@ function TFileServiceServer.RQ_Dir(sRemotePath:string):TDirectory;
 var
   dir: TDirectory;
 begin
+//  threadstatus.TVSetThreadName('RQ_Dir '+sRemotePath);
   var s := 'Dir of: '+sRemotePath+' resolves to '+resolvesharepath(sRemotePath)+' ';
 
 
@@ -615,11 +747,13 @@ end;
 
 function TFileServiceServer.RQ_EndCommand(handle: int64): boolean;
 begin
+//  threadstatus.TVSetThreadName('RQ_EndCommand');
   var c := FindCommandResource(self, handle);
   Resources.Remove(c);
   c.RaiseExceptions := false;
   c.WaitFor;
   c.Free;
+  result := true;
 end;
 
 function TFileServiceServer.RQ_EndExeCommand(handle: int64): string;
@@ -628,6 +762,7 @@ begin
   result := c.consoleoutput;
   self.Resources.Remove(c);
   c.waitfor;
+  EM.objlog('Local Execution Finished for : '+c.Prog+' '+c.Params);
   c.free;
 
 end;
@@ -637,6 +772,7 @@ function TFileServiceServer.RQ_Execute(sPath, sProgram,
 var
   c: Tcmd_RunExe;
 begin
+//  threadstatus.TVSetThreadName('RQ_Execute '+sProgram);
   c := Tcmd_Runexe.create;
   c.Prog := slash(resolvesharepath(sPath))+sProgram;
   c.prog := stringreplace(c.prog, '%dllpath%', dllpath, [rfReplaceAll, rfIgnoreCase]);
@@ -655,6 +791,7 @@ var
   c: Tcmd_RunExe;
   sTemp: string;
 begin
+//  threadstatus.TVSetThreadName('RQ_ExecuteAndCapture '+sProgram);
   sPath := resolvesharepath(sPath);
   c := Tcmd_Runexe.create;
   c.Prog := slash(sPath)+sProgram;
@@ -711,14 +848,24 @@ end;
 
 
 
+
 function TFileServiceServer.RQ_GetFileChecksum(sFile:string):TAdvancedFileChecksum;
 begin
+//  threadstatus.TVSetThreadName('RQ_GetFileChecksum '+sFile);
   Debug.Log('Calculate checksum for '+resolvesharepath(sFile));
   result.Calculate(resolvesharepath(sFile));
+  Debug.Log('checksum for '+resolvesharepath(sFile)+' '+result.bytesum.ToString+' '+result.bytexor.tostring);
+
 end;
 
 
-function TFileServiceServer.RQ_GetFileList(sRemotePath: string; sfileSpec: string; attrmask, attrresult: integer): TRemoteFileArray;
+function TFileServiceServer.RQ_GetFileDEPRECATED(
+  var oFile: TFileTransferReference): boolean;
+begin
+  result := RQ_GetfileAdapted(oFile, false);
+end;
+
+function TFileServiceServer.RQ_GetFileListADAPTED(sRemotePath: string; sfileSpec: string; attrmask, attrresult: integer; bGMTtimes: boolean): TRemoteFileArray;
 var
   dir: TDirectory;
   fil: TFileInformation;
@@ -728,18 +875,36 @@ begin
   try
     dir := TDirectory.create(sRemotePath, sFileSpec, attrmask, attrresult, false, false, false);
     setlength(result, dir.Filecount);
-    for t:= 0 to dir.filecount-1 do begin
-      fil := dir.files[t];
-      result[t].name := fil.name;
-      result[t].path := fil.Path;
-      result[t].date := fil.Date;
-      result[t].attributes := 0;
-      result[t].size := fil.Size;
-    end;
+      for t:= 0 to dir.filecount-1 do begin
+        fil := dir.files[t];
+        result[t].name := fil.name;
+        result[t].path := fil.Path;
+        if bGMTTimes then begin
+          result[t].dateUTC := fil.DateUTC
+        end else begin
+          result[t].dateUTC := fil.Date;//legacy
+        end;
+        result[t].attributes := 0;
+        result[t].size := fil.Size;
+      end;
+
   finally
     dir.free;
   end;
 
+end;
+
+
+function TFileServiceServer.RQ_GetFileListDEPRECATED(sRemotePath,
+  sFileSpec: string; attrmask, attrresult: integer): TRemoteFileArray;
+begin
+  result := RQ_GetFileListADAPTED(sRemotePath, sFileSpec, attrmask,attrresult,false);
+end;
+
+function TFileServiceServer.RQ_GetFileList(sRemotePath,
+  sFileSpec: string; attrmask, attrresult: integer): TRemoteFileArray;
+begin
+  result := RQ_GetFileListADAPTED(sRemotePath, sFileSpec, attrmask,attrresult,true);
 end;
 
 function TFileServiceServer.RQ_GetFileSize(filename: string): int64;
@@ -776,6 +941,8 @@ procedure oinit;
 begin
   CPWerk := TCommandProcessor.create(nil, 'CPWerk');
   RDTPServers.RegisterRDTPProcessor('FileService', TFileServiceServer);
+  NetUse;
+
 end;
 
 procedure ofinal;

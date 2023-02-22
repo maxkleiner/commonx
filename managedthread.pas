@@ -3,6 +3,7 @@ unit managedthread;
 {$I 'DelphiDefs.inc'}
 {$DEFINE NEW_LOOP}
 {$DEFINE GWATCH}
+{$DEFINE NULL_ENDSTART}
 interface
 {x$INLINE AUTO}
 {x$DEFINE SUSPEND_ACK}
@@ -10,16 +11,17 @@ interface
 {x$DEFINE DISABLE_THREAD_POOL}
 {x$DEFINE DETAILED_DEBUG}
 {x$DEFINE QUICK_THREAD_DEBUG}
+{x$DEFINE THREAD_TERMINATION_DEBUG}
 
 uses
   system.RTLConsts,//inline
   system.Types, numbers, better_collections,
 {$IFDEF STACK_TRACE}
-  StackTrace,
+`  StackTrace,
 {$ENDIF}
   betterobject, Classes,syncobjs, tickcount, signals,
 {$IFDEF MSWINDOWS}
-  winapi.windows,
+  winapi.windows, tlhelp32,
   winapi.activex,//<--no coinitialize
 {$ELSE}
   android.better_pthread,
@@ -60,11 +62,11 @@ type
   private
     FName: string;
   public
-    SetOnlyByThread: cardinal;
-    ClearedOnlyByThread: cardinal;
-    ClearedNotByThread: cardinal;
-    SetNotByThread: cardinal;
-    NoWaitByThreadid: cardinal;
+    SetOnlyByThread: nativeuint;
+    ClearedOnlyByThread: nativeuint;
+    ClearedNotByThread: nativeuint;
+    SetNotByThread: nativeuint;
+    NoWaitByThreadid: nativeuint;
     thr: TManagedThread;
     ignorechecks: boolean;
     procedure Init;override;
@@ -80,6 +82,12 @@ type
     mt: TManagedThread;
     procedure Execute; override;
   public
+    constructor Create; overload;
+    constructor Create(CreateSuspended: Boolean); overload;
+{$IF Defined(MSWINDOWS)}
+    constructor Create(CreateSuspended: Boolean; ReservedStackSize: NativeUInt); overload;
+{$ENDIF MSWINDOWS}
+
     function WaitForEx(timeout: int64): boolean;
   end;
 
@@ -110,6 +118,7 @@ type
     property Age: ticker read GetAge;
     function GetPercentActiveTime(var previoustotal,
       previoussampletime: int64): single;
+    procedure Init;
 
   end;
 
@@ -226,7 +235,7 @@ type
     evHot, evIdle, evHasWork, evStart, evStarted, evStop, evFinished, evOutOfPool, evSleeping, evPoolReady, evConcluded: TManagedSignal;
 
     function IdleBreak: boolean;virtual;
-    function GetThreadID: cardinal;
+    function GetThreadID: nativeuint;
 
   public
 
@@ -245,8 +254,9 @@ type
     property AutoCountCycles: boolean read FAutoCycle write FAutoCycle;
     procedure Terminate;
     procedure WaitForFinish;virtual;
-    procedure WaitFor;reintroduce;virtual;
+    function WaitFor(iTimeout: ticker =0): boolean; reintroduce;virtual;
     function WaitForLowLevel: boolean;
+    procedure OnPrepareToStop;virtual;
     function Stop(bySelf: boolean=false): boolean;virtual;
     function BeginStop(bySelf: boolean=false): boolean;
     procedure EndStop(bySelf: boolean=false);
@@ -309,7 +319,7 @@ type
     property Loop: boolean read FLoop write FLoop;
     property BreakLoopOnException: boolean read FReRaiseExceptionsInLoop write FReRaiseExceptionsInLoop;
     procedure SafeREsume;
-    procedure SafeWaitFor;
+    function SafeWaitFor(iTImeout: ticker=0): boolean;
     function SafeTerminated: boolean;
     procedure Start;virtual;
     procedure BeforeStart;virtual;
@@ -326,7 +336,7 @@ type
     property IsFinished: boolean read GetIsFinished;
     property IsComplete: boolean read GetIsComplete;
     function Started: boolean; reintroduce;
-    property ThreadID: cardinal read GetthreadID;
+    property ThreadID: nativeuint read GetthreadID;
     property Handle: THandle read GetHandle;
     property PlatformPriority: integer read GetPlatformPriority write SetPlatformPriority;
     property BetterPriority: TBetterPriority read GetBetterPriority write SetBetterPriority;
@@ -464,7 +474,7 @@ type
 
   TMasterThreadPool = class (TSharedObject)
   private
-    termlist: TSharedList<TMAnagedThread>;
+    termlist: TSharedList<TManagedThread>;
     FFreeOnEmpty: boolean;
     FhighPerformanceMode: boolean;
     FShutdown: boolean;
@@ -476,9 +486,11 @@ type
     procedure Clear;//
 
     function CheckTermList: boolean;
-    procedure Clean;//
+    function Clean: boolean;//
     procedure OnThreadExecute(sender: TExternalEventThread);//
+    function CountAllThreads: int64;
   public
+    Stopping: boolean;
     procedure StartCleaner;//
     procedure StopCleaner;//
 
@@ -538,6 +550,8 @@ type
     procedure TerminateAllThreads;
     procedure DetachAllThreads;
     function GetInfoList: TArray<TThreadInfo>;
+    function GetManagedList: TArray<TThreadInfo>;
+    function GetUnmanagedList(managed_list_reference: TArray<TThreadinfo>): TArray<TThreadInfo>;
   end;
 
 
@@ -558,7 +572,7 @@ var
   gwatchthread: nativeint;
   KillFlag: boolean;
   Killed: boolean;
-  TPM: TMasterThreadPool;
+  TPM: TMasterThreadPool = nil;
   thread_shutdown_tracking_stage: nativeint;
 
 
@@ -566,13 +580,28 @@ threadvar
   CurrentThreadObject: TManagedThread;
 
 var
+  GUIThreadID: nativeuint;
   dntdebug: ni;
   dntdebug_t: ni;
 
+
+procedure SetThreadDebug(m: string; p: PProgress = nil);
+
 implementation
+
 
 uses backgroundthreads, debug, unittest;
 
+procedure SetThreadDebug(m: string; p: PProgress = nil);
+begin
+  if CurrentthreadObject <> nil then begin
+    CurrentThreadObject.Status :=m;
+    if p <> nil then begin
+      CurrentThreadObject.StepCount := p^.stepCount;
+      CurrentThreadObject.Step := p^.step;
+    end;
+  end;
+end;
 type
   TUnitTestThread = class(TMAnagedThread)
   public
@@ -772,7 +801,7 @@ begin
   //register if applicable with a threadmanager
   FOwner := owner;
 
-  Init;
+  //Init;
 //  if not CreateSuspended then
   SetStartingState;
   signal(evSleeping,true);//special case for when we DON'T use TPM.NeedThread to create threads
@@ -798,6 +827,7 @@ begin
     self.Manager := BackGroundThreadMan;
 
 
+
 end;
 
 
@@ -820,7 +850,7 @@ begin
 {$IFDEF WINDOWS}
   interlockeddecrement(Self.instancecount);
   //if thread_shutdown_tracking_stage > 0 then
-    Debug.Log(nil,'--There are now '+inttostr(instancecount)+' threads.');
+{$IFDEF THREAD_TERMINATION_DEBUG}    Debug.Log(nil,'--There are now '+inttostr(instancecount)+' threads.');{$ENDIF}
 {$ENDIF}
 end;
 
@@ -854,10 +884,11 @@ begin
   poolloop := false;
   loop := false;
   signal(evSleeping,true);
-  Debug.Log('Destroy '+nameex);
+{$IFDEF THREAD_TERMINATION_DEBUG}  Debug.Log('Destroy '+nameex);{$ENDIF}
 
-  WaitForSignal(evConcluded);
-  Debug.Log('Concluded '+nameex);
+  if not neverstarted then
+    WaitForSignal(evConcluded);
+{$IFDEF THREAD_TERMINATION_DEBUG}  Debug.Log('Concluded '+nameex);{$ENDIF}
 
 
   if not realthread.Terminated and (not realthread.FreeOnTerminate) then begin
@@ -870,6 +901,8 @@ begin
   FromPool := nil;
 
   //sleepex(100);
+  realthread.free;
+  realthread := nil;
 
   Funknown.Free;
   if assigned(FMenu) then
@@ -962,6 +995,7 @@ var
 label
   rep_not_continue;
 begin
+  CurrentThreadObject := self;
   zone := 1;
   try
     try
@@ -992,7 +1026,7 @@ begin
               if Killed then begin
                 zone := 88;
                 Signal(evStarted);
-                Debug.ConsoleLog(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
+                Debug.Log(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
                 raise ECritical.create(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
               end;
             end;
@@ -1012,7 +1046,7 @@ begin
               end;
               if Killed then begin
                 Signal(evStarted);
-                Debug.ConsoleLog(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
+                Debug.log(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
                 raise ECritical.create(self.classname+' named '+self.name+' is still active after thread-pool is killed.');
               end;
             end;
@@ -1098,9 +1132,11 @@ rep_not_continue:
                   if AutoCountCycles then
                     inc(Finfo.Iterations);
                   tm2 := tickcount.GetTicker;
+{$IFDEF QUEUE_TIMES}
                   FTimeIndex := FTimeIndex mod length(FTimes);
                   FTimes[FTimeIndex] := GetTimeSince(tm2, tm1);
                   inc(FTimeIndex);
+{$ENDIF}
 
                   AfterDoExecute;
                 finally
@@ -1175,6 +1211,7 @@ rep_not_continue:
     {$IFDEF QUICK_THREAD_DEBUG}Debug.Log(self.nameex+' Concluded '+GetSignalDebug);{$ENDIF}
     Signal(evFinished);
     Signal(evConcluded);
+    CurrentThreadObject := nil;
   end;
 
 end;
@@ -1211,7 +1248,9 @@ function TManagedThread.Getinfo: TThreadInfo;
 var
   s: string;
 begin
-  Lock;
+  result.init;
+
+  if tryLock then
   try
     DeadCheck;
     try
@@ -1420,7 +1459,7 @@ begin
   end;
 end;
 
-function TManagedThread.GetThreadID: cardinal;
+function TManagedThread.GetThreadID: nativeuint;
 begin
   result := realthread.ThreadId;
 end;
@@ -1513,6 +1552,9 @@ begin
   NoWorkRunInterval := -1;
   PoolLoop := true;
   Signal(evStart,false);
+  Signal(evFinished,false);
+  Signal(evPoolReady,false);
+  Signal(evStop, false);
   //Signal(evSleeping, false);
 
 
@@ -1594,6 +1636,11 @@ begin
   //
 end;
 
+procedure TManagedThread.OnPrepareToStop;
+begin
+  //
+end;
+
 procedure TManagedThread.PrepareForPool;
 begin
 
@@ -1646,8 +1693,20 @@ end;
 
 
 
-procedure TManagedThread.SafeWaitFor;
+function TManagedThread.SafeWaitFor(iTImeout: ticker=0): boolean;
+var
+  tmStart: ticker;
+  function TimedOut: boolean;
+  begin
+    Result:=(iTimeout<>0) and (gettimesince(tmStart) > iTimeout);
+  end;
 begin
+  Result:=False;
+
+  var toWait := 8000;
+  if iTimeout > 0 then
+    toWait := lesserof(toWait, iTimeout);
+
   if IsCurrentThread then begin
     Debug.Log('YOU CAN''T WAIT ON THE CURRENT THREAD!');
     exit;
@@ -1660,15 +1719,18 @@ begin
 
     if IsSignaled(evStarted) then begin
       Signal(evHasWork);
-      while not WaitForSignal(evFinished, 1000) do begin
+      while not WaitForSignal(evFinished, toWait) do begin
+        if timedout then
+          exit(false);
+
         if not IsCurrentThread then begin
-          Debug.Log('Current thread is : '+TThread.currentthread.threadid.tostring);
+          Debug.Log('Waiting for thread '+Self.ThreadID.ToString+' from : '+TThread.currentthread.threadid.tostring);
         end;
-        Debug.Log(self, 'Safe Wait For '+self.classname+' #'+threadid.tostring+' '+getsignaldebug+' '+inttostr(getticker));
+{$IFDEF THREAD_TERMINATION_DEBUG}        Debug.Log(self, 'Safe Wait For '+self.classname+' #'+threadid.tostring+' '+getsignaldebug+' '+inttostr(getticker));{$ENDIF}
         Signal(evHasWork);
         if (WAitBEforeAbortTime > 0 ) and  (GetTimeSince(beginstoptime) > WAitBeforeAbortTime) then begin
           Debug.Log(self, 'Terminating Hung Thread'+self.classname+' '+getsignaldebug+' '+inttostr(getticker));
-          Signal(evStop);
+          Signal(evStop); //<--- this doesn't make any sense! just because we're waiting for a thread, doesn't mean we want to stop it
 //          TerminateThread(ThreadID,0);
 //          PoolLoop := false;
 //          Loop := false;
@@ -1678,8 +1740,10 @@ begin
     end;
   end else begin
       Signal(evHasWork);
-      while not WaitForSignal(evFinished, 1000) do begin
-        Debug.Log(self, 'Safe Wait For '+self.classname+' '+getsignaldebug+' '+inttostr(getticker));
+      while not WaitForSignal(evFinished, toWait) do begin
+        if timedout then
+          exit(false);
+{$IFDEF THREAD_TERMINATION_DEBUG}        Debug.Log(self, 'Safe Wait For '+self.classname+' '+getsignaldebug+' '+inttostr(getticker));{$ENDIF}
         Signal(evHasWork);
         if (WAitBEforeAbortTime > 0 ) and  (GetTimeSince(beginstoptime) > WAitBeforeAbortTime) then begin
           Debug.Log(self, 'Terminating Hung Thread'+self.classname+' '+getsignaldebug+' '+inttostr(getticker));
@@ -1692,6 +1756,7 @@ begin
         end;
       end;
   end;
+  exit(true);
 
 end;
 
@@ -1864,7 +1929,7 @@ end;
 procedure TManagedThread.SetThreadManager(const Value: TThreadManager);
 begin
   if Value = FThreadManager then begin
-    Debug.Log('Thread Manager already set!');
+//    Debug.Log('Thread Manager already set!');
     exit;
   end;
   if assigned(FThreadManager) then
@@ -1943,7 +2008,9 @@ begin
     Signal(evStarted,false);
     Signal(evFinished,false);
     Signal(evStart);
-
+{$IFDEF NULL_ENDSTART}
+    WaitForSignal(evStarted);
+{$ENDIF}
 
 
 end;
@@ -1966,6 +2033,7 @@ begin
 
   Lock;
   try
+    OnPrepareToStop;
     result := not IsSignaled(evStop);
     if result then
       Signal(evStop)
@@ -2027,10 +2095,11 @@ end;
 
 procedure TManagedThread.EndStart;
 begin
+{$IFNDEF NULL_ENDSTART}
 //  Debug.Log('waiting for started');
   WaitForSignal(evStarted);
 {$IFDEF QUICK_THREAD_DEBUG}  Debug.Log('At END of start signal '+self.GetSignalDebug);{$ENDIF}
-
+{$ENDIF}
 end;
 
 procedure TManagedThread.EndStop(bySelf: boolean=false);
@@ -2161,9 +2230,9 @@ begin
 
 end;
 
-procedure TManagedThread.WaitFor;
+function TManagedThread.WaitFor(iTImeout: ticker=0): boolean;
 begin
-  SafeWaitFor;
+  result := SafeWaitFor(iTimeout);
 
 end;
 
@@ -2392,13 +2461,9 @@ begin
       if thr.IsFinished then begin
         if thr.classname = 'TSoundDevice_PortAudio' then begin
           inc(ix);
-          if ix = 2 then
-            Debug.Log('here');
         end;
 
-        Debug.Log('Final Termination '+thr.nameex);
-        if sLastTerm = thr.NameEx then
-          Debug.Log('SAME!?!?!?!?');
+{$IFDEF THREAD_TERMINATION_DEBUG}        Debug.Log('Final Termination '+thr.nameex);{$ENDIF}
         sLastTerm := thr.NameEx;
         if not thr.IsCriticalSystemThread then begin
           thr.WaitFor;
@@ -2414,7 +2479,7 @@ begin
 
 
 
-        Debug.Log('There are now '+termlist.count.tostring+' termlist items');
+{$IFDEF THREAD_TERMINATION_DEBUG}        Debug.Log('There are now '+termlist.count.tostring+' termlist items');{$ENDIF}
       end;
 
     end;
@@ -2427,14 +2492,15 @@ begin
   end;
 end;
 
-procedure TMasterThreadPool.Clean;
+function TMasterThreadPool.Clean: boolean;
 var
   t: NativeInt;
   thr: TManagedThread;
   list: TBetterList<TManagedThread>;
 begin
 //  Debug.Log('Thread pool cleaner is executing.');
-//  Debug.ConsoleLog('Cleaning. '+inttostr(getcurrentthreadid));
+//  Debug.log('Cleaning. '+inttostr(getcurrentthreadid));
+  result := false;
   list := TBetterList<TManagedThread>.create;
   try
     if TryLock then
@@ -2444,6 +2510,7 @@ begin
         thr := FPools[t].Clean;
         if assigned(thr) then begin
           list.add(thr);
+          result := true;
         end;
 
         if FreeOnEmpty then begin
@@ -2455,7 +2522,8 @@ begin
       end;
     finally
       Unlock;
-    end;
+    end else
+      result := true;
 
     for t:= 0 to list.count-1 do begin
       thr := list[t];
@@ -2467,8 +2535,9 @@ begin
         thr.realthread.FreeOnTerminate := false;
         thr.terminate;
         //thr.Start;
-        thr.SignalAllForTerminate;
+//        thr.SignalAllForTerminate;//<called by terminate
         while thr.realthread.suspended do begin
+          Debug.log('Thread was suspended... odd');
           thr.terminate;
           thr.realthread.start;
         end;
@@ -2476,7 +2545,7 @@ begin
     end;
 
     for t:= 0 to list.count-1 do begin
-      Debug.Log('Adding '+list[t].nameex+' to termlist');
+{$IFDEF THREAD_TERMINATION_DEBUG}       Debug.Log('Adding '+list[t].nameex+' to termlist');{$ENDIF}
       termlist.add(list[t]);
     end;
     while CheckTermList and (HighPerformancemode) do begin
@@ -2485,6 +2554,7 @@ begin
   finally
     list.free;
   end;
+//  Debug.Log('Thread pool cleaner is finished.');
 
 end;
 
@@ -2503,6 +2573,26 @@ begin
   end;
 end;
 
+function TMasterThreadPool.CountAllThreads: int64;
+begin
+  Lock;
+  try
+    result := 0;
+    for var t := 0 to FPools.count-1 do begin
+      Fpools[t].Lock;
+      try
+        inc(result, FPools[t].FIncomingThreads.Count);
+        inc(result, FPools[t].Fthreads.Count);
+
+      finally
+        FPools[t].unlock;
+      end;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
 constructor TMasterThreadPool.Create;
 begin
   inherited;
@@ -2510,7 +2600,7 @@ begin
   termlist:= TSharedList<TMAnagedThread>.create;
   Debug.Log(self, 'Master Thread Pool Created');
 
-  StartCleaner;
+
 
 end;
 
@@ -2518,24 +2608,60 @@ destructor TMasterThreadPool.Destroy;
 var
   thr: TManagedThread;
 begin
-
+  Debug.Log('TMasterThreadPool.Destroy');
   HighPerformancemode := false;
+  Stopping := true;
   STopCleaner;
-  Fpools.free;
+  //sleep(1000);
+  Debug.Log('Cleaner Stopped');
+
+  Lock;
+  try
+    for var t:= 0 to Fpools.count-1 do begin
+      Fpools[t].ThreadPoolTimeout := 0;
+    end;
+  finally
+    Unlock;
+  end;
+
+
+  var tc := 0;
+  repeat
+    tc := countallthreads;
+    Debug.Log('There are still '+tc.tostring+' threads during TPM.Destroy');
+    if clean then
+      sleep(10)
+    else
+      sleep(1000);
+  until tc = 0;
 
 
   while termlist.count> 0 do begin
+    Debug.Log('Cleaning Threads from TermList '+termlist.count.tostring+' remain.');
     thr := termlist[0];
     termlist.delete(0);
+    Debug.Log('cleaning '+thr.classname);
     thr.waitfor;
+    Debug.Log('cleaning '+thr.classname+' ... thread finished');
     thr.waitForConclusion;
+    Debug.Log('cleaning '+thr.classname+' ... thread concluded');
     thr.WaitForLowLevel;
+    Debug.Log('cleaning '+thr.classname+' ... finished at the low level');
+    var s := thr.classname;
     thr.free;
+    Debug.Log('cleaning '+s+' ... thread freed');
     thr := nil;
 
   end;
+  while FPools.count > 0 do begin
+    FPools[FPools.count-1].free;
+    FPools.Delete(FPools.count-1);
+  end;
+
+  Fpools.free;
   inherited;
 
+  Debug.Log('freeing termlist');
   termlist.free;
 end;
 
@@ -2639,6 +2765,9 @@ procedure TMasterThreadPool.NoNeedthread(thr: TManagedthread);
 var
   tp: TThreadPoolBase;
 begin
+  if not stopping then
+    StartCleaner;
+
   if thr = nil then
     exit;
 
@@ -2670,6 +2799,7 @@ begin
     end else begin
       thr.realthread.Terminate;
       thr.WaitFor;
+      thr.evSleeping.signal(true);
       WaitForSignal(thr.evConcluded);
       thr.Detach;
       thr.Free;
@@ -2717,7 +2847,6 @@ end;
 
 procedure TMasterThreadPool.OnThreadExecute(sender: TExternalEventThread);
 var
-  t: NativeInt;
   tm: ticker;
 begin
 
@@ -2911,7 +3040,7 @@ begin
   if bWait then
   while (FIncomingThreads.count > 0) or (Fthreads.Count > 0) do begin
     sleep(1000);
-    Debug.ConsoleLog('Thread pool for '+self.Fc.ClassName+' still has '+FThreads.count.tostring+' threads + '+FIncomingThreads.count.tostring+' incoming.');
+    Debug.Log('Thread pool for '+self.Fc.ClassName+' still has '+FThreads.count.tostring+' threads + '+FIncomingThreads.count.tostring+' incoming.');
   end;
 
 end;
@@ -2941,7 +3070,9 @@ var
 begin
   Lock;
   try
+{$DEFINE SLEEP_IF_INCOMING}
 {$IFDEF SLEEP_IF_INCOMING}
+  if IsDebuggerAttached then
     while (FIncomingThreads.count > 2) and (Fthreads.count=0) do begin
       Unlock;
       sleep(10);
@@ -3105,6 +3236,7 @@ end;
 
 procedure oinit;
 begin
+  GUIThreadID := GetCurrentThreadID;
   gwatchthread := 0;
   KillFlag := false;
   Killed := false;
@@ -3116,11 +3248,11 @@ end;
 procedure ofinal;
 begin
 
-  TPM.WakeAndFreeallthreads;
-  TPM.StopCleaner;
+//  TPM.WakeAndFreeallthreads;
+//  TPM.StopCleaner;
   thread_shutdown_tracking_stage := 1;//<--notify if threads are still hanging around
   TPM.Shutdown := true;
-  TPM.freewiththreads;
+//  TPM.freewiththreads;
   TPM.free;
   TPM := nil;
   thread_shutdown_tracking_stage := 2;//<--serious errors if threads still hanging around
@@ -3413,6 +3545,32 @@ end;
 
 function TThreadManager.GetInfoList: TArray<TThreadInfo>;
 var
+  a,b: TArray<TThreadinfo>;
+
+begin
+  b := GetManagedList;
+  a := GetUnmanagedList(b);
+  setlength(result, length(a)+length(b));
+  var idx := 0;
+
+  for var t := 0 to high(b) do begin
+    result[idx] := b[t];
+    inc(idx);
+  end;
+
+  for var t := 0 to high(a) do begin
+    result[idx] := a[t];
+    inc(idx);
+  end;
+
+
+
+
+
+end;
+
+function TThreadManager.GetManagedList: TArray<TThreadInfo>;
+var
   t: ni;
 begin
 
@@ -3433,8 +3591,6 @@ begin
     finally
       Unlock;
     end;
-
-
 end;
 
 function TThreadManager.GetThreads(idx: integer): TManagedThread;
@@ -3446,6 +3602,74 @@ begin
   finally
     UnlockRead;
   end;
+end;
+
+function TThreadManager.GetUnmanagedList(managed_list_reference: TArray<TThreadinfo>): TArray<TThreadInfo>;
+begin
+  setlength(result, 0);
+{$IFDEF MSWINDOWS}
+  var hThreadSnap := INVALID_HANDLE_VALUE;
+  var te32 : THREADENTRY32;
+  var pid := GetCurrentProcessID;
+
+  // Take a snapshot of all running threads
+  hThreadSnap := CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD,0);
+  if( hThreadSnap = INVALID_HANDLE_VALUE ) then
+    exit();
+
+  // Fill in the size of the structure before using it.
+  te32.dwSize := sizeof(THREADENTRY32 );
+
+  // Retrieve information about the first thread,
+  // and exit if unsuccessful
+  if(not Thread32First( hThreadSnap, te32 ) ) then
+  begin
+    Debug.Log('Thread32First fail');
+    CloseHandle( hThreadSnap );     // Must clean up the snapshot object!
+    exit;
+  end;
+
+  // Now walk the thread list of the system,
+  // and display information about each thread
+  // associated with the specified process
+  setlength(result, 1024);
+  var idx := 0;
+  repeat
+    if( te32.th32OwnerProcessID = pid) then
+    begin
+      var bFound := false;
+      for var u := 0 to high(managed_list_reference) do begin
+        if managed_list_reference[u].threadid = te32.th32ThreadID then
+          bFound := true;
+      end;
+      if bFound then continue;//SKIP duplicate
+
+//      debug.Log('found thread');
+      if idx > high(result) then
+        setlength(result, length(result)+1024);
+
+      result[idx].spin := false;
+      result[idx].threadid := te32.th32ThreadID;
+      if result[idx].threadid = GUIThreadID then begin
+        result[idx].name := 'MAIN/APP/GUI';
+        result[idx].status := 'MAIN/APP/GUI';
+        result[idx].error := 'MAIN/APP/GUI';
+      end else begin
+        result[idx].name := 'unmanaged';
+        result[idx].status := 'unmanaged';
+        result[idx].error := 'unmanaged';
+      end;
+      result[idx].handle := INVALID_HANDLE_VALUE;
+      inc(idx);
+    end;
+  until not ( Thread32Next(hThreadSnap, te32 ) );
+
+  setlength(result, idx);
+//  debug.Log('finish');
+
+//  Don't forget to clean up the snapshot object.
+  CloseHandle( hThreadSnap );
+{$ENDIF}
 end;
 
 function TThreadManager.HasThread(thread: TManagedThread): boolean;
@@ -3662,6 +3886,12 @@ begin
 //  clx_windows.beep(50,50);
 end;
 
+
+function TThreadInfo.GetAge: ticker;
+begin
+  result := getticker-lastused;
+end;
+
 function TThreadInfo.GetPercentActiveTime(
   var previoustotal, previoussampletime: int64): single;
 var
@@ -3687,6 +3917,13 @@ begin
 
 end;
 
+procedure TThreadInfo.Init;
+begin
+  threadid := 0;
+  name := 'blocked';
+  status := 'blocked';
+end;
+
 procedure TThreadInfo.StartActiveTime;
 begin
   activestartTime := tickcount.GetHighResTicker;
@@ -3705,6 +3942,24 @@ begin
   TThread.Synchronize(aThread, athreadproc);
 end;
 
+constructor TRealManagedThread.Create;
+begin
+  inherited Create;
+end;
+constructor TRealManagedThread.Create(CreateSuspended: Boolean);
+begin
+  inherited Create(createsuspended);
+end;
+
+{$IF Defined(MSWINDOWS)}
+constructor TRealManagedThread.Create(CreateSuspended: Boolean; ReservedStackSize: NativeUInt);
+begin
+  inherited Create(createsuspended, reservedstacksize);
+end;
+
+{$ENDIF MSWINDOWS}
+
+
 function TRealManagedThread.WaitForEx(timeout: int64): boolean;
 {$IF Defined(MSWINDOWS)}
 var
@@ -3715,7 +3970,7 @@ var
 {$ENDIF}
 begin
 //  if FExternalThread then
-//    raise EThread.CreateRes(@SThreadExternalWait);
+//    raise EThread.Create8Res(@SThreadExternalWait);
   H[0] := Handle;
   var tmStart := GetTicker;
   if CurrentThread.ThreadID = MainThreadID then
@@ -3791,10 +4046,6 @@ begin
   ActiveNow := false;
 end;
 
-function TThreadInfo.GetAge: ticker;
-begin
-  result := GetTimeSince(LastUsed);
-end;
 
 { TAnonTask }
 
@@ -3805,11 +4056,14 @@ begin
 end;
 
 initialization
-  init.RegisterProcs('ManagedThread', oinit, nil, ofinal, nil, 'systemx,BackgroundThreads');
+  init.RegisterProcs('ManagedThread', oinit, nil, ofinal, nil, 'systemx');
+  debug.Log('Registered ManagedThread');
   dntdebug := 0;
   dntdebug_t := -1;
   gwatchthread := 0;
   ix := 0;
+  debug.Log('Registered ManagedThread --');
+  GUIThreadID := GetCurrentThreadID;
 
 
 finalization

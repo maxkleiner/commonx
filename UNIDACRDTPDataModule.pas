@@ -291,13 +291,37 @@ begin
       sessiondb.SpecificOptions.Values['MySQL.Protocol'] := 'mpSSL';
     end;
 
+//    reads.SpecificOptions.Values['Charset'] := 'utf8mb4';
+//    reads.SpecificOptions.Values['UseUnicode'] := 'True';
+//    writes.SpecificOptions.Values['Charset'] := 'utf8mb4';
+//    writes.SpecificOptions.Values['UseUnicode'] := 'True';
+//    sessiondb.SpecificOptions.Values['Charset'] := 'utf8mb4';
+//    sessiondb.SpecificOptions.Values['UseUnicode'] := 'True';
+
+
 
     //commit string
 
     writes.ConnectString := sWrites;
     Debug.Log(writes.ConnectString);
-    reads.ConnectString := sreads;
+    if zpos('provider name=mysql',lowercase(sWrites))>=0 then begin //todo 1:make this omre robust
+      writes.SpecificOptions.Values['Charset'] := 'utf8mb4';
+      writes.SpecificOptions.Values['UseUnicode'] := 'True';
+    end;
+
+
+    reads.ConnectString := sReads;
+    if zpos('provider name=mysql',lowercase(sReads))>=0 then begin //todo 1:make this omre robust
+      reads.SpecificOptions.Values['Charset'] := 'utf8mb4';
+      reads.SpecificOptions.Values['UseUnicode'] := 'True';
+    end;
+
     sessiondb.ConnectString := sSessiondb;
+    if zpos('provider name=mysql',lowercase(sSessiondb))>=0 then begin //todo 1:make this omre robust
+      sessiondb.SpecificOptions.Values['Charset'] := 'utf8mb4';
+      sessiondb.SpecificOptions.Values['UseUnicode'] := 'True';
+    end;
+
 
   finally
     nvp.free;
@@ -792,6 +816,7 @@ begin
   writes := TUniConnection.create(nil);
   sessiondb := TUniConnection.create(nil);
   reads := TUniConnection.create(nil);
+
   keybot_link := TBetterTcpClient.create(nil);
 
   DataModuleCreate(nil);
@@ -816,10 +841,15 @@ begin
     try
       Debug.Log(self,'Execute:'+sQuery);
 //      squery := StringReplace(sQuery, '''', '\''', [rfReplaceAll]);
-//      squery := StringReplace(sQuery, '"', '''', [rfReplaceAll]);
-      ds := connection.CreateDataSet(nil);
+//      squery := StringReplace(sQuery, '"', '''', [rfReplaceAll])
+      //ds := connection.CreateDataSet(nil);
+      var qq := TUniQuery.create(nil);
+      qq.Connection := connection;
+      ds := qq;
       try
-        ds.SQL.text := sQuery;
+        //qq.Options.TrimFixedChar :=false;
+//        qq.Options.TrimVarChar :=false;
+        qq.SQL.text := sQuery;
 
         var retry := 0;
         repeat
@@ -830,8 +860,9 @@ begin
             on E: Exception do begin
               inc(retry);
               Debug.Log('DB Exception :'+e.message+' ... will retry ... #'+retry.tostring);
-              if retry >= 10 then
+              if retry >= 4 then
                 raise;
+              sleep(1000*retry);
             end;
           end;
         until false;

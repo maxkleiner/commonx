@@ -7,6 +7,8 @@ unit soundtools;
 
 {$TypedAddress Off}
 {x$O-}
+{$DEFINE CANFFT}
+{x$DEFINE FFTNATIVE}
 
 {$DEFINE THREAD_SOUND_MODS}
 {x$DEFINE USE_PLAYBACK_INFO}
@@ -211,6 +213,7 @@ type
     function GetDeviceCount: ni;
     procedure SetDeviceName(const Value: string);
     function GetDeviceListH: IHolder<TStringlist>;
+    procedure SetShuttingDown(const Value: boolean);
   protected
     Factive: boolean;
     FFrequency: cardinal;
@@ -244,7 +247,7 @@ type
     function GetPosition_int64: int64;
     function GetPlayPosition: int64;
     function GEtNyquistFrequency: nativeint;
-    function GEtSampleRate: nativeint;
+    function GEtSampleRate: nativeint;virtual;
     procedure SetBufferSize(const Value: nativeint);
     function GetBufferSize: nativeint;
     function GetEngineSTartTime: int64;
@@ -252,6 +255,8 @@ type
     procedure ResolveDeviceName;virtual;
     procedure DeviceChanged;virtual;
   public
+    Fshuttingdown: boolean;
+
 {$IFDEF USE_PLAYBACK_INFO}
     playbackinfo: TSoundPlaybackInfo;
 {$ENDIF}
@@ -295,6 +300,7 @@ type
     property PlayOrigin: int64 read FPlayOrigin write FPlayOrigin;
     property Frequency: cardinal read FFrequency;
     property MuteAudio: boolean read GetMuteAudio write SetMuteAudio;
+    property ShuttingDown: boolean read FShuttingDown write SetShuttingDown;
     property Position_int64: int64 read GetPosition_int64;
     procedure ResetPlayOrigin;
     property EngineStartTime : int64 read GetEngineSTartTime write SetEngineStartTime;
@@ -390,22 +396,26 @@ type
   Tmodosc_Fade = class(TSoundModifierOscillator)
   private
     FFadeDurationInSeconds: nativefloat;
-    FDirection: TFadeDirection;
     FEnabled: boolean;
     FStartFadeOnNextSample: boolean;
     FFadeEndSample: int64;
     FFadeStartSample: int64;
     FCurrentFader: nativefloat;
     FAutomate: boolean;
+    FFadeTo: nativefloat;
+    FFadeStartLevel: nativefloat;
+
     property FadeDurationInSeconds: nativefloat read FFadeDurationInSeconds write FFadeDurationInSeconds;
-    property Direction: TFadeDirection read FDirection write FDirection;
 
   public
+
 
     procedure o(mt: ToscMessageType; out ss: TStereoSoundSample; iSampletime: int64); override;
 
 
-    procedure FadeNow(rDurationInSeconds: nativefloat; dir: TFadeDirection);
+    procedure FadeNow(rDurationInSeconds: nativefloat; dir: TFadeDirection);overload;
+    procedure FadeNow(rDurationInSeconds: nativefloat; toLevel: nativefloat);overload;
+    constructor Create; override;
 
     property CurrentFader: nativefloat read FCurrentFader write FCurrentFader;
     property Automate: boolean read FAutomate write FAutomate;
@@ -500,6 +510,8 @@ type
     procedure DOit(b: POscBufferInfo; iChannel: integer);
     procedure Buffer_Process_Sync(b: POscBufferInfo);override;
   public
+    //Todo 1: FIX the PHASE problem when shifting:
+    //http://blogs.zynaptiq.com/bernsee/pitch-shifting-using-the-ft/
     property ShiftOctaves: nativefloat read FShiftOctaves write FShiftOctaves;
   end;
 
@@ -615,8 +627,10 @@ type
     procedure Init;override;
   public
     RunningData: array [0..2] of array [0..5] of TTurbRunningData;
+    QuickMode: boolean;
     destructor Destroy;override;
     procedure DoExecute;override;
+
     property FileName: string read FFileName write FFilename;
     property Rebuild: boolean read FRebuild write FRebuild;
     function TurbFileName: string;
@@ -765,8 +779,10 @@ type
 
 
 
-{$IFDEF MSWINDOWS}
+{$IFDEF OLDEQ}
+{$IFDEF CANFFT}
 procedure ApplyEqToStereoBuffer(buf: P16BitStereoSoundSample; iSTereoSampleCount: nativeint; Feq: PEQInfo);
+{$ENDIF}
 {$ENDIF}
 
 procedure SoundDebug(s: string);
@@ -777,7 +793,7 @@ function ring_subtract(iptr: nativeint; buffer_size: nativeint; iDec: nativeint 
 
 
 
-{$IFDEF MSWINDOWS}
+{$IFDEF CANFFT}
 procedure SoundStretchVerify(sIn, sOut: string;
   rSourceTempo, rTargetTempo: nativefloat; iPitch: integer);
 {$ENDIF}
@@ -828,9 +844,13 @@ var
 implementation
 
 uses
-{$IFDEF MSWINDOWS}
+{$IFDEF CANFFT}
+{$IFDEF FFTNATIVE}
+  ffts,fftcomplexs,
+{$ELSE}
   fftw_interface,
-{$ENDIF MSWINDOWS}
+{$ENDIF}
+{$ENDIF}
   beeper;
 
 
@@ -2084,6 +2104,11 @@ begin
 
 end;
 
+procedure TAbstractSoundDevice.SetShuttingDown(const Value: boolean);
+begin
+  FShuttingDown := Value;
+end;
+
 procedure TAbstractSoundDevice.UDPOnReceive(AThread: TIdUDPListenerThread; const AData: TIdBytes; ABinding: TIdSocketHandle);
 var
   p: PRFAPacket;
@@ -2382,7 +2407,7 @@ end;
 
 
 
-
+{$IFDEF OLDEQ}
 {$IFDEF MSWINDOWS}
 procedure ApplyEqToStereoBufferPart(buf: P16BitStereoSoundSample; iSTereoSampleCount: nativeint; Feq: PEQInfo);
 var
@@ -2549,7 +2574,7 @@ begin
 
 end;
 {$ENDIF}
-
+{$ENDIF OLDEQ}
 
 
 
@@ -2592,8 +2617,13 @@ begin
   Buffer_FetchForward(b);
   if NoiseTest then begin
     for t:= 0 to (b.Length-1) do begin
+{$IFDEF FFTNATIVE}
+      b.FFT_Spatial[0][t].re := (random(2000)/1000)-1;
+      b.FFT_Spatial[1][t].re := (random(2000)/1000)-1;
+{$ELSE}
       b.FFT_Spatial[0][t] := (random(2000)/1000)-1;
       b.FFT_Spatial[1][t] := (random(2000)/1000)-1;
+{$ENDIF}
     end;
   end;
 
@@ -2663,8 +2693,14 @@ begin
 
     //if the sample is useful --------------------------------------------------
 
+    {$IFDEF FFTNATIVE}
+    ss2.Left := b.FFT_Spatial[0][iOFF].re;
+    ss2.Right := b.FFT_Spatial[1][iOFF].re;
+    {$ELSE}
     ss2.Left := b.FFT_Spatial[0][iOFF];
     ss2.Right := b.FFT_Spatial[1][iOFF];
+    {$ENDIF}
+
 
 
     if iCount > 1 then
@@ -2751,7 +2787,6 @@ begin
   iWindowLength := b.Length;
 
         //eq shit
-
         for t := 0 to (iWindowlength)-1 do begin
           rr := t/iWindowLength;
 //          if abs(rr-CrossOver) <= EQ_GUTTER then begin
@@ -2760,13 +2795,21 @@ begin
 //            b.FFT_Frequency[iChannel][t].r := b.FFT_Frequency[iChannel][t].r * rrr;
 //          end else
           if rr < CrossOver then begin
-            b.FFT_Frequency[iChannel][t].i := b.FFT_Frequency[iChannel][t].i * Bass;
-            b.FFT_Frequency[iChannel][t].r := b.FFT_Frequency[iChannel][t].r * Bass;
+            {$IFDEF FFTNATIVE}
+            b.FFT_Frequency[iChannel][t].im := b.FFT_Frequency[iChannel][t].im * Bass;
+            b.FFT_Frequency[iChannel][t].re := b.FFT_Frequency[iChannel][t].re * Bass;
+            {$ELSE}
+            b.FFT_Frequency[iChannel][t].im := b.FFT_Frequency[iChannel][t].im * Bass;
+            b.FFT_Frequency[iChannel][t].re := b.FFT_Frequency[iChannel][t].re * Bass;
+            {$ENDIF}
           end else begin
-            b.FFT_Frequency[iChannel][t].i := b.FFT_Frequency[iChannel][t].i * Treble;
-            b.FFT_Frequency[iChannel][t].r := b.FFT_Frequency[iChannel][t].r * Treble;
-          end;
+            {$IFDEF FFTNATIVE}
+            b.FFT_Frequency[iChannel][t].im := b.FFT_Frequency[iChannel][t].im * Treble;
+            b.FFT_Frequency[iChannel][t].re := b.FFT_Frequency[iChannel][t].re * Treble;
+            {$ELSE}
+            {$ENDIF}
 
+          end;
         end;
 
 end;
@@ -2806,7 +2849,12 @@ var
   t: nativeint;
   rr: nativefloat;
   rDivisor: nativefloat;
+{$IFDEF FFTNATIVE}
+  tempArray: TArray<TComplex>;
+{$ELSE}
   tempArray: PAfftw_complex;
+{$ENDIF}
+
   srcidx,lastsrcidx: nativeint;
   iSize: nativeint;
 begin
@@ -2814,7 +2862,11 @@ begin
   iWindowLength := b.Length;
 
       iSize := sizeof(fftw_complex)*iWindowLength;
+{$IFDEF FFTNATIVE}
+      setlength(temparray, iWindowLength);
+{$ELSE}
       GetMem(tempArray, iSize);     //todo 1 - GEtMEm has the potential to block and probably shouldn't be done in an audio thread
+{$ENDIF}
 
       if ShiftOctaves = 0 then exit;
 
@@ -2834,8 +2886,8 @@ begin
 
           if srcidx >= iWindowLength then
             continue;
-          tempArray[t].i := tempArray[t].i + b.FFT_Frequency[iChannel][srcidx].i;
-          tempArray[t].r := tempArray[t].r + b.FFT_Frequency[iChannel][srcidx].r;
+          tempArray[t].im := tempArray[t].im + b.FFT_Frequency[iChannel][srcidx].im;
+          tempArray[t].re := tempArray[t].re + b.FFT_Frequency[iChannel][srcidx].re;
           lastsrcidx := srcidx;
         end;
 
@@ -2856,8 +2908,8 @@ begin
           srcidx := round(t * rDivisor);
           if srcidx >= iWindowLength then
             continue;
-          tempArray[srcidx].i := tempArray[srcidx].i + b.FFT_Frequency[iChannel][t].i;
-          tempArray[srcidx].r := tempArray[srcidx].r + b.FFT_Frequency[iChannel][t].r;
+          tempArray[srcidx].im := tempArray[srcidx].im + b.FFT_Frequency[iChannel][t].im;
+          tempArray[srcidx].re := tempArray[srcidx].re + b.FFT_Frequency[iChannel][t].re;
 
         end;
 
@@ -2878,7 +2930,9 @@ begin
 
 
       end;
+{$IFnDEF FFTNATIVE}
   freemem(temparray);
+{$ENDIF}
 end;
 
 
@@ -3002,8 +3056,8 @@ begin
         rBand := Bands[u];
         if rBand <> 1 then begin
           for t := rBucketBottom to rBucketTop-1 do begin
-            b.FFT_Frequency[iChannel][t].i := b.FFT_Frequency[iChannel][t].i * rBand;
-            b.FFT_Frequency[iChannel][t].r := b.FFT_Frequency[iChannel][t].r * rBand;
+            b.FFT_Frequency[iChannel][t].im := b.FFT_Frequency[iChannel][t].im * rBand;
+            b.FFT_Frequency[iChannel][t].re := b.FFT_Frequency[iChannel][t].re * rBand;
           end;
         end;
       end;
@@ -3107,8 +3161,13 @@ begin
         eq.o(mtGetSample, ssJUnk, round(u+b.Start-(DelayTimeR *44100)));
         ss.Right := ssJunk.Right;
       end;
+{$IFDEF FFTNATIVE}
+      b.FFT_Spatial[0][u].Re := b.FFT_Spatial[0][u].re+(ss.Left*Mix);
+      b.FFT_Spatial[1][u].re := b.FFT_Spatial[1][u].re+(ss.Right*Mix);//todo : SSE optimize
+{$ELSE}
       b.FFT_Spatial[0][u] := b.FFT_Spatial[0][u]+(ss.Left*Mix);
       b.FFT_Spatial[1][u] := b.FFT_Spatial[1][u]+(ss.Right*Mix);//todo : SSE optimize
+{$ENDIF}
     end;
     eq.o(mtEndWindow, ss, b.Start+0);
 //  end;
@@ -3269,13 +3328,15 @@ begin
 end;
 
 procedure Tcmd_GenerateTurbulenceData.DoExecute;
+const
+  TURB_ASSUMED_SAMPLE_RATE = 44100;
 begin
   inherited;
   sso := nil;
   modeq := nil;
 
   try
-    sso := TSoundStreamOscillator.Create;
+    sso := TSoundStreamOscillator.Create();
     sso.fileName := FileName;
   //  sso.stream.BufferEntireFile := true;
 
@@ -3286,7 +3347,8 @@ begin
     modeq.Bands[1] := 1;
     modeq.Bands[2] := 0;
     modeq.source := sso;
-    sso.AddModifier(modeq, false);
+    if not quickmode then
+      sso.AddModifier(modeq, false);
 
 
 
@@ -3294,17 +3356,19 @@ begin
 
 
     if fileexists(TurbFileName) and (not REbuild) then
-      LoadFromFile
-    else begin
-      BuildFrames(0);
-      BuildFrames(1);
-      BuildFrames(2);
-
-
-
-
-      SavetoFile;
+    try
+      LoadFromFile;
+      exit;
+    except
     end;
+    BuildFrames(0);
+    BuildFrames(1);
+    BuildFrames(2);
+
+
+
+
+    SavetoFile;
   finally
 
     if assigned(sso) then
@@ -3884,8 +3948,8 @@ begin
     mtEndWindow: begin
     end;
     mtGetSample: begin
-//      s.left := SineSynth(iSampleTime, 1000, 0.25);
-//      s.right := SineSynth(iSampleTime, 1000, 0.25);
+//      s.left := SineSynth(iSampleTime, 300, 0.25);
+//      s.right := SineSynth(iSampleTime, 300, 0.25);
 //      exit;
 
       if bNewWindow then begin
@@ -4175,18 +4239,29 @@ end;
 
 procedure Tmodosc_Fade.FadeNow(rDurationInSeconds: nativefloat; dir: TFadeDirection);
 begin
+  if dir = fdOut then
+    FadeNow(rDurationInSeconds, 0.0)
+  else
+    FadeNow(rDurationInSeconds, 1.0);
+end;
+
+constructor Tmodosc_Fade.Create;
+begin
+  inherited;
+  FCurrentFader := 1.0;
+end;
+
+procedure Tmodosc_Fade.FadeNow(rDurationInSeconds, toLevel: nativefloat);
+begin
+  FFadeto := toLevel;
   Automate := true;
+
+
   if rDurationInSeconds < 0.01 then
     rDurationInSeconds := 0.01;
 
   FStartFadeOnNextSample := true;
   FFadeDurationInSeconds := rDurationInSeconds;
-  FDirection := dir;
-
-  if dir = fdIn then
-    FCurrentFader := 0.0
-  else
-    FCurrentFader := 1.0;
 
 end;
 
@@ -4201,30 +4276,17 @@ begin
       FFadeStartSample := iSampleTime;
       FFadeEndSample := iSampleTime + round(Self.FadeDurationInSeconds*self.SampleRate);
       FStartFadeOnNextSample := false;
+      FFadeStartLevel := FCurrentFader;
     end;
 
     if Automate then begin
-      if direction = fdIn then begin
-        if iSampleTime <= FFadeStartSample then begin
-          FCurrentFader := 0.0;
-
-        end else
         if iSampleTime >= FFadeEndSample then begin
-          FCurrentFader := 1.0;
+          FCurrentFader := FFadeTo;
           Automate := false;
-        end else
-          FCurrentFader := (iSAmpletime-FFadeStartSample) / (FFadeEndSample-FFadeStartSample);
-      end else begin
-        if iSampleTime <= FFadeStartSample then begin
-          FCurrentFader := 1.0;
-          //Automate := false;
-        end else
-        if iSampleTime >= FFadeEndSample then begin
-          FCurrentFader := 0.0;
-          AutoMate := false;
-        end else
-          FCurrentFader := 1-((iSAmpletime-FFadeStartSample) / (FFadeEndSample-FFadeStartSample));
-      end;
+        end else begin
+          var r := (iSAmpletime-FFadeStartSample) / (FFadeEndSample-FFadeStartSample);
+          FCurrentFader := ((FFadeTo-FFadeStartLevel) * (r)) + FFadeStartLevel;
+        end;
     end;
 
     ss := ss * FCurrentFader;

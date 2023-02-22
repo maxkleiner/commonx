@@ -1,9 +1,12 @@
 unit PerfMessage;
-
+{$I DelphiDefs.inc}
 interface
 
 uses
-  typex, systemx, numbers, sysutils;
+{$IFDEF NEED_FAKE_ANSISTRING}
+  ios.stringx.iosansi,
+{$ENDIF}
+  stringx, typex, systemx, numbers, sysutils, tickcount;
 
 {
 
@@ -38,6 +41,12 @@ const
   NT_IO = 1;
   NT_BUCKETFILL = 1;
   NT_CYCLES = 2;
+  NT_CPU_OVERALL = 3;
+  NT_CPU = 4;
+  NT_DISK = 5;
+  NT_NIC = 6;
+  NT_RAM = 7;
+
   FLAGMASK = $B0;
   TYPMASK=$3f;
 
@@ -67,9 +76,14 @@ type
     property w: int64 read Fw write SetW;
     procedure incw(by: int64);inline;
     procedure incr(by: int64);inline;
+    function percent: double;
 
   end;
   PPerfNode = ^TPerfNode;
+  TPerfNodeEx = packed record
+    received: ticker;
+    node: TPerfNode;
+  end;
 
   TPerfDescriptor = packed record
   public
@@ -97,12 +111,21 @@ type
   end;
 
   TPerfMessageHeader = packed record
+    zero: byte;
+    Fcomputername: array[0..15] of ansichar;
     processid: int64;
     ticker: int64;
     startnode: smallint;
     nodesinmessage: smallint;
     totalnodes: smallint;
     mtyp: byte;
+
+  private
+    function GetComputerName: string;
+    procedure SetComputername(const Value: string);
+  public
+    procedure Init;
+    property ComputerName: string read GetComputerName write SetComputername;
   end;
 
 
@@ -111,11 +134,13 @@ implementation
 { TPerfDescriptor }
 
 function TPerfDescriptor.GetDesc: string;
+var
+  ss: AnsiString;
 begin
   var s: PAnsiChar := @Fdesc[0];
   if s = nil then
     exit('');
-  var ss: ansistring := StrPas(s);
+  ss := AnsiString(StrPasEx(s));
   result := string(ss);
 
 end;
@@ -178,6 +203,13 @@ begin
   id := -1;
 end;
 
+function TPerfNode.percent: double;
+begin
+  if w= 0 then
+    exit(0);
+  result := r/w;
+end;
+
 procedure TPerfNode.SetBusyR(const Value: boolean);
 begin
   BitSet(@Ftyp, 7, value);
@@ -224,6 +256,43 @@ begin
 
   node.id := value;
   desc.id := value;
+
+
+end;
+
+{ TPerfMessageHeader }
+
+function TPerfMessageHeader.GetComputerName: string;
+begin
+{$IFDEF NEED_FAKE_ANSISTRING}
+  setlength(result, length(FComputerName));
+  fillmem(@result[low(result)], length(result)*sizeof(char), 0);
+
+  var outidx := 0;
+  while outidx < length(FComputerName) do begin
+    result[STRZ+outidx] := char(FComputername[outidx]);
+  end;
+{$ELSE}
+  result := string(Fcomputername);
+{$ENDIF}
+end;
+
+procedure TPerfMessageHeader.init;
+begin
+  zero := 0;
+  FillMem(@Fcomputername[0], length(Fcomputername), 0);
+end;
+
+procedure TPerfMessageHeader.SetComputername(const Value: string);
+var
+  astr: ansistring;
+begin
+  astr := ansistring(value);
+{$IFDEF NEED_FAKE_ANSISTRING}
+  movemem32(@Fcomputername[0], astr.addrof[STRZ], lesserof(length(astr)+1, length(Fcomputername)));
+{$ELSE}
+  movemem32(@Fcomputername[0], @astr[low(astr)], lesserof(length(astr)+1, length(Fcomputername)));
+{$ENDIF}
 
 
 end;

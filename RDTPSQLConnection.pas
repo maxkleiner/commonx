@@ -10,9 +10,7 @@ interface
 
 
 uses
-  StorageEngineTypes, classes, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
-
-
+  StorageEngineTypes, classes, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 type
   TRDTPSQLConnectionClient = class(TGenericRDTPClient)
@@ -102,7 +100,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Test():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -129,7 +127,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.Test_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -149,7 +147,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Test_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -165,7 +163,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.WriteQuery(sQuery:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -193,7 +191,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteQuery_Async(sQuery:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -214,7 +212,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.WriteQuery_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -230,7 +228,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadyToWriteBehind():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -257,7 +255,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.ReadyToWriteBehind_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -277,7 +275,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadyToWriteBehind_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -293,7 +291,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteBehind(sQuery:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -318,7 +316,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteBehind_Async(sQuery:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -339,7 +337,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadQuery(sQuery:string):TSERowSet;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -367,7 +365,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.ReadQuery_Async(sQuery:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -388,7 +386,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadQuery_Response():TSERowSet;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -404,7 +402,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.BackProc(exe_no_path:string; commandlineparams:string; backinputstringcontent:string; backinputfile:string; backoutputfile:string):TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -436,7 +434,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.BackProc_Async(exe_no_path:string; commandlineparams:string; backinputstringcontent:string; backinputfile:string; backoutputfile:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -461,7 +459,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.BackProc_Response():TStream;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -477,7 +475,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.BeginTransaction();
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -501,7 +499,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.BeginTransaction_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -521,7 +519,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Commit():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -548,7 +546,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.Commit_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -568,7 +566,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Commit_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -584,7 +582,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Rollback():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -611,7 +609,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.Rollback_Async();
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -631,7 +629,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.Rollback_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -647,7 +645,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.BeginTransactionOn(channel_const:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -672,7 +670,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.BeginTransactionOn_Async(channel_const:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -693,7 +691,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.CommitOn(channel_const:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -718,7 +716,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.CommitOn_Async(channel_const:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -739,7 +737,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.RollbackOn(channel_const:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -764,7 +762,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.RollbackOn_Async(channel_const:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -785,7 +783,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadOn(channel_const:integer; query:string):TSERowSet;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -814,7 +812,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.ReadOn_Async(channel_const:integer; query:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -836,7 +834,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.ReadOn_Response():TSERowSet;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -852,7 +850,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.WriteOn(channel_const:integer; query:string):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -881,7 +879,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteOn_Async(channel_const:integer; query:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -903,7 +901,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.WriteOn_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -919,7 +917,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteBehindOn(channel_const:integer; query:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -945,7 +943,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.WriteBehindOn_Async(channel_const:integer; query:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -967,7 +965,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.GetNextID(key:string):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -995,7 +993,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.GetNextID_Async(key:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1016,7 +1014,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.GetNextID_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -1032,7 +1030,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.SetNextID(key:string; id:int64);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1058,7 +1056,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.SetNextID_Async(key:string; id:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1080,7 +1078,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.GetNextIDEx(key:string; table:string; field:string; count:int64):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1111,7 +1109,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TRDTPSQLConnectionClient.GetNextIDEx_Async(key:string; table:string; field:string; count:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -1135,7 +1133,7 @@ end;
 //------------------------------------------------------------------------------
 function TRDTPSQLConnectionClient.GetNextIDEx_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

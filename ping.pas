@@ -147,7 +147,7 @@ procedure Tcmd_Ping.DoExecute;
 begin
   inherited;
   Fresult := false;
-  Fresult := PingServer(Host);
+//  Fresult := PingServer(Host);
 
 end;
 

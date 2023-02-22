@@ -1,17 +1,17 @@
 unit commands_http;
 
-
 interface
 
 uses
-  commandprocessor, httpclient, sysutils, tickcount, https;
+  betterobject, commandprocessor, httpclient, sysutils, tickcount, httpclient_2020, classes, helpers_stream, HTTPTypes;
 
 type
   Tcmd_HTTPDownload = class(TCommand)
   private
     FURL: string;
-    FClient: THTTPSCLient;
     FTimeout: ticker;
+    results:  THTTPResults;
+    alternate_output_stream: IHolder<TStream>;
     function GetTimeout: ticker;
     procedure SetTimeout(const Value: ticker);
   public
@@ -19,7 +19,6 @@ type
     destructor Destroy;override;
 
     property URL: string read FURL write FURL;
-    property Client: THTTPCLient read FClient;
 
     procedure DoExecute;override;
     procedure OnHTTPProgress(pos, max: int64);
@@ -47,23 +46,20 @@ implementation
 constructor Tcmd_HTTPDownload.Create;
 begin
   inherited;
-  FClient := THTTPCLient.create;
   FTimeout := 300000;
 end;
 
 destructor Tcmd_HTTPDownload.Destroy;
 begin
-  FClient.free;
   inherited;
 end;
 
 procedure Tcmd_HTTPDownload.DoExecute;
 begin
   inherited;
-  FClient.OnProgress := self.OnHTTPProgress;
-  FClient.TimeOut := Timeout;
-  FClient.Get(URL, '');
-//  beeper.beep(1000,100);
+  status := 'GET '+url;
+
+  results := HTTPSGet(URL,alternate_output_stream, self);
 end;
 
 function Tcmd_HTTPDownload.GetTimeout: ticker;
@@ -88,8 +84,27 @@ end;
 procedure Tcmd_HTTPDownLoadToFile.DoExecute;
 begin
   if (not IgnoreIfTargetExists) or (not FileExists(localfile)) then begin
+    alternate_output_stream := THolder<TStream>.create;
+    var fs := TFileStream.create(localfile, fmCreate);
+    alternate_output_stream.o := fs;
     inherited;
-    Client.SaveToFile(LocalFile);
+
+
+    if results.bodystream =nil then
+      exit;
+    if results.bodystream.o = nil then
+      exit;
+
+{    var fs := TFileStream.create(localfile, fmCreate);
+    try
+      results.bodystream.o.Seek(0, soBeginning);
+      Stream_GuaranteeCopy(results.bodystream.o, fs, results.bodystream.o.Size);
+    finally
+      fs.free;
+    end;
+ }
+
+
   end;
 
 end;

@@ -6,26 +6,30 @@ uses
 {$IFDEF MSWINDOWS}
   ActiveX,
 {$ENDIF}
-  SysUtils, Classes, sockfix, RDTPServerList, RDTPMultiplexerServer, applicationparams, rdtpprocessor,orderlyinit,
+  orderlyinit,
+  SysUtils, Classes, sockfix, RDTPServerList, RDTPMultiplexerServer, applicationparams, rdtpprocessor,
   simpleabstractprivateserversocket, simplereliableudp, typex, skill, herro, debug;
 
 type
   TIPClientLocal = TCustomIPClient;
 
   TdmRDTPMultiServer = class(TDataModule)
-    tcp: TTCPServer;
     procedure DataModuleCreate(Sender: TObject);
     procedure tcpAccept(Sender: TObject; ClientSocket: TIPClientLocal);
     procedure DataModuleDestroy(Sender: TObject);
   private
+
+
     FOnIdle: TRDTPIdleEvent;
     procedure udpAccept(endpoint: TReliableUDPEndpoint);
 
     { Private declarations }
   public
+    tcp: TTCPServer;
     udp: TMultiplexedUDPServer;
     { Public declarations }
     property OnIdle: TRDTPIdleEvent read FOnIdle write FOnIdle;
+    procedure CloseStuff;
   end;
 
 var
@@ -38,11 +42,18 @@ implementation
 {$R *.dfm}
 
 
+procedure TdmRDTPMultiServer.CloseStuff;
+begin
+  tcp.active := false;
+  udp.Active := false;
+end;
+
 procedure TdmRDTPMultiServer.DataModuleCreate(Sender: TObject);
 var
   ap:  TAppParams;
   t: ni;
 begin
+  tcp := TTcpServer.create(self);
 
   ap := NeedAppParams;
   try
@@ -67,7 +78,7 @@ begin
       rdtpservers.UnlockRead;
     end;
 
-    //speech.SayNatural('Listening on port '+tcp.localport);
+    Debug.log('Listening on port '+tcp.localport);
   finally
     NoNeedAppParams(ap);
   end;
@@ -137,8 +148,23 @@ begin
 
 end;
 
+procedure oinit;
+begin
+  //
+end;
+
+procedure ofinal;
+begin
+//  if dmRDTPMultiServer <> nil then begin
+//    dmRDTPMultiServer.free;
+//    dmRDTPMultiServer := nil;
+//  end;
+
+end;
 
 initialization
   G_RDTP_DEFAULT_MULTIPLEXER_PORT := 420;
+
+  init.registerprocs('uDmRDTPMultiplexer', oinit, ofinal, 'CommandProcessor');
 
 end.

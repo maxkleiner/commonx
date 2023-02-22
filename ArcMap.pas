@@ -97,9 +97,10 @@ end;
 
 procedure TArcMap.Detach;
 begin
-  inherited;
+
   fs.Free;
   fs := nil;
+  inherited;
 
 end;
 
@@ -146,6 +147,11 @@ var
 begin
   lock;
   try
+    if fs = nil then begin
+      Debug.Log('Arc Map filestream is nil, halting system in 30 seconds.');
+      sleep(30000);
+      halt;
+    end;
     ent := GetEntry(revidx);
     ent.logid := ent.logid + 1;
     PutEntry(revidx, ent, true);

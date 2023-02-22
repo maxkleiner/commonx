@@ -52,7 +52,7 @@ type
   end;
 
 var
-  DOCM: TDataObjectCacheManager;
+  DOCM: TDataObjectCacheManager = nil;
 
 
 implementation
@@ -360,7 +360,7 @@ end;
 
 
 initialization
-  orderlyinit.init.RegisterProcs('DataObjectCacheManager', oinit, ofinal, 'ManagedThread,SimpleReliableUDP');
+  orderlyinit.init.RegisterProcs('DataObjectCacheManager', oinit, ofinal, 'ManagedThread,SimpleReliableUDP,DataObjectFactory');
 
 
 finalization

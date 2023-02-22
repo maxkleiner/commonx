@@ -3,7 +3,7 @@ unit FEC;
 interface
 
 uses
-  idglobal, typex, systemx, BetterIdUDPServer,tickcount, sharedobject, classes, BetterIdUDPBase,Betteridsockethandle, numbers, debug, sysutils, idstackconsts, simplequeue, backgroundthreads, managedthread;
+  idglobal, typex, systemx, BetterIdUDPServer, tickcount, sharedobject, classes, BetterIdUDPBase,Betteridsockethandle, numbers, debug, sysutils, idstackconsts, simplequeue, backgroundthreads, managedthread;
 {x$INLINE AUTO}
 {$IFDEF MSWINDOWS}
   {$DEFINE QUICKINIT}
@@ -957,7 +957,7 @@ end;
 constructor TFECServer.Create(AOwner: TComponent);
 begin
   inherited;
-  ics(csLock);
+  ics(csLock, classname);
 
   fecs := TFecConstructors.Create;
   queue_in := TSimplePAcketInQueue.create(nil, nil);

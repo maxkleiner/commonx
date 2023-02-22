@@ -9,7 +9,7 @@ uses debug, tickcount, sysutils, sharedobject, systemx, generics.collections.fix
 
 
 var
-  GL: TMasterGameList;
+  GL: TMasterGameList = nil;
 
 implementation
 uses TowerGameAI;
@@ -27,7 +27,8 @@ end;
 procedure ofinal;
 begin
 //  raise Exception.create('unimplemented');
-  GL.free;
+  if assigned(GL) then
+    GL.free;
 
 
 end;

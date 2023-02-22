@@ -12,7 +12,7 @@ unit XMLTools;
 
 interface
 
-uses debug, betterobject, generics.collections.fixed, Classes, SysUtils, windows, dialogs, namevaluepair, variants, FileCtrl, ComObj, activex, MSXML2_TLB, commandprocessor, commandicons;
+uses debug, betterobject, generics.collections.fixed, Classes, SysUtils, windows, namevaluepair, variants, ComObj, activex, MSXML2_TLB, commandprocessor, commandicons;
 
 type
   XMLPArseException = class(Exception);
@@ -59,6 +59,7 @@ type
     function GetValue: string;
     function GetIntegerValue: integer;
     procedure SetIntegerValue(const Value: integer);
+    function GetElementsByVariant(sNameOrIndex: variant): TXMLElement;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -80,6 +81,7 @@ type
     property ElementsByIndex[idx: integer]: TXMLElement read GetElementsByIndex;
     //Retrieves an individual TXMLElement class by index that is CONTAINED within this element. Read ElementCount to determine how many there are.
     property Elements[sName :string; iInstance: integer]: TXMLElement read GetElements;
+    property E[sNameOrIndex :variant]: TXMLElement read GetElementsByVariant;default;
     //Retrieves an individual TXMLElement class by NAME that is CONTAINED
     //within this element. There can be multiple elements with the same name
     //underneath the current element, so this Array property is 2-dimensional.
@@ -442,6 +444,15 @@ begin
   result := FElements[idx];
 
 end;
+function TXMLElement.GetElementsByVariant(sNameOrIndex: variant): TXMLElement;
+begin
+  if vartype(sNameOrIndex) in [varInt64,varInteger] then
+    result := GetElementsByIndex(sNameOrIndex)
+  else
+    result := GetElements(sNameOrIndex,0);
+
+end;
+
 //------------------------------------------------------------------------------
 function TXMLElement.HasElement(sName: string): boolean;
 //p: sName: the Tag name of the element you are looking for.

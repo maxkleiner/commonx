@@ -4,7 +4,7 @@ unit DirFile;
 //reusable in other situations.
 
 interface
-uses sysutils, classes, filefind, helpers_stream, numbers, systemx,
+uses sysutils, classes, filefind, helpers_stream, numbers, systemx, typex,
 {$IFDEF WINDOWS}
     winapi.windows,
 {$ENDIF}
@@ -30,10 +30,12 @@ TFileInformation = class(Tobject)
     FIsFolder: boolean;
     FUniversalAttributes: integer;
     procedure SetAtributes(const Value: TFileAttributes);
+    function GetDateUTC: TDateTime;
+    procedure SetDateUTC(const Value: TDateTime);
   protected
     FSize: int64;
     FFullName: string;
-    FFileDate: TDateTime;
+    FFileDateUTC: TDateTime;
     FAttributes: TFileAttributes;
     bAttributesFetched: boolean;
     function GetName: string;
@@ -54,6 +56,7 @@ TFileInformation = class(Tobject)
     procedure SetFullName(str: string);
   public
     constructor Create;reintroduce; virtual;
+    constructor CopyCreate(src: Tfileinformation);
     procedure Invalidate;
     procedure Refresh;
     property Path: string read GetPath write SetPath;
@@ -78,6 +81,7 @@ TFileInformation = class(Tobject)
     //Returns the Size of the file.
     property Date: TDateTime read GetDate write SetDate;
     //Returns the date-time stamp of the file in Pascal datetime format.
+    property DateUTC: TDateTime read GetDateUTC write SetDateUTC;
 
     function IsCompressed: boolean;
     property IsFolder: boolean read FIsFolder write FIsFolder;
@@ -85,13 +89,26 @@ TFileInformation = class(Tobject)
     procedure RefreshUniversalAttributes;
     property UniversalAttributes: integer read FUniversalAttributes write FUniversalAttributes;
 end;
+
+
+
 function LastPos(sub,s : string):integer;
 function GetFileSize(sFile: string): int64;
 function GetFileDate(sFile: string): TDateTime;
+function FullFilleNametoRelative(sRelativeFolder: string; sFullFileName: string): string;
 
 implementation
 uses
   dir;
+
+function FullFilleNametoRelative(sRelativeFolder: string; sFullFileName: string): string;
+begin
+  result := stringreplace(sFullFileName, sRelativeFolder, '', [rfReplaceAll, rfIgnoreCase]);
+  if result = sFullFileName then
+    raise ECritical.create(sFullFilename+' is not a relative file name to '+sRelativeFolder);
+
+
+end;
 
 function GetFileDate(sFile: string): TDateTime;
 var
@@ -308,23 +325,39 @@ function TfileInformation.GetDate: TDateTime;
 var
   iA: integer;
 begin
-  if Real(FFileDate) <> 0.0 then
-    result := FFileDate
+  if Real(FFileDateUTC) <> 0.0 then
+    result :=  GMTtoLocalTime(FFileDateUTC)
   else try
-    iA := FileAge(FullName);
-    if iA < 0 then iA:= 0;
-    result := FileDateToDateTime(iA);
+    result := GMTtoLocalTime(GetDateUTC);
   except
     result := now;
   end;
 end;
+
+function TFileInformation.GetDateUTC: TDateTime;
+begin
+  if Real(FFileDateUTC) <> 0.0 then
+    result := FFileDateUTC
+  else try
+    result := TFile.GetLastWriteTimeUtc(FullName);
+  except
+    result := now;
+  end;
+
+end;
+
 {------------------------------------------------------------------------------}
 procedure TfileInformation.SetDate(dt: TDateTime);
 //Setter for the date property.
 begin
-  FFileDate := dt;
+  DateUTC := LocalTimeToGMT(dt);
 //  raise Exception.create('not implemented');
 end;
+procedure TFileInformation.SetDateUTC(const Value: TDateTime);
+begin
+  FFileDateUTC := value;
+end;
+
 {------------------------------------------------------------------------------}
 function TfileInformation.GetSize: int64;
 //Getter for the size property.
@@ -370,10 +403,24 @@ begin
 
 end;
 
+constructor TFileInformation.CopyCreate(src: Tfileinformation);
+begin
+  Create;
+  FIsFolder := src.FIsFolder;
+  FUniversalAttributes := src.FUniversalAttributes;
+  FSize := src.FSize;
+  FFullName := src.FFullName;
+  FFileDateUTC := src.FFileDateUTC;
+  FAttributes := src.FAttributes;
+  bAttributesFetched := src.bAttributesFetched;
+
+
+end;
+
 constructor TfileInformation.CReate;
 begin
   inherited;
-  FFileDate := 0.0;
+  FFileDateUTC := 0.0;
 end;
 
 { TAdvancedFileChecksum }

@@ -1,6 +1,6 @@
 unit Archiver;
 {$I DelphiDefs.inc}
-
+{x$DEFINE USE_MBFS}
 {x$DEFINE LINKDEBUG}
 {$DEFINE USE_ZONE_LOCKS}
 {x$DEFINE DONT_COMPRESS_INITIAL}
@@ -27,10 +27,12 @@ unit Archiver;
 interface
 
 uses
-  betterobject, stringx, namevaluepair, search, debug,applicationparams, helpers_stream, numbers, generics.defaults, sharedobject, systemx, typex, classes, generics.collections, sysutils, virtualdiskconstants, queuestream, compression, zip, windows{beep}, MultiBufferMemoryFileStream, memoryfilestream, better_collections, tickcount, consolelock;
+  betterobject, stringx, namevaluepair, search, debug,applicationparams, helpers_stream, numbers, generics.defaults, sharedobject, systemx, typex, classes, generics.collections, sysutils, virtualdiskconstants, queuestream, compression, zip, windows{beep}, MultiBufferMemoryFileStream, memoryfilestream, better_collections, tickcount, consolelock,  simplequeue, globalmultiqueue,dir, dirfile;
 
 
-const
+CONST
+  BACKUP_DURATION = 365;
+  MIRROR_FLAG =$4000000000000000;
   NULL_PIN = 0;
   ZONE_BUILDER_CACHE_SIZE = 96;
 type
@@ -39,6 +41,7 @@ type
   TdataResult = (drNoDataToRebuild, drSuccess, drCriticalError);
 
   TArchiver = class;//
+  ENoSpace = class(Exception);
 
   TArcStorHeader = packed record
     fileid: int64;
@@ -56,7 +59,7 @@ type
 
   TArcRecord = packed record
     logid: int64;
-    parentfileid: int64;
+    Fparentfileid: int64;
     parentaddr: int64;
     startblock: cardinal;
     lengthInBlocks: cardinal;
@@ -74,9 +77,11 @@ type
   private
     function GetEncoding: TArcEncoding;
     procedure SetEncoding(const Value: TArcEncoding);
+    function GetParentfileID: int64;
   public
     property Encoding: TArcEncoding read GetEncoding write SetEncoding;
     procedure CheckLengths;
+    property parentfileid: int64 read GetParentfileID write FParentFileId;
 
   end;
 
@@ -187,7 +192,12 @@ type
 
   end;
 
-
+  TZoneStackInfo = record
+        blockaddr: int64;
+        blocklength: int64;
+        toid: int64;
+        nao: TDatetime;
+  end;
   TZoneBuilder = class(TSharedObject)
   strict private
     FFs: IHolder<TLocalfileStream>;
@@ -201,32 +211,47 @@ type
     completeness: array[0..ARC_ZONE_SIZE_IN_BLOCKS-1] of byte;
     zone_vatent: TArcVatEntry;
     zone_stack: array of TArcRecordEx;
+    tmLastDebug: ticker;
   private
-    procedure RebuildZone(zoneidx: int64; pin: TDateTime; bFullDepth: boolean);
+    procedure WipeZone(zoneidx: int64);
+    procedure RebuildZone(bMirror: boolean; zoneidx: int64; pin: TDateTime; bFullDepth: boolean);
     function IsComplete: boolean;
-    function RebuildData(blockaddr: int64; pOutData: PByte; blocklength:int64; pin: TDateTime; prog: PProgress): int64;
-    function RecordDataEx(blockaddr: int64; pData: PByte; blocklength: int64; fromid: int64; toid: int64; var actual: int64; bShallow: boolean): boolean;
+    function RebuildData(bmirror: boolean; blockaddr: int64; pOutData: PByte; blocklength:int64; pin: TDateTime; prog: PProgress): int64;
+    function RecordDataEx(bMirror: boolean; blockaddr: int64; pData: PByte; blocklength: int64; fromid: int64; toid: int64; var actual: int64; bShallow: boolean; nao: TDatetime): boolean;
     procedure CheckAndMoveZone;
+    procedure OptDebug(s: string);
   public
     arc: TArchiver;
     rebuilt_zone_idx: int64;
     rebuilt_zone_pin: TDateTime;
+    rebuilt_zone_logtime: TDateTime;
     rebuilt_zone_logid: int64;
     rebuilt_zone_full_depth: boolean;
     bad_zone: boolean;
     locked_fileid: int64;
 
-
     function SyncFS(ifileID: int64; bAllowCreate: boolean): TLocalFileSTream;
     function GetZoneStackReport(zidx: int64;logid: int64; fullstack: boolean): string;
+    function GetZoneStackReportA(zidx: int64;logid: int64; fullstack: boolean): TArray<TZoneStackinfo>;
     function GetZoneChecksum(zoneidx: int64; pin: TDateTime; out iSum, iXor: int64): boolean;
     procedure Detach;override;
     destructor Destroy; override;
     constructor Create; override;
     procedure Lock; override;
     procedure Unlock; override;
+    procedure ReplaceStreamFrom(otherzonebuilder: TZoneBuilder);
+    procedure ReplaceStreamMirror();
 
 
+  end;
+
+
+  Tqi_LookForZone = class(TQueueItem)
+  protected
+    in_paths: TArray<string>;
+    in_zone: int64;
+    out_bestpath: string;
+    procedure DoExecute; override;
   end;
 
 
@@ -256,8 +281,10 @@ type
     function GetStor(idx: ni): TArcStor;
     procedure CleanupZoneBuilders;
   protected
+    tmLastDebug: ticker;
     property vat: TArcVat read FVat;
     function NewFile: int64;
+    procedure OptDebug(s: string);
   public
     zoneLocks: TNamedLocks;
     function NeedParams: TNameValuePairList;
@@ -269,13 +296,16 @@ type
     constructor Create;override;
     destructor Destroy;override;
     procedure GuaranteeRecordData(blockaddr: int64; pData: PByte; blocklength: int64);
-    procedure GuaranteeRebuildData(blockaddr: int64; pData: PByte; blocklength: int64; pin: TDateTime; prog: PProgress);
+    procedure GuaranteeRebuildData(bMirror: boolean; blockaddr: int64; pData: PByte; blocklength: int64; pin: TDateTime; prog: PProgress);
 
 
-    function RebuildZone(zoneidx: int64; pin: TDateTime): TZoneBuilder;//<<------------------------------------
-    function RecordDataEx(blockaddr: int64; pData: PByte; blocklength: int64; fromid: int64; toid: int64; var actual: int64): boolean;
+    function RebuildZone(bMirror: boolean; zoneidx: int64; pin: TDateTime): TZoneBuilder;//<<------------------------------------
+    procedure AbridgeZone(zoneidx: int64; preserve_after: TdateTime);
+    function AbridgeFileFromPath(sPath: string; maxsize: int64 = -1): boolean;
+    function AbridgeFilesFromAllPaths(): boolean;
+    function RecordDataEx(bMirror: boolean; blockaddr: int64; pData: PByte; blocklength: int64; fromid: int64; toid: int64; var actual: int64): boolean;
     procedure VerifyRecordedData(blockaddr: int64; pData: PByte; blocklength: int64; logid: int64; prog: PProgress);
-    function RebuildData(blockaddr: int64; pOutData: PByte; blocklength: int64; pin: TDateTime; prog: PProgress): int64;
+    function RebuildData(bMirror: boolean; blockaddr: int64; pOutData: PByte; blocklength: int64; pin: TDateTime; prog: PProgress): int64;
     function GetZoneChecksum(zoneidx: int64; pin: TDateTime; out iSum, iXor: int64): boolean;
     function GetArcVatCheckSum(zStart, zCount: int64): int64;
 
@@ -284,22 +314,30 @@ type
     property VatPath: string read FVatPath write SEtVatPath;
     property Name: string read Fname write GetName;
     procedure LoadConfig(sPrefix: string);
+    procedure Test;
     property Stors[idx: ni]: TArcStor read GetStor;
     function GetNextLogID(zoneidx, iReserve: int64): int64;
     property ParamsFileName: string read FParamsFileName write FparamsFileNAme;
-    function SyncZone(zoneidx: int64; pin: TDateTime): TZoneBuilder;
+    function SyncZone(bMirror: boolean; zoneidx: int64; pin: TDateTime): TZoneBuilder;
 {$IFDEF DICT}
     property Files: TArcFileDictionary read FFiles;
 {$ENDIF}
     function GetZoneStackReport(zidx, logid: int64; fullstack: boolean): string;
+    function GetZonePresenceHints(zstart, zcount: int64): TDynByteArray;
     function FindFileIDinStors(iFileID: int64): string;
+    function GetStorPaths: TArray<string>;
+    function BeginLookForZone(z: int64; paths: TArray<string>): Tqi_LookForZone;
   end;
 
-function FileIDtoFileName(iFileID: integer): string;
+function FileIDtoFileName(iFileID: int64): string;
 
 function guaranteeOpen(sFile: string): TLocalfileStream;
 
 function ArcEncodingToString(ae: TArcEncoding): string;
+
+function IsMirrorZone(zoneidx: int64): boolean;
+function GetMirroredZoneIdx(zoneid: int64): int64;
+
 
 implementation
 
@@ -354,7 +392,7 @@ begin
   until bSuccess;
 end;
 
-function FileIDtoFileName(iFileID: integer): string;
+function FileIDtoFileName(iFileID: int64): string;
 begin
   result := inttohex((iFileID shr 14) shl 14,16)+'\'+inttohex(iFileID, 16)+'.arc';
 
@@ -378,6 +416,232 @@ end;
 
 { TArchiver }
 
+function TArchiver.AbridgeFileFromPath(sPath: string; maxsize: int64): boolean;
+begin
+  exit;
+  result := false;
+  var dir := TDirectory.CreateH(sPath, '*.arc',0,0,false,false,false);
+  dir.o.SortBySizeDesc;
+  var fol := -1;
+  var f := random(dir.o.filecount);
+  var tryfolder := dir.o.foldercount > 0;
+
+  if tryfolder then
+    fol := random(dir.o.foldercount);
+
+  if (fol > -1) and (fol<dir.o.foldercount) then
+    result := AbridgeFileFromPath(dir.o.folders[fol].fullname, maxsize)
+  else begin
+    for var t:= 0 to dir.o.filecount-1 do begin
+      if (maxsize < 0) or (dir.o.files[t].size < maxsize) then begin
+        try
+          var zidx := dir.o.files[t].NamePart;
+          var izidx := StrToInt64('$'+zidx);
+          AbridgeZone(izidx, now - BACKUP_DURATION);
+          exit(true);
+        except
+          exit(false);
+        end;
+      end;
+    end;
+  end;
+
+end;
+
+var
+  tmLastAbridge: ticker = 0;
+
+function TArchiver.AbridgeFilesFromAllPaths: boolean;
+begin
+  result := false;
+//  exit;
+  if gettimesince(tmLastAbridge) < 30000 then
+    exit(true);
+  Lock;
+  try
+    tmLastAbridge := getticker;
+    for var t := 0 to FStors.Count-1 do begin
+      result := AbridgeFileFromPath(FStors[t].Path, -1);
+      if result then break;
+    end;
+    tmLastAbridge := getticker;
+
+
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TArchiver.AbridgeZone(zoneidx: int64; preserve_after: TdateTime);
+var
+  scratch: array of byte;
+const
+  MIN_ABRIDGE_SIZE : int64 = 200000;
+begin
+  //rebuild zone, hold zone builder
+  var mirroredidx := GetMirroredZoneIdx(zoneidx);
+  if zonelocks.TryGetLock(zoneidx.tostring) then
+  try
+    if zonelocks.TryGetLock(mirroredidx.tostring) then
+    try
+      var oldfile := FindFileIDinStors(zoneidx);
+
+      var sz := getfilesize(oldfile);
+      if  sz < MIN_ABRIDGE_SIZE then
+        exit;
+
+      var newfile := FindFileIDinStors(mirroredidx);
+      try
+        if fileexists(newfile) then
+          deletefile(pchar(newfile));
+      except
+      end;
+
+
+      Debug.log('----------->ABRIDGE '+inttohex(zoneidx));
+
+{      if not zone_builders.TryLock(8000) then begin
+        Debug.log('Cannot abridge zones right now because we couldn''t get the zone builder lock');
+        exit;
+      end else try
+        for var t := 0 to zone_builders.count-1 do begin
+          if zone_builders[t].rebuilt_zone_idx = zoneidx then begin
+            Debug.Log('cannot abridge zone right now'+inttohex(zoneidx)+' because it is currently in memory');
+            exit;
+          end;
+
+          if zone_builders[t].rebuilt_zone_idx = mirroredidx then begin
+            Debug.Log('cannot abridge zone right now'+inttohex(zoneidx)+' because it is currently in memory');
+            exit;
+          end;
+
+
+        end;
+        if zone_builders.HasZoneIndex(zoneidx) then
+      finally
+        zone_builders.unlock;
+      end;}
+
+
+
+
+      var sourcezone := RebuildZone(false, zoneidx, NULL_PIN);
+      //get list of dates from zone
+      var dates := sourcezone.GetZoneStackReportA(zoneidx,0, true);
+      //setup targetzone
+      var targetzone := RebuildZone(true, mirroredidx, NULL_PIN);
+      //wipe target
+      targetzone.RebuildZone(true, mirroredidx, NULL_PIN,false);
+      targetzone.WipeZone(mirroredidx);
+      //build appropriate dates in target
+
+
+      setlength(scratch,ARC_ZONE_SIZE_IN_BYTES);
+      var atleastone := false;
+      for var t:= high(dates) downto 0 do begin
+        var d := dates[t];
+        //skip rebuilding this one UNLESS
+        // -- it is the last one in the list
+        // -- or it is newer than the preserve_after date
+        if (t > 0)
+        and (dates[t].nao < preserve_after) then
+          continue;
+
+
+        //rebuild the ENTIRE zone
+        sourcezone.RebuildData(false, d.blockaddr and ARC_ZONE_BLOCK_BLOCK_ALIGN_MASK, @scratch[0], ARC_ZONE_SIZE_IN_BLOCKS, d.nao,nil);
+
+        //blockaddr: int64;
+        //pData: PByte;
+        //blocklength: int64;
+        //fromid: int64;
+        //toid: int64;
+        //var actual: int64;
+        //bShallow:boolean;
+        //nao: TDatetime): boolean;
+        var act : int64 := int64(0);
+        //record the entire zone at target
+
+        optDebug('Abridging zone 0x'+inttohex(zoneidx,1)+' '+t.tostring+' remaining.');
+
+        if not atleastone then begin
+          targetzone.RecordDataEx(true, (d.blockaddr div ARC_ZONE_SIZE_IN_BLOCKS)*ARC_ZONE_SIZE_IN_BLOCKS, @scratch[0], ARC_ZONE_SIZE_IN_BLOCKS, targetzone.rebuilt_zone_logid, d.toid, act, false, d.nao)
+        end else begin
+          var zoneblockbase : int64 := (d.blockaddr div ARC_ZONE_SIZE_IN_BLOCKS)*ARC_ZONE_SIZE_IN_BLOCKS;
+          targetzone.RecordDataEx(true, d.blockaddr, @scratch[(d.blockaddr - zoneblockbase) shl BLOCKSHIFT], d.blocklength, targetzone.rebuilt_zone_logid, d.toid, act, false, d.nao);
+        end;
+
+        atleastone := true;
+      end;
+      sourcezone.SyncFS(-1, false);
+      targetzone.SyncFS(-1, false);
+
+      oldfile := FindFileIDinStors(zoneidx);
+      var backupfile := oldfile+'.backup';
+      newfile := FindFileIDinStors(mirroredidx);
+      try
+        if fileexists(backupfile) then
+          deletefile(pchar(backupfile));
+        if GetFileSize(oldfile) > GetfileSize(newfile) then begin
+
+          RenameFile(oldfile, backupfile);
+          if fileexists(backupfile) and (not fileexists(oldfile)) then
+            dir.CopyFile(newfile, oldfile);
+            if fileexists(oldfile) then begin
+              var entold := vat.getEntry(zoneidx);
+              var ent := vat.GetEntry(mirroredidx);
+              ent.zoneidx := entold.zoneidx;
+              ent.fileid := entold.fileid;
+              vat.PutEntry(ent);
+              if fileexists(newfile) then
+                deletefile(pchar(newfile));
+{$DEFINE DELETE_BACKUPS}
+{$IFDEF DELETE_BACKUPS}
+              if fileexists(backupfile) then
+                deletefile(pchar(backupfile));
+{$ENDIF}
+          end;
+        end else begin
+          //new file was not smaller
+          Debug.log('Abridged file was not smaller '+oldfile);
+              if fileexists(newfile) then
+                deletefile(pchar(newfile));
+
+        end;
+
+        sourcezone.RebuildZone(false, zoneidx, NULL_PIN, false);
+
+      except
+        on E: Exception do begin
+          debug.log('rollback! '+e.message);
+          if fileexists(oldfile) then
+            deletefile(pchar(oldfile));
+          renamefile(backupfile, oldfile);
+        end;
+      end;
+//      sourcezone.replacestreamfrom(targetzone);
+
+
+    finally
+      zonelocks.ReleaseLock(mirroredidx.tostring);
+    end;
+  finally
+    zonelocks.ReleaseLock(zoneidx.tostring);
+  end;
+
+
+
+
+end;
+
+function TArchiver.BeginLookForZone(z: int64; paths: TArray<string>): Tqi_LookForZone;
+begin
+  result := Tqi_LookForZone.Create;
+  result.in_paths := paths;
+  result.in_zone := z;
+  GMQ.additem(result);
+end;
+
 function TArchiver.ChoosePath: string;
 var
   best, t: ni;
@@ -387,6 +651,7 @@ begin
   lock;
   try
     bestspace := -1;
+    best := -1;
     for t:= 0 to FStors.Count-1 do begin
       ForceDirectories(Fstors[t].Path);
       space := GetFreeSpaceOnPath(Fstors[t].Path);
@@ -396,10 +661,15 @@ begin
         best := t;
       end;
     end;
+    if best < 0 then begin
+      raise ENoSpace.create('Could not determine best place for data. Possibly all stors critically low on space!');
+    end;
+
     result := FStors[best].Path;
 
-    if bestspace < 100000000 then begin
-      raise ECritical.create('All stors critically low on space!');
+    if bestspace < 1000000000 then begin begin
+      raise ENoSpace.create('All stors critically low on space!');
+    end;
     end;
   finally
     unlock;
@@ -438,6 +708,7 @@ begin
 {$ENDIF}
 
   zonelocks := TNAmedLocks.Create;
+
 
 end;
 
@@ -483,19 +754,36 @@ var
   t: ni;
   sOrigFile: string;
   sFile: string;
+  bestfile: string;
+  bestdate: TDateTime;
 begin
   Lock;
   try
+    bestDate := 0.0;
+    bestfile := '';
     sOrigFile := FileIDToFileName(iFileID);
     for t:= 0 to StorCount-1 do begin
       sFile := Stors[t].Path+sOrigFile;
       if FileExists(sFile) then begin
-        exit(sFile);
+        var fi := TFIleInformation.Create;
+        try
+          fi.LoadFromFile(sFile);
+          if fi.Date > bestDate then begin
+            bestfile := sFile;
+            bestDate := fi.date;
+          end;
+        finally
+          fi.free;
+        end;
       end;
     end;
     //if file not found in stors then
     //choose a new path and return it
-    exit(ChoosePath+sOrigfile);
+    if bestfile = '' then begin
+      exit(ChoosePath+sOrigfile);
+    end else begin
+      result := bestfile;
+    end;
   finally
     Unlock;
   end;
@@ -531,6 +819,19 @@ begin
 
 end;
 
+function TArchiver.GetStorPaths: TArray<string>;
+begin
+  Lock;
+  try
+    setlength(result, StorCount);
+    for var t:= 0 to high(result) do begin
+      result[t] := Stors[t].Path;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
 function TArchiver.GetZoneChecksum(zoneidx: int64; pin: TDateTime; out iSum,
   iXor: int64): boolean;
 var
@@ -538,6 +839,7 @@ var
 begin
   while hint_PendingRebuilds do
     sleep(10000);
+
   result := true;
 {$IFDEF USE_ZONE_LOCKS}
   zonelocks.GetLock(inttostr(zoneidx), false);
@@ -545,7 +847,7 @@ begin
   Lock;
 {$ENDIF}
   try
-    builder := SyncZone(zoneidx, pin);
+    builder := SyncZone(false, zoneidx, pin);
     result := builder.getZoneChecksum(zoneidx, pin, iSum, iXor);
 
   finally
@@ -555,6 +857,45 @@ begin
     UnLock;
 {$ENDIF}
   end;
+end;
+
+function TArchiver.GetZonePresenceHints(zstart, zcount: int64): TDynByteArray;
+var
+  qis: Tarray<Tqi_LookForZone>;
+  paths: Tarray<string>;
+begin
+  var cx := zcount;
+  var idx := zstart;
+  var outidx := 0;
+  paths := GetStorPaths;
+
+  setlength(qis, cx);
+  while cx > 0 do begin
+    qis[outidx] := BeginLookForZone(idx, paths);
+    inc(idx);
+    inc(outidx);
+    dec(cx);
+
+  end;
+
+  cx := zcount;
+  idx := zstart;
+  outidx := 0;
+  setlength(result, cx);
+  while cx > 0 do begin
+    qis[outidx].WAitFor;
+    if qis[outidx].out_bestpath <> '' then
+      result[outidx] := 1
+    else
+      result[outidx] := 0;
+
+    qis[outidx].free;
+    qis[outidx] := nil;
+    inc(idx);
+    inc(outidx);
+    dec(cx);
+  end;
+
 end;
 
 function TArchiver.GetZoneRevision(idx:int64; logpin: TDateTime = NULL_PIN): int64;
@@ -607,7 +948,7 @@ begin
 {$ENDIF}
   Lock;
   try
-    builder := SyncZone(zidx, logid);
+    builder := SyncZone(false, zidx, logid);
     result := builder.GetZoneStackReport(zidx, logid, fullstack);
   finally
     unlock;
@@ -625,10 +966,32 @@ var
 begin
   Lock;
   try
-    RebuildZone(zidx, logid, fullstack);
+    RebuildZone(false, zidx, logid, fullstack);
     result := inttohex(zidx,1)+'::';
     for t:= 0 to high(zone_stack) do begin
       result := result + zone_stack[t].DebugStr+CRLF;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+function TZoneBuilder.GetZoneStackReportA(zidx, logid: int64;
+  fullstack: boolean): TArray<TZoneStackinfo>;
+var
+  t: ni;
+begin
+  Lock;
+  try
+    RebuildZone(false, zidx, logid, fullstack);
+    setlength(result, length(zone_stack));
+    for t:= 0 to high(zone_stack) do begin
+      result[t].nao := zone_stack[t].rec.logtime;
+      result[t].blockaddr := zone_stack[t].rec.startblock + (zidx * ARC_ZONE_SIZE_IN_BLOCKS);
+      result[t].blocklength := zone_stack[t].rec.lengthInBlocks;
+      result[t].toid := zone_stack[t].rec.logid;
+
+
     end;
   finally
     Unlock;
@@ -658,22 +1021,21 @@ begin
 
 end;
 
-procedure TArchiver.GuaranteeRebuildData(blockaddr: int64; pData: PByte;
+procedure TArchiver.GuaranteeRebuildData(bMirror: boolean; blockaddr: int64; pData: PByte;
   blocklength: int64; pin: TDateTime; prog: PProgress);
 var
-  iRecordedBlocks: int64;
-  iToRecord: int64;
-  iJustRecorded: int64;
+  iTotal: int64;
+  iTo: int64;
+  iJust: int64;
 begin
-  iRecordedBlocks := 0;
-  iToRecord := blocklength;
-  while iToRecord > 0 do begin
+  iTotal := 0;
+  iTo := blocklength;
+  while iTo > 0 do begin
     hint_PendingRebuilds := true;
-    iToRecord := blocklength-iRecordedBlocks;
-    iJustRecorded := RebuildData(blockAddr, @pData[iRecordedBlocks*BLOCKSIZE], iToRecord, pin, prog);
-    inc(iRecordedBlocks, iJustRecorded);
-    dec(iToRecord, iJustRecorded);
-    inc(blockAddr, iJustRecorded);
+    iJust := RebuildData(bMirror, blockAddr, @pData[iTotal*BLOCKSIZE], iTo, pin, prog);
+    inc(iTotal, iJust);
+    dec(iTo, iJust);
+    inc(blockAddr, iJust);
   end;
   hint_pendingRebuilds := false;
 end;
@@ -693,6 +1055,12 @@ begin
 
 end;
 
+function IsMirrorZone(zoneidx: int64): boolean;
+begin
+  result := (zoneidx and MIRROR_FLAG) <> 0;
+
+end;
+
 procedure TZoneBuilder.Lock;
 begin
   inherited;
@@ -700,6 +1068,15 @@ begin
 //  if sect.recursioncount = 2 then
 //    Debug.Log('trap');
 
+end;
+
+procedure TZoneBuilder.OptDebug(s: string);
+begin
+  if gettimesince(tmLastDebug) > 2000 then begin
+    debug.log(self, s);
+    tmLastDebug := getticker;
+
+  end;
 end;
 
 procedure TArchiver.LoadConfig(sPrefix: string);
@@ -724,6 +1101,9 @@ begin
   end;
 
   LoadStors;
+
+  Test;
+
 
 end;
 
@@ -767,7 +1147,7 @@ end;
 function TArchiver.NewFile: int64;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
@@ -797,7 +1177,15 @@ begin
   Unlock;
 end;
 
-function TZoneBuilder.RebuildData(blockaddr: int64; pOutData: PByte;
+procedure TArchiver.OptDebug(s: string);
+begin
+  if gettimesince(tmLastDebug) > 200 then begin
+    debug.log(self, s);
+    tmLastDebug := getticker;
+  end;
+end;
+
+function TZoneBuilder.RebuildData(bmirror: boolean; blockaddr: int64; pOutData: PByte;
   blocklength: int64; pin: TdateTime; prog: PProgress): int64;
 var
   zoneidx: ni;
@@ -813,9 +1201,13 @@ begin
   Lock;
 //  DEBUG.Log('RebuildData<-Lock');
   try
+
     zoneidx := blockaddr shr ARC_ZONE_BLOCK_SHIFT;
+    if bmirror then
+      zoneidx := zoneidx or MIRROR_FLAG;
+
 //    DEBUG.Log('RebuildData->RebuildZone');
-    RebuildZone(zoneidx, pin,false);
+    RebuildZone(bMirror, zoneidx, pin,false);
 //    DEBUG.Log('RebuildData<-RebuildZone');
 
     //extract the specific part that we want
@@ -842,7 +1234,7 @@ begin
 
 end;
 
-procedure TZoneBuilder.RebuildZone(zoneidx: int64; pin: TDateTime; bFullDepth: boolean);
+procedure TZoneBuilder.RebuildZone(bMirror: boolean; zoneidx: int64; pin: TDateTime; bFullDepth: boolean);
 var
   oldent, ent: TArcVatEntry;
   rec: TArcRecordEx;
@@ -920,7 +1312,9 @@ var
     end;
 
 begin
+  rebuilt_zone_logtime := 0.0;
 //  DEBUG.Log('->RebuildZone');
+  {$IFDEF LINKDEBUG}Debug.Log('Rebuild '+zoneidx.ToHexString+' at '+datetimetostr(pin));{$ENDIF}
   if (rebuilt_zone_idx = zoneidx) and (rebuilt_zone_pin = pin) and (rebuilt_zone_full_depth= bFullDepth) then
     exit;
 
@@ -930,6 +1324,7 @@ begin
 
   rebuilt_zone_logid := 0;
   setlength(zone_stack, 0);
+  idx := length(zone_stack);
 
   //pass <0 to clean-up/flush rebuilt zone
   if zoneidx < 0 then begin
@@ -994,9 +1389,12 @@ begin
       rec.fileid := ent.fileid;
       rec.addr := ent.addr;
 
-      stream_GuaranteeRead(fs, @rec.rec, sizeof(rec.rec));//<<------FIRST RECORD
+
+      if fs.Size >= fs.position+sizeof(rec.rec) then
+        stream_GuaranteeRead(fs, @rec.rec, sizeof(rec.rec));//<<------FIRST RECORD
 
       rebuilt_zone_logid := rec.rec.logid;
+      rebuilt_zone_logtime := rec.rec.logtime;
 
 
       if (not rec.rec.IsValid) or (ent.addr < 0) or ((ent.addr+sizeof(rec.rec)) > fs.Size) then begin
@@ -1031,7 +1429,7 @@ begin
 
 
       //if we need it, put it in the stack
-      if (pin = NULL_PIN) or (rec.rec.logtime < pin) then begin
+      if (pin = NULL_PIN) or (rec.rec.logtime <= pin) then begin
       {$IFDEF LINKDEBUG}Debug.Log('(init) We need this: '+rec.DebugStr);{$ENDIF}
         setlength(zone_stack,idx+1);
         zone_stack[idx] := rec;
@@ -1056,20 +1454,26 @@ begin
       //work back through parents
       //------------------------------------------
       //------------------------------------------
-      while rec.rec.parentfileid >= 0 do begin
+      while (rec.rec.parentfileid >= 0) do begin
         if not rec.rec.IsValid then begin
           Debug.Log('Invalid rec, breaking.');
           break;
         end;
 
         //if completeness[] is all 1s then we can stop looking backwards
-        bdone := checkIfDone;
+        bdone := (not bFullDepth) and checkifdone;
         if bFullDepth then
           bDone := rec.rec.parentfileid < 0;
         if bDone then break;
 
 
-  {$IFDEF LINKDEBUG}      debug.log(self,'Walk Back Link '+inttostr(idx-1)+' ent='+rec.rec.ToSTring);{$ENDIF}
+
+  {$IFDEF LINKDEBUG}
+    if idx = 0 then
+      debug.log('idx=0');
+    debug.log(self,'Walk Back Link '+inttostr(idx-1)+' ent='+rec.rec.ToSTring);
+{$ENDIF}
+        Optdebug('Walk Back Link '+inttostr(idx-1)+' ent='+rec.rec.ToSTring);
         if self.FSyncedFileStreamID <> rec.rec.parentfileid then
           raise ENotSupportedException.Create('parenting to different file id ('+inttohex(rec.rec.parentfileid,1)+') in this zone '+inttohex(FSyncedFileStreamID,1)+' is not supported');
         fs := SyncFS(rec.rec.parentfileid,false);
@@ -1107,7 +1511,7 @@ begin
 
         //determine if we need this record, if we don't then break
         //if we need this record, put it on the stack
-        if (pin = NULL_PIN) or (rec.rec.logtime < pin) then begin
+        if (pin = NULL_PIN) or (rec.rec.logtime <= pin) then begin
       {$IFDEF LINKDEBUG}Debug.Log('(parent) We need this: '+rec.DebugStr);{$ENDIF}
           rec.rec.checkLengths;
           if (rec.rec.encoding in [aeComplete, aePartialUncompressed,aePartial]) then begin
@@ -1121,6 +1525,9 @@ begin
           {$IFDEF VERIFY}      Debug.Log(self,'add to stack '+rec.DebugStr);{$ENDIF}
           inc(idx);
 
+        end else begin
+      {$IFDEF LINKDEBUG}OptDebug('(parent) We DONT need this: '+rec.DebugStr);{$ENDIF}
+          OptDebug('(parent) We DONT need this: '+rec.DebugStr);
         end;
 
       end;
@@ -1131,7 +1538,7 @@ begin
       //------------------------------------------
       //------------------------------------------
       //work forward through children
-      //------------------------------------------
+      //------------`------------------------------
       //------------------------------------------
       for idx := high(zone_stack) downto 0 do begin
 
@@ -1140,6 +1547,7 @@ begin
   {$IFDEF LINKDEBUG}      debug.log(self,'Walk Forward Link '+inttostr(idx)+' ent='+rec.rec.ToSTring);{$ENDIF}
   {$IFDEF LINKDEBUG}      Debug.Log(self,'work forward***');{$ENDIF}
   {$IFDEF LINKDEBUG}      Debug.Log(self,'['+inttostr(idx)+'] '+rec.DebugStr);{$ENDIF}
+        Optdebug('Forward: '+'['+inttostr(idx)+'] '+rec.DebugStr);
         if self.FSyncedFileStreamID <> rec.fileid then
           raise ENotSupportedException.Create('switching to different file id ('+inttohex(rec.fileid,1)+') in this zone '+inttohex(FSyncedFileStreamID,1)+' is not supported');
 
@@ -1210,11 +1618,14 @@ begin
     rebuilt_zone_idx := zoneidx;//even in case zone is bad, we still need to flag that we rebuilt it
     rebuilt_zone_pin := pin;//even in case zone is bad, we still need to flag that we rebuilt it
     tmDif := GetTimeSince(tmStart);
-    Debug.Log([ltThread], self,'Rebuilt zone '+inttohex(zoneidx,1)+' at logid '+rebuilt_zone_logid.tostring+' in '+tmDif.tostring+'ms.');
-//    if tmDif > 4000 then begin
-//      if pin <= strtoDateTime('12/30/1899') then
-//        RecordDataEx(zoneidx * ARC_ZONE_SIZE_IN_BLOCKS, @zone[0], ARC_ZONE_SIZE_IN_BLOCKS, rebuilt_zone_logid, rebuilt_zone_logid,junk,true);
-//    end;
+    Debug.Log([ltThread], self,'Rebuilt zone '+inttohex(zoneidx,1)+' at logtime '+datetimetostr(rebuilt_zone_logtime)+' logid '+rebuilt_zone_logid.tostring+' in '+tmDif.tostring+'ms.');
+    if tmDif > 8000 then begin
+      try
+        if pin <= strtoDateTime('12/30/1899') then
+          RecordDataEx(bMirror,zoneidx * ARC_ZONE_SIZE_IN_BLOCKS, @zone[0], ARC_ZONE_SIZE_IN_BLOCKS, rebuilt_zone_logid, rebuilt_zone_logid,junk,true,rebuilt_zone_logtime);
+      finally
+      end;
+    end;
 //    setlength(zone_stack,0);
     Unlock;
 //    DEBUG.Log('<-RebuildZone');
@@ -1224,7 +1635,7 @@ begin
 
 end;
 
-function TArchiver.RebuildData(blockaddr: int64; pOutData: PByte;
+function TArchiver.RebuildData(bMirror: boolean; blockaddr: int64; pOutData: PByte;
   blocklength: int64;
   pin: TdateTime; prog: PProgress): int64;
 var
@@ -1239,13 +1650,13 @@ begin
 {$ENDIF}
   try
     hint_pendingRebuilds := true;
-    dEBUG.lOG('RebuildData->SyncZone');
-    builder := SyncZone(blockaddr shr ARC_ZONE_BLOCK_SHIFT, pin);
-    DEBUG.lOG('RebuildData<-SyncZone');
-    DEBUG.Log('RebuildData->builder.RebuildData');
+//    dEBUG.lOG('RebuildData->SyncZone');
+    builder := SyncZone(bMirror, blockaddr shr ARC_ZONE_BLOCK_SHIFT, pin);
+//    DEBUG.lOG('RebuildData<-SyncZone');
+//    DEBUG.Log('RebuildData->builder.RebuildData');
     hint_pendingRebuilds := true;
-    result := builder.RebuildData(blockaddr, poutdata, blocklength, pin, prog);
-    DEBUG.Log('RebuildData<-builder.RebuildData');
+    result := builder.RebuildData(bMirror, blockaddr, poutdata, blocklength, pin, prog);
+//    DEBUG.Log('RebuildData<-builder.RebuildData');
   finally
 {$IFDEF USE_ZONE_LOCKS}
 //    zonelocks.ReleaseLock('diskopt',false);
@@ -1257,20 +1668,24 @@ begin
   end;
 end;
 
-function TArchiver.RebuildZone(zoneidx: int64; pin: TDateTime): TZoneBuilder;
+function TArchiver.RebuildZone(bMirror: boolean; zoneidx: int64; pin: TDateTime): TZoneBuilder;
 begin
+  result := nil;
   try
+    if bMirror then
+      zoneidx := zoneidx or MIRROR_FLAG;
     zoneLocks.GetLock(zoneidx.tostring, false);
     try
-       result := SyncZone(zoneidx, pin);
+       result := SyncZone(bMirror, zoneidx, pin);
     finally
       zoneLocks.ReleaseLock(zoneidx.tostring, false);
     end;
   except
+    result := nil;
   end;
 end;
 
-function TArchiver.RecordDataEx(blockaddr: int64; pData: PByte; blocklength,
+function TArchiver.RecordDataEx(bMirror: boolean; blockaddr: int64; pData: PByte; blocklength,
   fromid, toid: int64; var actual: int64): boolean;
 var
   builder: TZoneBuilder;
@@ -1284,8 +1699,8 @@ begin
   Lock;
 {$ENDIF}
   try
-    builder := SyncZone(blockaddr shr ARC_ZONE_BLOCK_SHIFT, NULL_PIN);
-    result := builder.RecordDataEx(blockaddr, pdata, blocklength, fromid, toid, actual, false);
+    builder := SyncZone(bMirror, blockaddr shr ARC_ZONE_BLOCK_SHIFT, NULL_PIN);
+    result := builder.RecordDataEx(bMirror, blockaddr, pdata, blocklength, fromid, toid, actual, false, now);
     l := FVat.GetEntry(blockaddr shr ARC_zONE_BLOCK_SHIFT);
     l.logid := builder.rebuilt_zone_logid;
     FVat.PutEntry(l);
@@ -1300,8 +1715,8 @@ begin
 end;
 
 
-function TZoneBuilder.RecordDataEx(blockaddr: int64; pData: PByte; blocklength,
-  fromid: int64;  toid:int64; var actual: int64; bShallow: boolean): boolean;
+function TZoneBuilder.RecordDataEx(bMirror: boolean; blockaddr: int64; pData: PByte; blocklength,
+  fromid: int64;  toid:int64; var actual: int64; bShallow: boolean; nao: TDatetime): boolean;
 var
   zoneidx: ni;
   t: ni;
@@ -1337,6 +1752,9 @@ begin
   Lock;
   try
     zoneidx := blockaddr shr ARC_ZONE_BLOCK_SHIFT;
+    if bmirror then
+      zoneidx := zoneidx or MIRROR_FLAG;
+
 //    if arc.Vat.FCachedNextID < 0 then
 //      logid := arc.GetNextLogID(zoneidx, 1);
     logid := toid;
@@ -1345,7 +1763,7 @@ begin
     bytelength := blocklength * BLOCKsize;
     try
       try
-        RebuildZone(zoneidx,NULL_PIN, false);
+        RebuildZone(bMirror, zoneidx,NULL_PIN, false);
       except
         on E: exception do begin
           bad_zone := true;
@@ -1469,7 +1887,7 @@ begin
       ent.addr := recex.addr;
       ent.zoneidx := rebuilt_zone_idx;
       ent.logid := logid;
-      rec.logtime := now;
+      rec.logtime := nao;
       rec.CalculateChecksum;
 
       Stream_GuaranteeWrite(fs, pbyte(@rec), sizeof(rec));
@@ -1494,7 +1912,7 @@ begin
       ent.addr := recex.addr;
       ent.zoneidx := rebuilt_zone_idx;
       ent.logid := logid;
-      rec.logtime := now;
+      rec.logtime := nao;
       rec.CalculateChecksum;
       Stream_GuaranteeWrite(fs, pbyte(@rec), sizeof(rec));
       Stream_GuaranteeWrite(fs, pbyte(@zip3[0]), l3);
@@ -1518,7 +1936,7 @@ begin
       ent.addr := recex.addr;
       ent.zoneidx := rebuilt_zone_idx;
       ent.logid := logid;
-      rec.logtime := now;
+      rec.logtime := nao;
       rec.CalculateChecksum;
       Stream_GuaranteeWrite(fs, pbyte(@rec), sizeof(rec));
       Stream_GuaranteeWrite(fs, pbyte(@zip5[0]), l5);
@@ -1542,7 +1960,7 @@ begin
       ent.addr := recex.addr;
       ent.zoneidx := rebuilt_zone_idx;
       ent.logid := logid;
-      rec.logtime := now;
+      rec.logtime := nao;
       rec.calculatechecksum;
       Stream_GuaranteeWrite(fs, pbyte(@rec), sizeof(rec));
       Stream_GuaranteeWrite(fs, pbyte(@zip1[0]), l1);
@@ -1566,7 +1984,7 @@ begin
       ent.addr := recex.addr;
       ent.zoneidx := rebuilt_zone_idx;
       ent.logid := logid;
-      rec.logtime := now;
+      rec.logtime := nao;
       rec.CalculateChecksum;
       Stream_GuaranteeWrite(fs, pbyte(@rec), sizeof(rec));
       Stream_GuaranteeWrite(fs, pbyte(@zip2[0]), l2);
@@ -1610,6 +2028,43 @@ begin
   result := true;
 end;
 
+
+procedure TZoneBuilder.ReplaceStreamFrom(otherzonebuilder: TZoneBuilder);
+begin
+  if otherzonebuilder.FFs = nil then
+    raise ECritical.create('other zone has no stream');
+  if otherzonebuilder.FFs.o = nil then
+    raise ECritical.create('other zone has no stream');
+  otherzonebuilder.FFs.o.seek(0,soBeginning);
+
+
+  FFs.o.seek(0,soBeginning);
+  FFs.o.Size := 0;
+  rebuilt_zone_logid := 0;
+  rebuilt_zone_full_depth := false;
+
+  Stream_GuaranteeCopy(otherzonebuilder.FFs.o,FFs.o);
+
+
+end;
+
+procedure TZoneBuilder.ReplaceStreamMirror;
+begin
+{  if otherzonebuilder.FFs = nil then
+    raise ECritical.create('other zone has no stream');
+  if otherzonebuilder.FFs.o = nil then
+    raise ECritical.create('other zone has no stream');
+  otherzonebuilder.FFs.o.seek(0,soBeginning);
+
+
+  FFs.o.seek(0,soBeginning);
+  FFs.o.Size := 0;
+  rebuilt_zone_logid := 0;
+  rebuilt_zone_full_depth := false;
+
+  Stream_GuaranteeCopy(otherzonebuilder.FFs.o,FFs.o);
+ }
+end;
 
 procedure TArchiver.SEtVatPath(value: string);
 begin
@@ -1705,7 +2160,20 @@ begin
 
 end;
 
-function TArchiver.SyncZone(zoneidx: int64; pin:TDateTime): TZoneBuilder;
+procedure TZoneBuilder.WipeZone(zoneidx: int64);
+begin
+  if FFs <> nil then
+    if FFs.o <> nil then
+      FFs.o.Size := 0;
+  rebuilt_zone_pin := NULL_PIN;
+  rebuilt_zone_logid := 0;
+  rebuilt_zone_full_depth := false;
+  if FFs <> nil then
+    if FFs.o <> nil then
+      FFs.o.Seek(0,soBeginning);
+end;
+
+function TArchiver.SyncZone(bMirror: boolean; zoneidx: int64; pin:TDateTime): TZoneBuilder;
 var
   has: TZoneBuilder;
   t: ni;
@@ -1714,10 +2182,13 @@ var
   fails: nativeint;
   idx: nativeint;
 begin
+  result := nil;
   has := nil;
   if zoneidx = 93901 then begin
     Debug.Log('93901');
   end;
+  if bMirror then
+      zoneidx := zoneidx or MIRROR_FLAG;
 {$IFDEF USE_ZONE_LOCKS}
   zonelocks.GetLock(inttostr(zoneidx),false);
 {$ELSE}
@@ -1760,9 +2231,9 @@ begin
               end;
             end;
           end;
-          if cnt > 1 then begin
-            Debug.Log('WHOOWHAOWHAOWHAOWHAOWH!  Too many of this zone. ' +inttohex(zoneidx,1));
-          END;
+//          if cnt > 1 then begin
+//            Debug.Log('WHOOWHAOWHAOWHAOWHAOWH!  Too many of this zone. ' +inttohex(zoneidx,1));
+//          END;
 
 
           //Clean out excess builders (if we can get locks)
@@ -1794,7 +2265,7 @@ begin
         result := has;
         unlock;
         if result <> nil then begin
-          result.RebuildZone(zoneidx, pin, false);
+          result.RebuildZone(bMirror, zoneidx, pin, false);
         end else begin
           debug.log('result is nil!');
         end;
@@ -1813,6 +2284,17 @@ begin
   end;
 end;
 
+procedure TArchiver.Test;
+begin
+  //self.AbridgeZone($0, now-90);
+//  self.AbridgeZone($244E, now-90);
+//  self.AbridgeZone($244E, now-90);
+//  self.AbridgeZone($E4D, now-30);
+//  self.AbridgeZone($E4D, now-30);
+//  self.AbridgeZone($15A, now-90);
+//  self.AbridgeZone($15A, now-90);
+end;
+
 procedure TArchiver.VerifyRecordedData(blockaddr: int64; pData: PByte;
   blocklength: int64; logid: int64; prog: PProgress);
 var
@@ -1821,12 +2303,12 @@ var
   dba: TDynByteArray;
   iCan, iDid, iTotal: int64;
 begin
-  RebuildZone(-1,NULL_PIN);
+  RebuildZone(false, -1,NULL_PIN);
   setlength(dba, blocklength*512);
   iTotal := 0;
   while iTotal < blocklength do begin
     iCan := blocklength - iTotal;
-    iDid := RebuildData(blockaddr+iTotal, @dba[0], iCAn,NULL_PIN, prog);
+    iDid := RebuildData(false, blockaddr+iTotal, @dba[0], iCAn,NULL_PIN, prog);
 
     if not CompareMem(@pData[iTotal*512], @dba[0], iDid*512) then begin
       Debug.Log(self,'FAILED COMPARE MEM!');
@@ -2020,9 +2502,10 @@ end;
 
 procedure TArcVat.Detach;
 begin
-  inherited;
+
   fs.Free;
   fs := nil;
+  inherited;
 
 end;
 
@@ -2087,7 +2570,7 @@ begin
   Lock;
 {$ENDIF}
   try
-    builder := self.RebuildZone(zoneidx, NULL_PIN);
+    builder := self.RebuildZone(false, zoneidx, NULL_PIN);
     result := builder.rebuilt_zone_logid+1;
 
 
@@ -2183,7 +2666,7 @@ end;
 
 function TArcRecordEx.DebugStr: string;
 begin
-  RESULT := '[rec fileid='+inttostr(fileid)+' addr='+inttohex(addr,2)+rec.DebugString+']';
+  RESULT := '[rec fileid='+inttostr(fileid)+'|addr='+inttohex(addr,2)+rec.DebugString+']';
 end;
 
 class operator TArcRecordEx.equal(a, y: TArcRecordEx): boolean;
@@ -2213,7 +2696,9 @@ end;
 
 function TArcRecord.DebugString: string;
 begin
-  result := ' datetime='+datetimetostr(logtime)+' cmplen='+commaize(compressedlength)+' logid='+inttostr(logid)+' enc='+arcencodingtostring(encoding)+' time='+datetimetostr(logtime)+' parenaddr='+inttohex(parentaddr,2);
+//  result := '|pintime='+datetimetostr(logtime)+'|cmplen='+commaize(compressedlength)+'|logid='+inttostr(logid)+'|enc='+arcencodingtostring(encoding)+'|parenaddr='+inttohex(parentaddr,2);
+  result := '|pintime='+datetimetostr(logtime)+'|pin='+floattostr(logtime)+'|logid='+inttostr(logid)+'|parentfile='+inttostr(parentfileid)+'|parentaddr='+inttohex(parentaddr,0)+'|startblock='+inttostr(startblock)+'|blocklength='+inttostr(Self.lengthInBlocks)+'|enc='+arcencodingtostring(encoding);
+
 end;
 
 class operator TArcRecord.equal(a, y: TArcRecord): boolean;
@@ -2224,6 +2709,13 @@ end;
 function TArcRecord.GetEncoding: TArcEncoding;
 begin
   result := TArcEncoding(FEncoding);
+end;
+
+function TArcRecord.GetParentfileID: int64;
+begin
+  if FParentFileid = -1 then
+    exit(FParentFileID);
+  Result := FParentFileId and (not MIRROR_FLAG);
 end;
 
 function TArcRecord.IsValid: boolean;
@@ -2300,6 +2792,8 @@ begin
       var fileid: int64 := strtoint64('$'+extractfilenamepart(ffs.o.filename));
       var newfile := slash(newpath)+FileIDtoFileName(fileid);
       var fs2 := Tholder<TLocalFileStream>.create;
+      forcedirectories(extractfilepath(newfile));
+      Debug.Log('Moving '+ffs.o.filename+'  >>>>>  '+newfile);
       fs2.o := TLocalFileStream.create(newfile, fmCreate);
       ffs.o.Seek(0,soBeginning);
       Stream_GuaranteeCopy(ffs.o, fs2.o, ffs.o.size);
@@ -2329,6 +2823,7 @@ begin
   rebuilt_zone_idx := -1;
 
 end;
+
 
 destructor TZoneBuilder.Destroy;
 begin
@@ -2367,13 +2862,60 @@ begin
 
 end;
 
-function TZoneBuilder.GetZoneChecksum(zoneidx: int64; pin: TDateTime; out iSum,
-  iXor: int64): boolean;
+function GetMirroredZoneIdx(zoneid: int64): int64;
 begin
-  result := true;
-  CalculateChecksum(@zone[0], ARC_ZONE_SIZE_IN_BYTES, iSum, iXor);
+  result := zoneid or MIRROR_FLAG;
 
 end;
 
+function TZoneBuilder.GetZoneChecksum(zoneidx: int64; pin: TDateTime; out iSum,
+  iXor: int64): boolean;
+var
+  cs: TChecksumresult;
+begin
+  result := true;
+  cs := CalculateChecksum2020(@zone[0], ARC_ZONE_SIZE_IN_BYTES);
+  isum := cs.cs1;
+  iXor := cs.cs2;
+
+end;
+
+
+{ Tqi_LookForZone }
+
+procedure Tqi_LookForZone.DoExecute;
+var
+  t: ni;
+  sOrigFile: string;
+  sFile: string;
+  bestfile: string;
+  bestdate: TDateTime;
+begin
+//  Lock;
+  try
+    bestDate := 0.0;
+    bestfile := '';
+    sOrigFile := FileIDToFileName(in_zone);
+    for t:= 0 to high(in_paths) do begin
+      sFile := in_paths[t]+sOrigFile;
+      if FileExists(sFile) then begin
+        var fi := TFIleInformation.Create;
+        try
+          fi.LoadFromFile(sFile);
+          if fi.Date > bestDate then begin
+            bestfile := sFile;
+            bestDate := fi.date;
+          end;
+        finally
+          fi.free;
+        end;
+      end;
+    end;
+    out_bestpath := bestfile;
+  finally
+//    Unlock;
+  end;
+
+end;
 
 end.

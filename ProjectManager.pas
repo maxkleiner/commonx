@@ -3,7 +3,7 @@ unit ProjectManager;
 interface
 
 uses
-  typex, systemx, threadmanager, managedthread,commandprocessor, webconfig, debug, diagram, sysutils, SharedObject, PascalCompiler,  BackgroundThreads, classes, docgen, mothershipwebserver, generics.collections, orderlyinit, betterobject;
+  typex, systemx, threadmanager, managedthread,commandprocessor, webconfig, debug, diagram, sysutils, SharedObject, PascalCompiler,  BackgroundThreads, classes, docgen, generics.collections, orderlyinit, betterobject;
 
 type
   TProjectManager = class(TLockQueuedObject)
@@ -65,7 +65,7 @@ function PM: TProjectManager;
 procedure AssertProjectExists;
 
 var
-  pmt: TProjectManagerThread;
+  pmt: TProjectManagerThread = nil;
 
 implementation
 
@@ -234,14 +234,29 @@ var
   p: TUMLProject;
 begin
   inherited;
-  p := FPM.AddProject;
-//  GLOG.Filter := '';
-//  p.AddSourceDir('G:\focus\komodo\drivers\decoders\micronas', '*.h', true);
-//  p.AddSourceFile('g:\focus\komodo\drivers\decoders\micronas\include\_aaa.h');
-  p.AddSourceDir(dllpath+'..\commonx', '*.pas', false);
-//  p.AddSourceDir(dllpath+'..\parsetest', '*.pas', false);
+
+  if paramstr(1) = 'test' then begin
+    p := FPM.AddProject;
+    p.Name := 'parsetest';
+    p.AddSourceDir(dllpath+'..\parsetest', '*.pas', false);
+  end else begin
+    p := FPM.AddProject;
+
+    p.Name := 'codedb';
+
+  //  GLOG.Filter := '';
+  //  p.AddSourceDir('G:\focus\komodo\drivers\decoders\micronas', '*.h', true);
+  //  p.AddSourceFile('g:\focus\komodo\drivers\decoders\micronas\include\_aaa.h');
+    p.AddSourceDir(dllpath+'..\commonx', '*.pas', false);
+    p.AddSourceDir(dllpath+'..\commonx\vcl', '*.pas', false);
+    p.AddSourceDir(dllpath+'..\commonx\fmx', '*.pas', false);
+  end;
+
+
 //  p.AddSourceFile(dllpath+'..\commonx\systemx.pas');
+{$IFNDEF NO_PM_COMPILE}
   QueueCommands;
+{$ENDiF}
 
 
 
@@ -282,10 +297,13 @@ begin
     FPM.BaseDir := dllpath+'..\';
 
     cc := TCompileCommand.create;
-    cc.Project := FPM.Projects[0];
+    cc.Project := FPM.Projects[0];      //todo 1: unfinished
     cc.FireForget := false;
     cc.start;
     cc.waitfor;
+    cc.Free;
+
+
   finally
     FPM.UnlockWrite;
   end;
@@ -309,6 +327,7 @@ var
   sDir: ansistring;
 begin
   inherited;
+  RaiseExceptions := false;
   project.OnProgress := self.OnCompileProgress;
   project.clear;
   project.compileall;
@@ -343,20 +362,6 @@ begin
 
 end;
 
-procedure WebStart(ws: TMothershipwebserver);
-begin
-
-//  raise ECritical.create('unimplemented');
-//TODO -cunimplemented: unimplemented block
-end;
-
-procedure WebStop(ws: TMothershipwebserver);
-begin
-  pmt.Stop;
-  pmt.WaitFor;
-  TPM.NoNeedthread(pmt);
-  pmt := nil;
-end;
 
 
 procedure AssertProjectExists;
@@ -367,22 +372,22 @@ end;
 
 procedure oinit;
 begin
-  webserver.AddStartupRoutine(webstart);
-  webserver.addshutdownroutine(webstop);
   pmt := TPM.NeedThread<TProjectManagerThread>(nil);
-  pmt.beginstart;
+//  pmt.beginstart;
 end;
 
 procedure ofinal;
 begin
-  pmt.Stop;
-  pmt.SafeWaitFor;
-  TPM.NoNeedThread(pmt);
+  if assigned(pmt) then begin
+    pmt.Stop;
+    pmt.SafeWaitFor;
+    TPM.NoNeedThread(pmt);
+  end;
 end;
 
 initialization
 
-orderlyinit.init.RegisterProcs('ProjectManager', oinit, ofinal, 'ManagedThread,CommandProcessor');
+orderlyinit.init.RegisterProcs('ProjectManager', oinit, ofinal, 'ManagedThread');
 
 
 

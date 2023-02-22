@@ -4,7 +4,7 @@ interface
 
 uses webscript,orderlyinit;
 var
-  sf: TScriptFunctions;
+  sf: TScriptFunctions = nil;
 
 
 implementation
@@ -18,7 +18,8 @@ end;
 
 procedure ofinal;
 begin
-  sf.free;
+  if assigned(sf) then
+    sf.free;
 
 
 end;

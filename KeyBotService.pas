@@ -16,7 +16,7 @@ type
   end;
 
 var
-  KEYBOT: TKeybot;
+  KEYBOT: TKeybot = nil;
 
 implementation
 

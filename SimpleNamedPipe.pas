@@ -28,7 +28,8 @@ type
     destructor Destroy; override;
     function DoConnect: boolean; override;
     procedure DoDisconnect;override;
-
+    function GetUniqueID: int64;override;
+    function DocheckForData: boolean;override;
   end;
 
 
@@ -48,6 +49,12 @@ begin
   sPipeName := '';
 end;
 //-------------------------------------------------------------------------------
+function TSimpleNamedPipeConnection.DocheckForData: boolean;
+begin
+  inherited;
+  raise Exception.create('This hasn''t been supported or implemented in years.');
+end;
+
 function TSimpleNamedPipeConnection.DoConnect: boolean;
 //Connects to the Named pipe.  Returns TRUE if successful, else FALSE.
 var
@@ -129,6 +136,11 @@ end;
 function TSimpleNamedPipeConnection.GetConnected: Boolean;
 begin
   result := hpipe <> INVALID_HANDLE_VALUE;
+end;
+
+function TSimpleNamedPipeConnection.GetUniqueID: int64;
+begin
+  result := hpipe;
 end;
 
 //-------------------------------------------------------------------------------

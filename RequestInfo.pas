@@ -1,10 +1,10 @@
 unit RequestInfo;
-
+{x$DEFINE ALLOW_USER_VARS_IN_DB}
 
 interface
 
 uses typex, classes, DataObjectCache, DataObjectServices, DataObjectCacheManager, DataObject, ServerInterfaceInterface, windows,
-  errorHandler, ExceptionsX, ErrorResource, webstring, webconfig, betterobject, sharedobject, stringx, XMLTools, variants, simpleserverinterface, httpclient, variantlist, interfacelist, debug, sysutils;
+  errorHandler, ExceptionsX, ErrorResource, webstring, webconfig, betterobject, sharedobject, stringx, XMLTools, variants, simpleserverinterface, httpclient, variantlist, interfacelist, debug, sysutils, helpers_stream;
 
 type
   EObjectMissing = class(Exception);
@@ -42,7 +42,7 @@ type
     FISRNDTID: integer;
     FSessionID: integer;
     FPercentComplete: single;
-    FServer: IServerInterface;
+    FServers: array of IServerInterface;
 
     FHTTPClient: THTTPClient;
     FDoTransactions: boolean;
@@ -99,10 +99,11 @@ type
     procedure ForceInit;
     property PercentComplete: single read FPErcentComplete write FPercentComplete;
 
-    property Server: IServerInterface read GetServer write FServer;
+    property ServerP: IServerInterface read GetServer;
+    function Server(id: nativeint = 0): IServerInterface;
     property DoTransactions: boolean read FDoTransactions write FDoTransactions;
 
-    procedure CloseServer;
+    procedure CloseServers;
     property ProgressMax: integer read FProgressMax write FProgressMax;
     property ProgressPos: integer read FProgressPos write FProgressPos;
     property Status: string read FStatus write FStatus;
@@ -130,6 +131,7 @@ type
 
     property HTTPClient: THTTPClient read GetHTTPClient write SetHTTPClient;
     function StealHTTPClient: THTTPClient;
+
   end;
 //------------------------------------------------------------------------------
   TMotherShipWebRequest = class(TFakeLockQueuedObject)
@@ -139,6 +141,7 @@ type
     FRequestInfo: TRequestInfo;
     FOriginalDocument: string;
     FIsSecure: boolean;
+    FContentType: string;
     function GetUserAgent: string;
     procedure SetParams(sName: string; const Value: string);
     function GetReferer: string;
@@ -152,13 +155,16 @@ type
     function GetDocument: string;
     function GetOriginalDocument: string;
     function GetFullURL: string;
+    function GetContentString: string;
   //Provides all needed information about the request being made of the
   //Web server.
   //Note: the only information that is represented is the information that
   //we've determined we needed for MotherShip Web Learning Network.
   protected
-    FRaw: string;
-    FContent: string;
+    FContentStream: IHolder<TMemoryStream>;
+    FRawText: rawbytestring;
+    FContentString: string;
+
 
     Fheader: TStringList;
     FCommand: string;
@@ -210,6 +216,7 @@ type
     function IndexOfParam(sName: string): integer;
     //Returns whether or not a parameter has been defined by given name
     property Command: string read FCommand write FCommand;
+    property Method: string read FCommand write FCommand;
     //GET/POST/PUT Command (also called METHOD)
     property Document: string read GetDocument write SetDocument;
     //Document being requested from server excluding HOST information.
@@ -219,10 +226,11 @@ type
 
     property DocumentExt: string read GetDocumentExt;
     //Extension of document being requested.
-    property Raw: string read FRaw write Fraw;
+    //property Raw: TArray<byte> read FRaw write Fraw;
     //Place to put the raw HTTP header that was sent (may not be applicable in
     //some implementations)
-    property Content: string read FContent write FContent;
+    property ContentString: string read GetContentString;
+
 
     property Header: TStringList read FHeader write FHeader;
     //Content of HTTP request body -- used only for POST operations.
@@ -242,8 +250,9 @@ type
     function PatternQuery(sPattern: string): TStringList;
     property FullURL: string read GetFullURL;
 
-
-
+    property RawText: rawbytestring read FRawText write FRawText;
+    property ContentStream: IHolder<TMemoryStream> read FContentStream;
+    property ContentType: string read FContentType write FContentType;
 
   end;
 //------------------------------------------------------------------------------
@@ -534,6 +543,11 @@ var
 begin
 
   sName := lowercase(sName);
+  if (sName = 'id') and (value = '') then
+    Debug.Log('id here');
+
+  if sNAme = 'content-type' then
+    FContentType := Value;
 
   //if already has a param by name... overwrite it
   idx := FParamNames.indexof(sName);
@@ -569,7 +583,7 @@ begin
 
 end;
 
-procedure TRequestInfo.CloseServer;
+procedure TRequestInfo.CloseServers;
 begin
   if self.Response.FDOCache <> nil then begin
     self.Response.FDOCache.server := nil;
@@ -579,14 +593,19 @@ begin
 
   Response.FObjectPool.Clear;
   //FServer.free;
-  DOSVPool[DTID].NoNeedServer(FServer);
-  FServer := nil;
+  for var t:= 0 to high(FServers) do begin
+    if assigned(FServers[t]) then
+      DOSVPool[t].NoNeedServer(FServers[t]);
+  end;
+  setlength(FServers,0);
 end;
 
 procedure TRequestInfo.Commit;
 begin
-  if assigned(self.FServer) then
-    server.Commit;
+  for var t := 0 to high(FServers) do begin
+    if assigned(self.FServers[t]) then
+      server.Commit;
+  end;
 
 end;
 
@@ -606,9 +625,9 @@ begin
   FISRNDTID := source.FISRNDTID;
   FCopied := true;
   if bNewCache then begin
-    FServer := nil;
+    setlength(FServers,0);
   end else begin
-    FServer := source.FServer;
+    FServers := source.FServers;
   end;
 
   //inc(GelementCount);
@@ -659,9 +678,7 @@ begin
 
 
   if DoTransactions then begin
-    if DTID < DOSVPool.count then
-      DOSVPool[DTID].NoNeedServer(FServer);
-    FServer := nil;
+    CloseServers;
   end;
 //    FServer.free;
 
@@ -682,11 +699,12 @@ begin
 
 
   //CopyStringList(source.FContent, FContent);
-  Fcontent :=  source.FContent;
-
-  FRaw:= '';
-  FRaw := source.Fraw;
-  UniqueString(FRaw);
+  FcontentString :=  source.FContentString;
+  FContentStream := source.FContentStream;
+   FContentStream := THolder<TMemoryStream>.create;
+  FContentStream.o := TMemoryStream.Create;
+  source.FContentStream.o.seek(0,soBeginning);
+  Stream_GuaranteeCopy(source.FContentStream.o, FContentStream.o);
 
   FParams:= TStringList.create;
   CopyStringList(source.FParams, FParams, true);
@@ -717,7 +735,8 @@ constructor TMotherShipWebRequest.Create;
 begin
   inherited;
   FIsSecure := false;
-  FRaw:= '';
+  FContentStream := THolder<TMemoryStream>.create;
+  FContentStream.o := TMemoryStream.Create;
   FHeader:= TStringList.create;
   FParams:= TStringList.create;
   FParamNames := TStringList.create;
@@ -730,13 +749,14 @@ begin
   FClientIP := '0.0.0.0';
   Fcopied:=false;
 
+
 end;
 //------------------------------------------------------------------------------
 procedure TMotherShipWebRequest.DecodeMultiPart;
 var
   sTemp: string;
 begin
-  sTemp := self.Content;
+  sTemp := self.ContentString;
   //Get the multipart header
 
   //Get the multipart content-type
@@ -770,6 +790,16 @@ begin
     request.AddParam('accountid', '0', pcCookie);
   self.SessionId := 0;
   request.AddParam('sessionid', self.SessionHash, pcCookie);
+
+end;
+
+function TMotherShipWebRequest.GetContentString: string;
+begin
+  var rbs: rawbytestring := '';
+  setlength(rbs, contentstream.o.Size);
+  contentstream.o.Seek(0,soBeginning);
+  Stream_GuaranteeRead(contentstream.o, @rbs[low(rbs)], contentstream.o.Size);
+  result := string(rbs);
 
 end;
 
@@ -1188,7 +1218,7 @@ end;
 
 function TRequestInfo.GetDoTransactions: boolean;
 begin
-  Result := FDoTransactions and (FServer <> nil);
+  Result := FDoTransactions and (length(FServers) > 0);
 end;
 
 function TRequestInfo.GetDTID: integer;
@@ -1236,21 +1266,8 @@ begin
   if DTID = 255 then
     DTID := 0;
 
-  if FServer = nil then begin
-    if DoTransactions then
-      FServer := DOSVpool[DTID].NewServer
-    else begin
-      raise exception.create('only transactional servers allowed');
-    end;
 
-//      FServer := DOSVpool[DTID].NewServer;
-
-    LoadVars;
-  end;
-
-  result := FServer;
-
-
+  result := Server(DTID);
 
 
 end;
@@ -1374,6 +1391,7 @@ begin
     if sessionid <= 0 then
       exit;
 
+{$IFDEF ALLOW_USER_VARS_IN_DB}
     if not self.server.LazyQueryMap(self.Response.DOCache,  obj, 'SELECT * from session_vars where sessionid='+inttostr(sessionid), sessionid, 10000,'TdoSessionVars', sessionid, nil, 'TdoSessionVar', 2)
     then
       exit;
@@ -1388,6 +1406,7 @@ begin
       request.Default(obj2.obj[t]['varName'].AsString,decodewebstring(obj2.obj[t]['varValue'].AsString));
   //    request.AddParam(obj.obj[t]['varName'].AsString,obj.obj[t]['varValue'].AsString, pcCookie);
     end;
+{$ENDIF}
 
   finally
     self.SetupDefaultVarPool;
@@ -1474,8 +1493,10 @@ end;
 
 procedure TRequestInfo.Rollback;
 begin
-  if assigned(self.FServer) then
-    server.Rollback;
+  for var t := 0 to high(Fservers) do begin
+    if assigned(FServers[t]) then
+      Fservers[t].Rollback;
+  end;
 
 end;
 
@@ -1508,6 +1529,22 @@ begin
   response.varpool[sName] := sValue;
 
 end;
+function TRequestInfo.Server(id: nativeint): IServerInterface;
+begin
+  if length(FServers) < (id+1) then
+    setlength(FServers,id+1);
+
+  if FServers[id] = nil then begin
+    FServers[id] := DOSVPool[id].NewServer;
+    LoadVars;
+  end;
+
+  result := FServers[id];
+
+
+
+end;
+
 procedure TRequestInfo.SetDTID(const Value: integer);
 begin
   FDTID := Value;
@@ -1877,6 +1914,7 @@ begin
 
 end;
 
+
 function TMotherShipWebRequest.RebuildInlineParameters: string;
 //returns all Header/Inline parameters in URL encoded
 //form.  Effectively used to rebuild the URL from which the
@@ -1988,6 +2026,8 @@ var
   i: integer;
   pc: TParamsource;
 begin
+  if (sName = 'id') and (value = '') then
+    raise ECritical.create('whoa!');
   i := FParamNames.IndexOf(sName);
 
   pc := pcGenerated;

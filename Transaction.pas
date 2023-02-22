@@ -53,8 +53,9 @@ type
     function CanCommit: boolean;virtual;//<<<-----------OVERRIDE ME!
 
     property Tries: ni read FTries write FTries;
-
+    procedure ExceptionRecover;virtual;
   public
+
     procedure BeginTransaction;
     function CommitTransaction: boolean;
     procedure DoExecute;override;
@@ -112,32 +113,41 @@ begin
   Cresult := trFailed;
   try
     while (CResult <> trCommitted) and (CResult <> trCancelled)and ((TriesBeforeFail = 0) or (Tries < TriesBeforeFail)) do begin
-      if isCancelled then begin
-        CResult := trCancelled;
-        exit;
-      end;
-
-      BeginTransaction;
       try
-        CResult := Perform;
-      except
-        if not RetryOnPerformException then
-          raise
-        else
-          CResult := trFailed;
-      end;
-      if CommitTransaction then
-        CResult := trCommitted
-      else
-        CResult := trCollision;
+        if isCancelled then begin
+          CResult := trCancelled;
+          exit;
+        end;
 
-      inc(FTries);
-      if ((Tries > TriesBeforeFail) and (TriesBeforeFail > 0)) then begin
-        DEbug.Log('TRANSACTION FAILED! '+self.classname);
+        BeginTransaction;
+        try
+          CResult := Perform;
+        except
+          if not RetryOnPerformException then
+            raise
+          else
+            CResult := trFailed;
+        end;
+        if CommitTransaction then
+          CResult := trCommitted
+        else
+          CResult := trCollision;
+
+        inc(FTries);
+        if ((Tries > TriesBeforeFail) and (TriesBeforeFail > 0)) then begin
+          DEbug.Log('TRANSACTION FAILED! '+self.classname);
+        end;
+      except
+        on E:Exception do begin
+          inc(FTries);
+          ExceptionRecover;
+          DEbug.Log('TRANSACTION Exception! '+self.classname);
+        end;
       end;
     end;
   except
     on E: Exception do begin
+
       Status := e.message;
       CResult := trFailed;
     end;
@@ -148,6 +158,11 @@ begin
 end;
 
 procedure TTransactionalCommand.DoRollback;
+begin
+  //
+end;
+
+procedure TTransactionalCommand.ExceptionRecover;
 begin
   //
 end;

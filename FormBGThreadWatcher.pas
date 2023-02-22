@@ -5,9 +5,9 @@ interface
 {x$DEFINE USE_ONCOMPLETE}
 
 uses
-  tickcount, betterobject,guihelpers,colorconversion, commandprocessor, advancedgraphics, Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  tickcount, betterobject, guihelpers,colorconversion, commandprocessor, advancedgraphics, Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, ImgList, BackgroundThreads, ManagedThread, ExtCtrls, betterobjectregistry, systemx, numbers,
-  Vcl.StdCtrls,easyimage, typex, ringstats,
+  Vcl.StdCtrls,easyimage, typex, ringstats,tlhelp32, windowsx, system.uitypes, system.diagnostics,
 {$DEFINE TRYLOCKRUDP}
 {$IFDEF RUDP2}
   RUDPMonitor2,
@@ -76,7 +76,6 @@ type
     TabSheet7: TTabSheet;
     lvRUDP: TListView;
     TabSheet8: TTabSheet;
-    memLog: TMemo;
     StaticText1: TStaticText;
     Splitter2: TSplitter;
     cRUDP: TChart;
@@ -84,6 +83,7 @@ type
     Series3: TAreaSeries;
     Series4: TLineSeries;
     Series5: TLineSeries;
+    memLog: TMemo;
     procedure Timer1Timer(Sender: TObject);
     procedure FrameResize(Sender: TObject);
     procedure Timer2Timer(Sender: TObject);
@@ -124,7 +124,9 @@ type
     procedure ThrDrawOnComplete(sender: TObject);
     procedure SyncThrDrawOnCOmplete;
   public
+
     destructor Destroy; override;
+    constructor Create(AOwner: TComponent); override;
 
     { Public declarations }
 
@@ -204,8 +206,8 @@ procedure TfrmBGThreadWatcher.rgUpdateSpeedClick(Sender: TObject);
 begin
   case rgUpdateSpeed.itemindex of
     0: timer1.Interval := 10;
-    1: timer1.Interval := 1000;
-    2: timer1.Interval := 333;
+    1: timer1.Interval := 2000;
+    2: timer1.Interval := 1000;
     3: timer1.Interval := 100;
     4: timer1.Interval := 10;
   end;
@@ -221,6 +223,9 @@ begin
   try
     popThread.items.Clear;
     thr := GetSelectedThread;
+    if thr = nil then
+      exit;
+
     for idx := popthread.Items.count-1 downto 0 do begin
       itm := popThread.Items[idx];
       popThread.Items.Delete(idx);
@@ -295,6 +300,8 @@ begin
   end;
 
   thr := nil;
+  if not lvBackground.showing then
+    exit;
   if refreshhits then begin
     //brainscanwindowsgui.MemList(lvMemory, lvBackground);
 
@@ -700,7 +707,14 @@ begin
 
 
         //-----------THREAD TIMES
-        tt := tickcount.getthreadtime(thr2.handle);
+        var thrh := thr2.handle;
+        if thrh = INVALID_HANDLE_VALUE then
+          thrh := OpenThread(THREAD_SET_INFORMATION or THREAD_QUERY_INFORMATION, false, thr2.threadid);
+        tt := tickcount.getthreadtime(thrh);
+        if thr2.handle = INVALID_HANDLE_VALUE then
+          windows.CloseHandle(thrh);
+
+
         if deltaTime = 0 then deltaTime := 1;
 
         QueryPerformanceFrequency(tempfreq);
@@ -777,7 +791,6 @@ var
 
 begin
   h := db.height;
-  result := 1;
 
   if h = 0 then begin
     result := 0;
@@ -832,12 +845,18 @@ end;
 function TfrmBGThreadWatcher.GetSelectedThread: TManagedThread;
 begin
   result := nil;
+  EXIT;
+  //rewrite this so that it doesn't talk directly to backgroundthreadman
+
+
   if lvBackground.ItemIndex < 0 then
     exit;
 
   BackgroundThreadMan.Lock;
   try
-    result := TManagedThread(BackgroundThreadMan.Threads[lvBackground.ItemIndex]);
+    var thr := BackgroundThreadMan.Threads[lvBackground.ItemIndex];
+    if thr is TManagedThread then
+      result := TManagedThread(thr);
 
   finally
     BackgroundThreadMan.UnLock;
@@ -1068,7 +1087,7 @@ begin
           end;
 
 
-
+          cccc := colorconversion.ColorFormat(cccc,'RGB','RGB');
           db.Canvas.pixels[(xx*h)+TT,(yy*h)+uu] := cccc;
 
 
@@ -1082,6 +1101,13 @@ begin
 //    cp.unlock;
   end;
 
+
+end;
+
+constructor TfrmBGThreadWatcher.Create(AOwner: TComponent);
+begin
+  debug.log('creating debug frame');
+  inherited;
 
 end;
 
@@ -1172,3 +1198,4 @@ end;
 
 
 end.
+

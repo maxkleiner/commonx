@@ -26,6 +26,8 @@ type
     function GetConnected: boolean;override;
     function DoReadData(buffer: pbyte; length: integer): integer;override;
     function DoWaitForData(timeout: cardinal): boolean;override;
+
+
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -49,6 +51,7 @@ type
     procedure MIDI_NoteOff(iChannel: nativeint; iNote: nativeint; iVel: nativeint);
     procedure ProcessIncoming;override;  //does nothing
     procedure EvalDataSignal;
+    function GetUniqueID: Int64; override;
   end;
 
   TSimpleBufferedMidiConnection = class(TSimpleAbstractConnection)
@@ -222,6 +225,11 @@ begin
 end;
 
 
+
+function TSimpleMIDIPort.GetUniqueID: Int64;
+begin
+  result := -666;
+end;
 
 procedure TSimpleMIDIPort.Lock;
 begin

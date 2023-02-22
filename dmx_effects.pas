@@ -7,7 +7,8 @@ interface
 uses
   colorblending, math, sysutils, typex,  dmx_objects, graphics, geometry, systemx, soundtools, numbers, stringx, fastbitmap, types;
 
-
+const
+  BOX_COLORS : array of TColor = [clRed,clLime,clBlue,clYellow, $FF00FF, $FFFF00];
 type
   TFXSpotStaticJoyPosition = class(TDMXEffect)
   public
@@ -139,6 +140,31 @@ type
       rAmplitude: single); override;
     procedure DefineParameters;override;
   end;
+  TDMXBitmappedEffect = class(TDMXEffect)
+  protected
+    fbm: TFastBitmap;
+    procedure CheckResources;
+  public
+    procedure Detach; override;
+    procedure Dim(by: single);
+    procedure PushBitmapToDMX(l: TDMXChannelCluster);
+
+  end;
+
+  TFXBeatSquares = class(TDMXBitmappedEffect)
+  private
+    lasttrigger: nativeint;
+  public
+    procedure UpdatePhysicsForEffect(iTriggerNumber: integer; rTime: NativeFloat;
+      rAmplitude: single);override;
+
+    procedure UpdatePhysicsforlight(iGroupID, iGroupOf: integer;
+      l: TDMXChannelCluster; iTriggerNumber: integer; rTime: NativeFloat;
+      rAmplitude: single); override;
+    procedure DefineParameters;override;
+
+  end;
+
 
 
   TFXMoveThenBlankGroup = class(TDMXEffect)
@@ -712,7 +738,7 @@ begin
     if pw.strobeenable then exit;
 
     for u := 0 to pw.Dimensions.y-1 do begin
-      uu := (pw.Dimensions.y-1) -u;
+      uu := u;//(pw.Dimensions.y-1) -u;
 
       for t:= 0 to pw.Dimensions.x-1 do begin
         r := power(rAmplitude,2) * Scale * 4;
@@ -720,8 +746,8 @@ begin
         r := r - ((pw.Dimensions.y-1)-u);
         if r < 0 then r := 0;
         if r > 1 then r := 1;
-        //r := Interpolate(MinIntensity, Intensity, r);
-        pw.pixels[t,uu].Intensity := r*Intensity;
+        r := Interpolate(r,MinIntensity, Intensity);
+        pw.pixels[t,uu].Intensity := r;//*Intensity;
       end;
     end;
   end;
@@ -1431,6 +1457,115 @@ begin
 end;
 
 
+{ TFXBeatSquares }
+
+
+
+procedure TFXBeatSquares.DefineParameters;
+begin
+  inherited;
+
+end;
+
+procedure TFXBeatSquares.UpdatePhysicsForEffect(iTriggerNumber: integer;
+  rTime: NativeFloat; rAmplitude: single);
+begin
+  inherited;
+  checkresources;
+  var newtrig : boolean := iTriggerNumber <> lasttrigger;
+  lasttrigger := iTriggerNumber;
+  Dim(0.5);
+  var w := round(fbm.width);
+  var h := round(fbm.height);
+  var nw  := round(fbm.width*1.1);
+  var nh  := round(fbm.height*1.1);
+  fbm.ResizeImage(nw, nh);
+  fbm.ResizeCanvas(w,h,0+((nw-w) shr 1),0+((nh-h) shr 1),clBlack);
+
+
+  if newtrig then begin
+    for var t := 0 to 11 do begin
+      var rnd := Random(length(BOX_COLORS)-1);
+      var c := BOX_COLORS[rnd];
+      var rx := Random(fbm.width-1);
+      var ry := random(fbm.height-1);
+      var rw := Random(6)+2;
+
+
+      fbm.canvas.brush.color := c;
+      fbm.Canvas.Rectangle(rx,ry, rx+rw,ry+rw);
+    end;
+  end;
+
+
+end;
+
+procedure TFXBeatSquares.UpdatePhysicsforlight(iGroupID, iGroupOf: integer;
+  l: TDMXChannelCluster; iTriggerNumber: integer; rTime: NativeFloat;
+  rAmplitude: single);
+begin
+  inherited;
+  PushBitmapToDMX(l);
+
+
+end;
+
+{ TDMXBitmappedEffect }
+
+procedure TDMXBitmappedEffect.CheckResources;
+begin
+  if fbm <> nil then
+    exit;
+
+  fbm := TFastBitmap.create;
+  fbm.width := 24;
+  fbm.height := 24+40;
+  fbm.new;
+
+end;
+
+procedure TDMXBitmappedEffect.Detach;
+begin
+  fbm.free;
+  fbm := nil;
+  inherited;
+end;
+
+procedure TDMXBitmappedEffect.Dim(by: single);
+begin
+  CheckResources;
+  fbm.Canvas.Iterate(procedure (x,y: nativeint) begin
+
+    fbm.Canvas.Pixels[x,y] := ColorBlend(fbm.Canvas.Pixels[x,y],clBlack,by);
+
+  end);
+end;
+
+procedure TDMXBitmappedEffect.PushBitmapToDMX(l: TDMXChannelCluster);
+var
+  pw: TDMXPixelWall;
+  t,u: integer;
+  r: nativefloat;
+  Scale: nativefloat;
+  Intensity: nativefloat;
+  c: Tcolor;
+begin
+  inherited;
+
+  //only works with derivatives of pixel wall
+  if not (l is TDMXPixelWall) then
+    exit;
+  pw := l as TDMXPixelWall;
+  for u := 0 to pw.Dimensions.y-1 do begin
+    for t:= 0 to pw.Dimensions.X-1 do begin
+      c := fbm.Canvas.Pixels[t+pw.pixeloffset.x,u+pw.pixeloffset.y];
+      pw.pixels[t,u].color := c;
+      pw.pixels[t,u].Intensity := 1;
+    end;
+  end;
+
+end;
+
 initialization
 
 Multiverse.EffectLibrary.RegisterClass(TFXSpotSwirl);
@@ -1446,6 +1581,7 @@ Multiverse.EffectLibrary.RegisterClass(TFXCaliente);
 Multiverse.EffectLibrary.RegisterClass(TFX4Banger);
 Multiverse.EffectLibrary.RegisterClass(TFXSimpleGraphic);
 Multiverse.EffectLibrary.RegisterClass(TFXPixelFire);
+Multiverse.EffectLibrary.RegisterClass(TFXBeatSquares);
 globalfire.init;
 
 

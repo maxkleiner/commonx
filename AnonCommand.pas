@@ -5,7 +5,7 @@ interface
 {x$DEFINE ANON_SYNC_EXEC}
 
 uses
-  debug, System.Classes, System.SysUtils, System.Generics.Collections, better_collections, typex, systemx, managedthread, commandprocessor;
+  betterobject, debug, System.Classes, System.SysUtils, System.Generics.Collections, better_collections, typex, systemx, managedthread, commandprocessor, numbers, backgroundcommandprocessor;
 
 type
   EAnonymousThreadException = class(Exception);
@@ -14,6 +14,8 @@ type
   public
     procedure DoExecute;override;
   end;
+
+
 
 
 
@@ -34,6 +36,9 @@ type
   protected
     procedure DoExecute; override;
   public
+    vResultEx: variant;
+    parenthold: IUnknown;
+    property OnErrorProc: TProc<Exception> read FonErrorProc;
     procedure InitExpense; override;
     procedure Detach; override;
     property SynchronizeFinish: boolean read FSynchronizeFinish write FSynchronizeFinish;
@@ -58,9 +63,9 @@ type
   protected
     procedure DoExecute; override;
   public
-    iteration: ni;
-    count: ni;
-    proc: TProc<ni>;
+    iteration: int64;
+    batchcount: int64;
+    proc: TProc<int64>;
   end;
 
 
@@ -81,19 +86,37 @@ type
     procedure InitExpense;override;
   end;
 
-{ TAnonymousTimer }
+  TPromise = record
+  private
+    cmd: IHolder<TAnonymousCommand<boolean>>;
+  public
+    parent: ^TPromise;
+    function thenDo(p: TProc): TPromise;
+    function thenGUI(p: TProc): TPromise;
+    function Go: TPromise;
+    function WaitFor(iupTo: int64 = -1): boolean;
+  end;
 
-function InlineProc(proc: TProc): TAnonymousCommand<boolean>;
-function InlineIteratorProc(idx: ni; proc: TProc<ni>): TAnonymousIteratorCommand;
-function InlineIteratorGroupProc(idx: ni; count: ni; proc: TProc<ni>): TAnonymousIteratorCommand;
+function Promise(proc: TProc): TPromise;
+function InlineProc(proc: TProc; bStart: boolean = true): TAnonymousCommand<boolean>;
+function InlineIteratorProc(idx: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
+function InlineIteratorProcNS(idx: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
+function InlineIteratorGroupProc(idx: ni; batchcount: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
 function InlineProcWithGui(proc, guiproc: TProc): TAnonymousCommand<boolean>;
 function InlineProcWithGuiEx(proc, guiproc: TProc; exProc:TProc<string>): TAnonymousCommand<boolean>;
-
+function InlineProcWithGuiExUnstarted(proc, guiproc: TProc; exProc:TProc<string>): TAnonymousCommand<boolean>;
+procedure ForXFake(iStart, iEnd_Ignored, iMinBatchSize,iMaxBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);overload;
+procedure ForXFake(iStart, iEnd_Ignored, iMinBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);overload;
+procedure ForX(iStart, iEnd_Ignored, iMinBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);overload;
+procedure ForX(iStart, iEnd_Ignored, iMinBatchSize,iMaxBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);overload;
+procedure ForX_NoWait(iStart, iEnd, iMinBatchSize: int64; doproc: TProc<int64>; cp: TCommandProcessor = nil);
 //function InlineProc<T>(proc: TProc): TAnonymousCommand<T,boolean>;
 
 
 function SetTimer(interval: ni; ontimerproc: TAnonTimerProc): TAnonymousTimer;
 function SetTimerGUI(interval: ni; ontimerproc: TAnonTimerProc): TAnonymousTimer;
+
+
 
 implementation
 
@@ -106,8 +129,184 @@ uses
 {$ENDIF IOS}
   ;
 {$ENDIF MACOS}
+procedure ForXFake(iStart, iEnd_Ignored, iMinBatchSize,iMaxBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);overload;
+begin
+  ForXFake(iStart, iEnd_Ignored, iMinBatchSize, doproc, opts, prog, cp);
+end;
 
+procedure ForXFake(iStart, iEnd_Ignored, iMinBatchSize: int64; doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);
+var
+  p: TProgress;
+begin
+  var realend := iEnd_Ignored-1;
+  if TForXoption.fxEndInclusive in opts then
+    realend := realend + 1;
+
+  for var x := iStart to realend do begin
+    if assigned(prog) then begin
+      p.step := x;
+      p.stepcount := realend;
+      prog(p);
+    end;
+    doProc(x);
+  end;
+
+end;
+
+
+procedure ForX(iStart, iEnd_Ignored, iMinBatchSize: int64;
+    doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);
+begin
+//  if IsDebuggerAttached then opts := opts + [fxLimit4Threads];
+  ForX(iStart,iEnd_Ignored,iMinBatchSize, 0, doproc, opts, prog,cp);
+end;
+
+procedure ForX(iStart, iEnd_Ignored, iMinBatchSize, iMaxBatchSize: int64;
+    doproc: TProc<int64>;opts: TForXOptions = []; prog: TProc<TProgress> = nil; cp: TCommandProcessor = nil);
+begin
+  if fxEndInclusive in opts then begin
+    if iEnd_Ignored < iStart then
+      exit;
+  end else begin
+    if iEnd_Ignored <= iStart then
+      exit;
+  end;
+//  if IsDebuggerAttached then opts := opts + [fxLimit4Threads];
+  if iMaxBatchSize = 0 then
+    iMaxBatchSize := SIMPLE_BATCH_SIZE;
+
+  var cl := TCommandList<TAnonymousIteratorCommand>.create;
+  try
+    var cpus :=  GetEnabledCPUCount;
+
+
+    var t := iStart;
+
+    if (iEnd_Ignored >= iStart) then begin
+      var totalsz := iEnd_Ignored-iStart;
+      if fxNoCPUExpense in opts then
+        cpus := greaterof(1,totalsz);
+      if fxLimit1Thread in opts then
+        cpus := 1;
+      if fxLimit2Threads in opts then
+        cpus := 2;
+      if fxLimit4Threads in opts then
+        cpus := 4;
+      if fxLimit8Threads in opts then
+        cpus := 8;
+      if fxLimit16Threads in opts then
+        cpus := 16;
+      if fxLimit32Threads in opts then
+        cpus := 32;
+      if fxLimit64Threads in opts then
+        cpus := 64;
+      if fxLimit256Threads in opts then
+        cpus := 256;
+      if fxLimit1024Threads in opts then
+        cpus := 1024;
+
+
+      if fxEndInclusive in opts then
+        inc(totalsz);
+      var cx := totalsz;
+      while cx > 0 do begin
+        var thissz := lesserof(cx, greaterof(iMinBatchSize, (totalsz div cpus)));
+
+        thissz := lesserof(iMaxBatchSize, thissz);
+        var c := TAnonymousIteratorCommand.Create;
+        c.iteration := t;
+        c.batchcount := thissz;
+        c.proc := doProc;
+        cl.add(c);
+        if fxNoCPUExpense in opts then
+          c.CPUExpense := 0.0;
+        if fxLimit1Thread in opts then
+          c.memoryexpense := 1/2;
+        if fxLimit2Threads in opts then
+          c.memoryexpense := 1/2;
+        if fxLimit4Threads in opts then
+          c.memoryexpense := 1/4;
+        if fxLimit8Threads in opts then
+          c.memoryexpense := 1/8;
+        if fxLimit16Threads in opts then
+          c.memoryexpense := 1/16;
+        if fxLimit32Threads in opts then
+          c.memoryexpense := 1/32;
+        if fxLimit64Threads in opts then
+          c.memoryexpense := 1/64;
+        if fxLimit256Threads in opts then
+          c.memoryexpense := 1/256;
+        if fxLimit1024Threads in opts then
+          c.memoryexpense := 1/1024;
+
+        c.RaiseExceptions := fxRaiseExceptions in opts;
+        c.FireForget := false;
+        if cp = nil then
+          c.start(ForXCmd)
+        else
+          c.start(cp);
+
+        dec(cx, thissz);
+        inc(t, thissz);
+      end;
+    end else begin
+      debug.Log('warning, not implemented when end < start');
+      exit;
+    end;
+
+    cl.WaitForAll_DestroyWhileWaiting(prog);
+    if assigned(prog) then begin
+      var p: TProgress;
+      p.step := -1;
+      p.stepcount := 0;
+      prog(p);
+    end;
+
+
+  finally
+    cl.free;
+  end;
+end;
+
+procedure ForX_NoWait(iStart, iEnd, iMinBatchSize: int64; doproc: TProc<int64>; cp: TCommandProcessor = nil);
+begin
+//  var cl := TCommandList<TAnonymousIteratorCommand>.create;
+  try
+    var cpus :=  GetEnabledCPUCount;
+    var t := iStart;
+
+    if (iEnd >= iStart) then begin
+      var totalsz := iEnd-iStart;
+      var cx := totalsz;
+      while cx > 0 do begin
+        var thissz := lesserof(cx, greaterof(iMinBatchSize, (totalsz div cpus)));
+        var c := TAnonymousIteratorCommand.Create;
+        c.iteration := t;
+        c.batchcount := thissz;
+        c.proc := doProc;
+//        cl.add(c);
+        c.FireForget := true;
+        if cp = nil then
+          c.start(ForXCmd)
+        else
+          c.start(cp);
+        dec(cx, thissz);
+        inc(t, thissz);
+      end;
+    end else begin
+      raise ECritical.create('not implemented when end < start');
+    end;
+
+//    cl.WaitForAll_DestroyWhileWaiting;
+  finally
+//    cl.free;
+  end;
+end;
 { TAnonymousCommand }
+
+
+
+
 
 //class constructor TAnonymousCommand<T>.Create;
 //begin
@@ -121,38 +320,51 @@ uses
 
 procedure TAnonymousCommand<T>.Detach;
 begin
-  Debug.log(self, 'Detaching');
+//  Debug.log(self, 'Detaching');
   if detached then exit;
   inherited;
 
 end;
 
-function InlineProc(proc: TProc): TAnonymousCommand<boolean>;
+
+function Promise(proc: TProc): TPromise;
+begin
+  result.cmd := THolder<TAnonymousCommand<boolean>>.create(TAnonymousFunctionCommand.createinline(proc,true,false));
+  result.cmd.o.startondestroy := true;
+  result.parent := nil;
+end;
+
+function InlineProc(proc: TProc; bStart: boolean = true): TAnonymousCommand<boolean>;
 var
   res: TAnonymousCommand<boolean>;
 begin
-  res := TAnonymousFunctionCommand.createinline(proc, false, false);
+  res := TAnonymousFunctionCommand.createinline(proc, not bStart, false);
   res.SynchronizeFinish := false;
   result := res;
 end;
 
 
-function InlineIteratorProc(idx: ni; proc: TProc<ni>): TAnonymousIteratorCommand;
+function InlineIteratorProc(idx: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
+begin
+  result := InlineIteratorProcNS(idx, proc);
+  result.start;
+end;
+function InlineIteratorProcNS(idx: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
 begin
   result := TAnonymousIteratorCommand.create;
   result.iteration := idx;
-  result.count := 1;
+  result.BATCHcount := 1;
   result.proc := proc;
 //  result.CPUExpense := 1.0;
-  result.start;
+
 end;
 
 
-function InlineIteratorGroupProc(idx: ni; count: ni; proc: TProc<ni>): TAnonymousIteratorCommand;
+function InlineIteratorGroupProc(idx: ni; batchcount: ni; proc: TProc<int64>): TAnonymousIteratorCommand;
 begin
   result := TAnonymousIteratorCommand.create;
   result.iteration := idx;
-  result.count := count;
+  result.batchcount := batchcount;
   result.proc := proc;
 //  result.CPUExpense := 1.0;
   result.start;
@@ -179,6 +391,18 @@ begin
   result.start;
 
 end;
+
+function InlineProcWithGuiExUnstarted(proc, guiproc: TProc; exProc:TProc<string>): TAnonymousCommand<boolean>;
+var
+  res: TAnonymousCommand<boolean>;
+begin
+  res := TAnonymousFunctionCommand.createinlinewithguiex(proc, guiproc, exProc, false, false);
+
+  result := res;
+//  result.start;
+
+end;
+
 
 
 constructor TAnonymousCommand<T>.Create(AThreadFunc: TFunc<T>; AOnFinishedProc: TProc<T>;
@@ -234,15 +458,16 @@ begin
   try
 {$ENDIF}
     try
-//      raise ECritical.Create('fuck you');
-      if FSynchronizeExecute then begin
-        TThread.Synchronize(self.Thread.realthread, SyncExecute)
-      end else
-        FResult := FThreadFunc;
+      if assigned(FthreadFunc) then begin
+        if FSynchronizeExecute then begin
+          TThread.Synchronize(self.Thread.realthread, SyncExecute)
+        end else
+          FResult := FThreadFunc;
+      end;
 
       if assigned(FonFinishedProc) then begin
         try
-          if FSynchronizeFinish then
+          if FSynchronizeFinish and assigned(FOnFinishedProc) then
             TThread.Synchronize(self.Thread.realthread, SyncFinished)
           else
             FOnFinishedProc(FResult);
@@ -378,7 +603,7 @@ begin
                 end;
 
 
-  Create(funct, procedure (b: boolean) begin end, procedure (e: exception) begin end);
+  Create(funct, nil, nil, ACreateSuspended, FreeOnComplete);
 end;
 
 constructor TAnonymousFunctionCommand.CreateInlineWithGui(AThreadFunc, GuiFunc: TProc;
@@ -389,7 +614,8 @@ var
 begin
   func1:= function (): boolean
                 begin
-                  AthreadFunc();
+                  if assigned(AThreadFunc) then
+                    AthreadFunc();
                   result := true;
                 end;
 
@@ -420,12 +646,14 @@ begin
                   AthreadFunc();
                   result := true;
                 end;
-
+  func2 := nil;
+  if assigned(guifunc) then
   func2:= procedure (b: boolean)
                 begin
                   GuiFunc();
                 end;
-
+  func3 := nil;
+  if assigned(exproc) then
   func3 := procedure (s: string)
           begin
             ExProc(s);
@@ -444,11 +672,45 @@ end;
 procedure TAnonymousIteratorCommand.DoExecute;
 begin
   inherited;
-  if count = 0 then
-    count := 1;
-  for var t:= 0 to count-1 do begin
+  if batchcount = 0 then
+    batchcount := 1;
+  for var t:= 0 to batchcount-1 do begin
     proc(iteration+t);
   end;
+end;
+
+{ TPromise }
+
+function TPromise.Go: TPromise;
+begin
+  result := self;
+  cmd.o.StartChain;
+end;
+
+function TPromise.thenDo(p: TProc): TPromise;
+begin
+  result := Promise(p);
+  result.parent := @self;
+  result.cmd.o.FireForget := false;
+  result.cmd.o.parenthold := result.cmd;
+  result.cmd.o.AddDependency(result.parent.cmd.o);
+end;
+
+function TPromise.thenGUI(p: TProc): TPromise;
+begin
+  result := Promise(p);
+  result.parent := @self;
+  result.cmd.o.FireForget := false;
+  result.cmd.o.AddDependency(result.parent.cmd.o);
+  result.cmd.o.parenthold := result.cmd;
+  result.cmd.o.SynchronizeExecute := true;
+
+
+end;
+
+function TPromise.WaitFor(iupTo: int64): boolean;
+begin
+  result := self.cmd.o.WaitFor(iUpTo);
 end;
 
 end.

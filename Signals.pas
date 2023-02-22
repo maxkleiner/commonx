@@ -264,6 +264,11 @@ begin
 end;
 
 function WaitForSignal(ev: TSignal; iTimeout: nativeint = -1): boolean;overload;
+{$IFDEF SIMPLE_WAIT}
+begin
+  ev.WaitFor(iTimeout);
+end;
+{$ELSE}
 var
   iThisWait: ni;
   tmStart: ticker;
@@ -290,6 +295,7 @@ begin
   result := false; // we didn't get the signal in time
 
 end;
+{$ENDIF}
 
 
 

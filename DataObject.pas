@@ -337,14 +337,17 @@ type
     function Fetch(sType: string; tokenparams: variant; sessionid: ni): TDataObject;
     function LazyFetch(sType: string; tokenparams: variant; sessionid: ni; bRaiseExceptions: boolean = true): TDataObject;
     function GhostObject(sType: string; tokenparams: variant; sessionid: ni): TDataObject;
+    procedure SortAnon_Quick(CompareProc_1isAgtB: TFunc<TDataObject,TDataObject,ni>;iLo,iHi: ni);
 
 
   public
+    sortHelperData: pointer;
     FFieldDefs: array of TDOFieldDef;
     FExtFieldDefs: array of TExtDOFieldDef;
     FValFieldDefs: array of TValDOFieldDef;
       //field defs needs to be public due to property limitations
 
+    function IndexOfSubFieldValue(field: string; subvalue: variant): nativeint;
     function FirstNonKeyField: ni;
       //returns the index of the first field that isn't a key field
 
@@ -399,6 +402,7 @@ type
     function HasTokens: boolean;
     procedure InstantiateAllTokens;
     procedure QuickSort(CompareFunction: TListSortCompare);
+    procedure QuickSortAnon(func: TFunc<TDataObject,TDataObject,ni>);
 
     property Token: TDataObjectToken read GetTToken;
     // the token handles the task of identifying the Data object.  Why do we
@@ -732,8 +736,6 @@ type
     destructor Destroy; override;
     procedure Pool;
 
-    function _AddRef: Integer; stdcall;
-    function _Release: Integer; stdcall;
 
     property DataCenter: integer read FDataCenter write FDataCenter;
     //ID of the datacenter from which this object originated or will be added.
@@ -1102,7 +1104,7 @@ begin
       varinteger : result := result + '#' + inttostr(Params[t]);
       varstring  : result := result + '#' + Params[t];
       varOleStr  : result := result + '#' + Params[t];
-      varDate  : result := result + '#' + vartostr(Params[t]);
+      varDate  : result := result + '#' + vartostrex(Params[t]);
     else
       //i:= varType(Params[t]);
       //raise EDataObjectError.CreateFmt('Variant type not supported. Type: %d', [i]);
@@ -1672,6 +1674,16 @@ begin
   end;
 
 end;
+function TDataObject.IndexOfSubFieldValue(field: string;
+  subvalue: variant): nativeint;
+begin
+  for var t:= 0 to objectcount-1 do begin
+    if obj[t].fld[field].AsVariant = subvalue then
+      exit(t);
+  end;
+  exit(-1);
+end;
+
 //---------------------------------------------------------
 function TDataObject.GetObjectCount: integer;
 //(protected)
@@ -1876,7 +1888,7 @@ begin
   for t:= SkipInsertKeycount to high(FKeys) do begin
     if valuelist <> '' then
       valuelist := valuelist + ', ';
-    ValueList := ValueList + vartostr(token.params[t]);
+    ValueList := ValueList + vartostrex(token.params[t]);
   end;
 
   for t:= 0 to fieldCount-1 do begin
@@ -2200,7 +2212,7 @@ begin
         result := 'false'
     else
       if HasChoices then
-        result := DataFieldChoices.ValueOf(VarToStr(v))
+        result := DataFieldChoices.ValueOf(VarToStrex(v))
       else
         if Vartype(v) = varNull then begin
           if self.ValueType = dftString then
@@ -2208,7 +2220,7 @@ begin
           else
             result := '0';
         end else
-          result := vartoStr(v);
+          result := vartoStrex(v);
 
 
 
@@ -2235,6 +2247,7 @@ begin
     //if VArType(owner.FFieldDefs[FMyIndex].Value) = varNull then
     //  raise Exception.create('Illegal value detected in '+TDataObject(owner).name+'->'+self.name);
     result := owner.FFieldDefs[FMyIndex].Value;
+
   end;
 
 end;
@@ -2472,12 +2485,12 @@ begin
       if (iTemp >= 0) and (iTemp-VarArrayLowBound(FParams,1) >= 0) then begin
         for t:= VarArrayLowBound(FParams,1) to VarArrayHighBound(FParams,1) do begin
           if (not (VarType(FParams[t])=varNull)) and (not VarIsEmpty(FParams[t])) then
-            result := result +'#'+varToStr(FParams[t]);
+            result := result +'#'+varToStrEx(FParams[t]);
         end;
       end
   end
   else
-    result := result + '#' + VarToStr(FParams);
+    result := result + '#' + VarToStrex(FParams);
 
   if (LengthLImit > 0) and (Length(result)>LengthLimit) then begin
     result := copy(result, 1, lengthlimit)+'...';
@@ -2502,12 +2515,12 @@ begin
       if (iTemp >= 0) and (iTemp-VarArrayLowBound(FParams,1) >= 0) then begin
         for t:= VarArrayLowBound(FParams,1) to VarArrayHighBound(FParams,1) do begin
           if (not (VarType(FParams[t])=varNull)) and (not VarIsEmpty(FParams[t])) then
-            result := result +'#'+varToStr(FParams[t]);
+            result := result +'#'+varToStrex(FParams[t]);
         end;
       end
   end
   else
-    result := result + '#' + VarToStr(FParams);
+    result := result + '#' + VarToStrex(FParams);
 
   if (LengthLImit > 0) and (Length(result)>LengthLimit) then begin
     result := copy(result, 1, lengthlimit)+'...';
@@ -2950,7 +2963,7 @@ begin
   try
     sl.add('object='+self.token.typename);
     for t:= 0 to token.paramcount-1 do begin
-      sl.add('key='+vartostr(token.params[t]));//todo 1: probably should be better
+      sl.add('key='+vartostrex(token.params[t]));//todo 1: probably should be better
     end;
     sl.add('fields='+inttostr(self.fieldcount));
     for t:= 0 to self.fieldcount-1 do begin
@@ -3166,6 +3179,7 @@ function TDataObject.DoNew(iSessionID: integer): boolean;
 //var
 //  t: ni;
 begin
+  result := false;
 //  for t:= 0 to high(Fkeys) do begin
 //    token.params[t] := 0-t;
 //  end;
@@ -3200,16 +3214,6 @@ begin
 
 end;
 
-//------------------------------------------------------------------------------
-function TDataObjectToken._AddRef: Integer;
-begin
-  result := inherited _AddRef;
-end;
-//------------------------------------------------------------------------------
-function TDataObjectToken._Release: Integer;
-begin
-  result := inherited _Release;
-end;
 //------------------------------------------------------------------------------
 function TDataObject._AddRef: integer;
 begin
@@ -3443,6 +3447,41 @@ begin
 end;
 
 
+procedure TDataObject.SortAnon_Quick(CompareProc_1isAgtB: TFunc<TDataObject,TDataObject, ni>; iLo,
+  iHi: ni);
+var
+   Lo, Hi: ni;
+  TT,Pivot: TDataObject;
+begin
+   Lo := iLo;
+   Hi := iHi;
+   var pvtIDX := (Lo + Hi) shr 1;
+   if pvtIDX >= objectcount then
+    exit;
+   Pivot := obj[pvtIDX];
+   repeat
+      while CompareProc_1isAgtB(obj[lo],pivot) < 0 do
+        begin
+          inc(lo);
+          if lo >= objectcount then break;
+        end;
+      while CompareProc_1isAgtB(obj[hi],pivot) > 0 do
+        begin
+          dec(hi);
+          if hi < 0 then break;
+        end;
+      if Lo <= Hi then
+      begin
+        SwapObjects(Lo,Hi);
+        Inc(Lo) ;
+        Dec(Hi) ;
+      end;
+   until Lo > Hi;
+   if Hi > iLo then SortAnon_Quick(CompareProc_1isAgtB, iLo, Hi) ;
+   if Lo < iHi then SortAnon_Quick(CompareProc_1isAgtB, Lo, iHi) ;
+end;
+
+
 //------------------------------------------------------------------------------
 procedure TDataObject.QuickSort(CompareFunction: TListSortCompare);
 begin
@@ -3450,6 +3489,12 @@ begin
 	// sort using Delphi's TList sort function which requires a compare-value fct to be passed in
 //  if (lstObjects <> nil) and (lstObjects.Count > 1) then
 //    lstObjects.Sort(CompareFunction);
+end;
+
+procedure TDataObject.QuickSortAnon(func: TFunc<TDataObject,TDataObject,ni>);
+begin
+  if lstobjects <> nil then
+    SortAnon_Quick(func,0,objectcount-1);
 end;
 
 //------------------------------------------------------------------------------
@@ -3523,6 +3568,9 @@ procedure TDataObject.DeleteObject(iIndex: integer);
 var
   obj: TObject;
 begin
+  if (iIndex < 0) or (iIndex >= lstObjects.count) then
+    raise Ecritical.create('index '+inttostr(iIndex)+' out of range when trying to delete object from '+name);
+
   //get the object at the index
   obj := lstObjects[iIndex];
   //delete the object from the list
@@ -4058,7 +4106,7 @@ begin
   end;
 
   inc(FFieldCount);
-  If FieldCount > FieldCapacity then
+  If int64(FieldCount) > int64(FieldCapacity) then
     FieldCapacity := FieldCount;
   //add the definition to the FlyWeight Array
   FFieldDefs[FFieldCount-1] := rec;

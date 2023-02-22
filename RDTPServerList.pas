@@ -41,16 +41,26 @@ type
 
 function RegisterModules(mainmod: TRDTPServerList): boolean;export;
 function DLLShutdown(mainmod: TRDTPServerList): boolean;export;
+function RDTPServers: TRDTPServerList;
 
 exports RegisterModules, DLLShutDown;
 
 
 var
   external_rdtp_server: boolean;
-  RDTPServers: TRDTPServerList;
+  GRDTPServers: TRDTPServerList = nil;
 
 
 implementation
+
+function RDTPServers: TRDTPServerList;
+begin
+  if grdtpservers = nil then
+    grdtpservers := TRDTPServerLIst.create;
+
+  result := GRDTPServers;
+
+end;
 
 
 { TRDTPServerList }
@@ -175,7 +185,7 @@ begin
       end;
       RDTPServers.Free;
       external_rdtp_server := true;
-      RDTPServers := mainmod;
+      GRDTPServers := mainmod;
     finally
       MainMod.UnlockWrite;
     end;
@@ -200,13 +210,16 @@ end;
 
 procedure oinit;
 begin
-RDTPServers := TRDTPServerList.create;
+  RDTPServers();//creates if nil
 end;
 
 procedure ofinal;
 begin
-if not external_rdtp_server then
-  RDTPServers.free;
+  if not external_rdtp_server then
+    if assigned(GRDTPServers) then begin
+      GRDTPServers.free;
+      GRDTPServers := nil;
+    end;
 
 end;
 

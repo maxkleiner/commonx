@@ -40,7 +40,7 @@ type
     constructor CopyCreate(db: TDB);
     procedure Init;override;
     destructor Destroy;override;
-    procedure Connect(sHost: string; sDatabase: string; sUser: string; sPAssword: string; sPort: string = '');override;
+    procedure Connect;override;
     function ReadQueryDBC(sQuery: string): TAbstractdbCursor;overload;override;
     function ReadQuery(sQuery: string): TSERowSet;override;
 
@@ -148,18 +148,18 @@ end;
 
 { Tdb }
 
-procedure Tdb.Connect(sHost, sDatabase, sUser, sPAssword, sPort: string);
+procedure Tdb.Connect;
 begin
   inherited;
   Fconn := TSQLConnection.create(nil);
   FConn.DriverName := 'MYSQL';
   FConn.LoginPrompt := false;
   Fconn.params.text := MYSQL_PARAMS;
-  Fconn.Params.Text := StringReplace(FConn.params.text, '%username%', sUser, [rfReplaceAll]);
-  Fconn.Params.Text := StringReplace(FConn.params.text, '%db%', sDatabase, [rfReplaceAll]);
-  Fconn.Params.Text := StringReplace(FConn.params.text, '%hostname%', sHost, [rfReplaceAll]);
-  Fconn.Params.Text := StringReplace(FConn.params.text, '%password%', sPAssword, [rfReplaceAll]);
-  Fconn.Params.Text := StringReplace(FConn.params.text, '%port%', sPort, [rfReplaceAll]);
+  Fconn.Params.Text := StringReplace(FConn.params.text, '%username%', self.DBuser, [rfReplaceAll]);
+  Fconn.Params.Text := StringReplace(FConn.params.text, '%db%', self.database, [rfReplaceAll]);
+  Fconn.Params.Text := StringReplace(FConn.params.text, '%hostname%', self.DBHost, [rfReplaceAll]);
+  Fconn.Params.Text := StringReplace(FConn.params.text, '%password%', self.DBpassword, [rfReplaceAll]);
+  Fconn.Params.Text := StringReplace(FConn.params.text, '%port%', self.DBPort, [rfReplaceAll]);
 
 
 
@@ -192,7 +192,10 @@ end;
 constructor Tdb.CopyCreate(db: TDB);
 begin
   inherited CReate;
-  Self.Connect(db.host, db.database, db.user, db.password, db.port);
+  self.DBHost := db.DBHost;
+  self.DBpassword := db.DBpassword;
+  self.DBuser := db.DBuser;
+  self.DBPort := db.DBPort;
 end;
 
 destructor Tdb.Destroy;

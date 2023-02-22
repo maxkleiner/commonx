@@ -11,7 +11,7 @@ interface
 
 
 uses
-  packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -68,7 +68,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.GetNextID(iID:integer):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -96,7 +96,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TKeyBotClient.GetNextID_Async(iID:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -117,7 +117,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.GetNextID_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -133,7 +133,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.GetNextID_str(sID:string):int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -161,7 +161,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TKeyBotClient.GetNextID_str_Async(sID:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -182,7 +182,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.GetNextID_str_Response():int64;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -198,7 +198,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.SetNextID_str(sID:string; val:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -227,7 +227,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TKeyBotClient.SetNextID_str_Async(sID:string; val:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -249,7 +249,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.SetNextID_str_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -265,7 +265,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.SetNextID(iID:integer; val:int64):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -294,7 +294,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TKeyBotClient.SetNextID_Async(iID:integer; val:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -316,7 +316,7 @@ end;
 //------------------------------------------------------------------------------
 function TKeyBotClient.SetNextID_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try

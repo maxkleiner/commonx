@@ -4,6 +4,8 @@ unit BrainWashUltra;
 
 interface
 
+
+
 uses
   Classes;
 
@@ -44,10 +46,12 @@ var
   v: integer;
   w: integer;
   x: integer;
+  s: integer;
   man: TBlockManager;
   iTotal: integer;
   iFreed: integer;
   mancount: integer;
+  worked: nativeint;
 begin
   iFreed := 0;
   iTotal := 0;
@@ -56,11 +60,13 @@ begin
   w:= 0;
   x := 0;
   mancount := 0;
+
   while not terminated do begin
     inc(u);
     inc(v);
     inc(w);
     inc(x);
+    worked := 0;
 
     if (u mod 30) = 0 then
       mancount := manman.ManagerCount;
@@ -72,7 +78,7 @@ begin
 
       if ManMan.TryLock then
       try
-        ManMan.Clean;
+        inc(worked, ManMan.Clean);
         u:=0;
       finally
         ManMan.Unlock;
@@ -87,7 +93,7 @@ begin
       v:=0;
 //      {$IFNDEF NOSTATS}if MainMan.Freebytes > (iTotal shr 2) then begin{$ENDIF}
       {$IFNDEF PEAK_MEMORY}
-        MainMan.Clean;
+        inc(worked, MainMan.Clean);
       {$ENDIF}
 //      {$IFNDEF NOSTATS}end;{$ENDIF}
     end;
@@ -101,7 +107,7 @@ begin
           man := ManMan.Managers[t];
           if Man.TryLock then
           try
-            Man.Clean;
+            inc(worked,Man.Clean);
             inc(iFreed);
           finally
             Man.Unlock;
@@ -111,6 +117,7 @@ begin
       ManMan.Unlock;
     end;
 
+{$IFDEF CLEAN_PAGES}
     if x=25 then begin
       x := 0;
       if ManMan.TryLock then
@@ -129,13 +136,26 @@ begin
         ManMan.Unlock;
       end;
     end;
+{$ENDIF}
+
+    if worked > 0 then begin
+//  {$IFDEF OLD_SLEEPS}
+      if random(iFreed) > 3 then
+        sleep(1)
+      else
+        if random(10) > 4 then
+          sleep(1);
+//  {$ENDIF}
+    end else begin
+      for s := 1 to 20 do begin
+        sleep(200);
+        if Terminated then break;
+      end;
+    end;
 
 
-    if random(iFreed) > 3 then
-      sleep(1)
-    else
-      if random(10) > 4 then
-        sleep(1);
+
+
 
   end;
 
@@ -197,7 +217,9 @@ end;
 initialization
   {$IFNDEF NOCLEAN}
   {$IFNDEF BIGBRAINDLL}
+{$IFNDEF DISABLE_BIG_BRAIN}
   StartMemoryCleaner;
+{$ENDIF}
   {$ENDIF}
   {$ENDIF}
 
@@ -205,7 +227,10 @@ finalization
   //cleaner.Suspend;
   {$IFNDEF NOCLEAN}
   {$IFNDEF BIGBRAINDLL}
+{$IFNDEF DISABLE_BIG_BRAIN}
   StopMemoryCleaner;
+{$ENDIF}
+
   {$ENDIF}
   {$ENDIF}
 

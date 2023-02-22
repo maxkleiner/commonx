@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{E54DFFA0-4596-4B00-B944-46E14AD018C7}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="vcl\PackageCommonX_VCL_10_4.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="PackageCommonX_10_4.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="fmx\PackageCommonX_FMX_10_4.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="PackageCommonX_VCL_10_4">
+        <MSBuild Projects="vcl\PackageCommonX_VCL_10_4.dproj"/>
+    </Target>
+    <Target Name="PackageCommonX_VCL_10_4:Clean">
+        <MSBuild Projects="vcl\PackageCommonX_VCL_10_4.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PackageCommonX_VCL_10_4:Make">
+        <MSBuild Projects="vcl\PackageCommonX_VCL_10_4.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="PackageCommonX_10_4">
+        <MSBuild Projects="PackageCommonX_10_4.dproj"/>
+    </Target>
+    <Target Name="PackageCommonX_10_4:Clean">
+        <MSBuild Projects="PackageCommonX_10_4.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PackageCommonX_10_4:Make">
+        <MSBuild Projects="PackageCommonX_10_4.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="PackageCommonX_FMX_10_4">
+        <MSBuild Projects="fmx\PackageCommonX_FMX_10_4.dproj"/>
+    </Target>
+    <Target Name="PackageCommonX_FMX_10_4:Clean">
+        <MSBuild Projects="fmx\PackageCommonX_FMX_10_4.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PackageCommonX_FMX_10_4:Make">
+        <MSBuild Projects="fmx\PackageCommonX_FMX_10_4.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="PackageCommonX_VCL_10_4;PackageCommonX_10_4;PackageCommonX_FMX_10_4"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="PackageCommonX_VCL_10_4:Clean;PackageCommonX_10_4:Clean;PackageCommonX_FMX_10_4:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="PackageCommonX_VCL_10_4:Make;PackageCommonX_10_4:Make;PackageCommonX_FMX_10_4:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

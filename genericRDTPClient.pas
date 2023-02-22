@@ -15,18 +15,27 @@ unit GenericRDTPClient;
 {x$DEFINE ALLOW_CALLBACKS}
 
 {x$DEFINE PACKET_DEBUG_MESSAGES}
+{$D+}
 interface
 
 uses
   tickcount, stringx,
-  simplereliableudp, simplebufferedconnection, betterobject, sharedobject, packet,
-  classes,
+  simplereliableudp, simplebufferedconnection, betterobject, sharedobject, packet, packet64,
+  classes, packetabstract,
   sysutils, ExceptionsX,
 {$IFDEF USE_WINSOCK}
   simplewinsock,
   windows,
 {$ELSE}
+{$IFDEF AUTO_PROXY}
+  {$IFDEF MSWINDOWS}
+    SimpleAutoConnection,
+  {$ELSE}
+    Simpletcpconnection,
+  {$ENDIF}
+{$ELSE}
   Simpletcpconnection,
+{$ENDIF}
 {$ENDIF}
   simpleabstractconnection,
   managedthread, DtNetConst, networkbuffer, debug, typex, systemx;
@@ -58,7 +67,6 @@ type
     FLastSuccessfulFunction: string;
     FLastConnectionAttempt: ticker;
     FUseTCP: boolean;
-    FUseTor: boolean;
     function GetDebugTag: string;
     procedure SetDebugTag(const Value: string);
     function GetSupportedPlatformoptions: cardinal;
@@ -85,15 +93,16 @@ type
     function Connect: boolean;
     procedure OnHello;virtual;
     procedure NegotiateOptions;
+    function CreateSupportedPacket: TRDTPPacketAbstract;
 
 
     function InitConnectionClass: TSimpleAbstractConnection;
 
-    function BeginTransact2(inPacket: TRDTPPacket; var outPacket: TRDTPPacket; sender: TObject; bForget: boolean  = false):boolean;
-    function EndTransact2(inPacket: TRDTPPacket; var outPacket: TRDTPPacket; sender: TObject; bForget: boolean  = false):boolean;
-    function Transact2(inPacket: TRDTPPacket; var outPacket: TRDTPPacket; sender: TObject; iTimeOutMS: integer = 900000; bForget: boolean  = false):boolean;
+    function BeginTransact2(inPacket: TRDTPPacketAbstract; var outPacket: TRDTPPacketAbstract; sender: TObject; bForget: boolean  = false):boolean;
+    function EndTransact2(inPacket: TRDTPPacketAbstract; var outPacket: TRDTPPacketAbstract; sender: TObject; bForget: boolean  = false):boolean;
+    function Transact2(inPacket: TRDTPPacketAbstract; var outPacket: TRDTPPacketAbstract; sender: TObject; iTimeOutMS: integer = 900000; bForget: boolean  = false):boolean;
 
-    procedure WritePacket(packet: TRDTPPacket);
+    procedure WritePacket(packet: TRDTPPacketAbstract);
 
 
     function ThreadTransact(var Packet: TRDTPPacket; bForget: boolean): boolean;overload;
@@ -103,7 +112,6 @@ type
     errors: nativeint;
     RecoverLostConnections: boolean;
     property UseTCP: boolean read FUseTCP write FUseTCP;
-    property UseTor: boolean read FUseTor write FUseTor;
 
     procedure InitPlatformOptions;
     constructor create(sHost, sEndpoint: string);reintroduce;virtual;
@@ -121,9 +129,9 @@ type
 
     property Timeout: integer read FTimeout write FTimeout;
 
-    function Transact(var Packet: TRDTPPacket; iTimeOutMS: integer = -1; slDebug: TStringList = nil; bForget: boolean = false): boolean;overload;
-    function Transact(var Packet: TRDTPPacket; bForget: boolean): boolean;overload;
-    procedure TransactThreadStart(Packet: TRDTPPacket; bForget: boolean);
+    function Transact(var Packet: TRDTPPacketAbstract; iTimeOutMS: integer = -1; slDebug: TStringList = nil; bForget: boolean = false): boolean;overload;
+    function Transact(var Packet: TRDTPPacketAbstract; bForget: boolean): boolean;overload;
+    procedure TransactThreadStart(Packet: TRDTPPacketAbstract; bForget: boolean);
     function IsThreadComplete: boolean;
     function GetThreadResult: TRDTPPacket;
     function IsInTransaction: boolean;
@@ -136,7 +144,7 @@ type
     property DisconnectImmediately: boolean read FDisconnectImmediately write FDisconnectImmediately;
 
     procedure DoProgressClose;
-    procedure DoProgress(prog: TRDTPPacket);
+    procedure DoProgress(prog: TRDTPPacketAbstract);
     property OnProgress: TRDTPProgressEvent read FOnProgress write FOnProgress;
 
     function DispatchCallback: boolean;virtual;
@@ -158,7 +166,7 @@ type
     procedure Disconnect;
     property PlatformOptions: cardinal read FplatformOptions write SetPlatformOptions;
     property SupportedPlatformOptions: cardinal read GetSupportedPlatformoptions;
-    function NeedPacket: TRDTPPacket;
+    function NeedPacket: TRDTPPacketAbstract;
 
     function ShouldGive: Boolean; override;
     function ShouldREturn: boolean; override;
@@ -167,16 +175,16 @@ type
 
   TRDTPCallback = class(TObject)
   private
-    FRequest: TRDTPPacket;
-    FResponse: TRDTPPacket;
+    FRequest: TRDTPPacketAbstract;
+    FResponse: TRDTPPacketAbstract;
     Client: TGenericRDTPCLient;
-    procedure SetResponse(const Value: TRDTPPAcket);
-    function GetResponse: TRDTPPacket;
+    procedure SetResponse(const Value: TRDTPPacketAbstract);
+    function GetResponse: TRDTPPacketAbstract;
   public
 
     destructor Destroy;override;
-    property Request: TRDTPPacket read FRequest write FRequest;
-    property Response: TRDTPPacket read GetResponse write SetResponse;
+    property Request: TRDTPPacketAbstract read FRequest write FRequest;
+    property Response: TRDTPPacketAbstract read GetResponse write SetResponse;
   end;
 
 var
@@ -186,7 +194,7 @@ var
   RDTP_USE_TCP: boolean = true;
 {$ENDIF}
 
-  RDTP_USE_SOCKS: boolean = false;
+
 
 implementation
 
@@ -233,9 +241,7 @@ begin
   cli.Callback.response.AddString(res);
 end;
 
-function TGenericRDTPClient.BeginTransact2(inPacket: TRDTPPacket;
-  var outPacket: TRDTPPacket; sender: TObject;
-  bForget: boolean): boolean;
+function TGenericRDTPClient.BeginTransact2(inPacket: TRDTPPacketAbstract; var outPacket: TRDTPPacketAbstract; sender: TObject; bForget: boolean  = false): boolean;
 var
   buffer : PByte;
   length : ni;
@@ -265,8 +271,6 @@ begin
       CheckConnected;
 
       if not Connect then begin
-  //      SetLastServerError(999, 'Unable to connect to server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
-              //raise ETransPortError.create('Unable to connect to Pathways server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
         result := false;
         exit;
       end;
@@ -332,6 +336,7 @@ begin
     try
       Fconnection.Disconnect;
       result := FConnection.connect;
+      Debug.Log('OK! Connected to '+self.FHost+':'+self.FEndpoint);
     except
       on E: Exception do begin
         Fconnection.Disconnect;
@@ -369,8 +374,16 @@ begin
 {$ELSE}
   UseTCP := RDTP_USE_TCP;
 {$ENDIF}
-  UseTor := RDTP_USE_SOCKS;
   Init;
+end;
+
+function TGenericRDTPClient.CreateSupportedPacket: TRDTPPacketAbstract;
+begin
+  if (PlatformOptions and PACKET_PLATFORM_OPTION_SUPPORTS_64BIT_PACKETS) <> 0 then
+    result := TRDTPPacket64.create
+  else
+    result := TRDTPPacket.create;
+
 end;
 
 procedure TGenericRDTPClient.DecAbortedTransactions;
@@ -428,8 +441,16 @@ end;
 
 procedure TGenericRDTPClient.Disconnect;
 begin
-  if assigned(FConnection) then
-    FConnection.Disconnect;
+  Lock;
+  try
+    if assigned(FConnection) then
+      FConnection.Disconnect;
+
+    FConnection.Free;
+    FConnection := nil;
+  finally
+    Unlock;
+  end;
 
 end;
 
@@ -576,7 +597,6 @@ begin
     s := zcopy(Fhost, length(FHost)-6, 6);
     if lowercase(s) ='.onion' then begin
       UseTCP := true;
-      UseTor := true;
     end;
   end;
 
@@ -594,10 +614,14 @@ begin
   else
 {$ELSE}
   IF UseTCP then begin
-    result := TSimpleTCPconnection.create;
 
-    if UseTor then
-      TSimpleTCPconnection(result).UseSocks := true;
+{$IFDEF AUTO_PROXY}
+    result := TSimpleAutoconnection.create;
+{$ELSE}
+    result := TSimpleTcpconnection.create;
+{$ENDIF}
+
+
   end
   else
 {$ENDIF}
@@ -617,6 +641,9 @@ begin
 {$IFDEF ENABLE_RDTP_COMPRESSION}
   PLatformOptions := PACKET_PLATFORM_OPTION_SUPPORTS_COMPRESSION;
 {$ENDIF}
+{$IFNDEF NO_64_BIT_PACKETS}
+  PLatformOptions := PlatformOptions or PACKET_PLATFORM_OPTION_SUPPORTS_64BIT_PACKETS;
+{$ENDIF}
 end;
 
 function TGenericRDTPClient.IsInTransaction: boolean;
@@ -631,15 +658,15 @@ begin
 //TODO -cunimplemented: unimplemented block
 end;
 
-function TGenericRDTPClient.NeedPacket: TRDTPPacket;
+function TGenericRDTPClient.NeedPacket: TRDTPPacketAbstract;
 begin
-  result := TRDTPPacket.create;
+  result := CreateSupportedPacket;
   result.PlatFormOptions := self.PlatformOptions;
 end;
 
 procedure TGenericRDTPClient.NegotiateOptions;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
   bTRans: boolean;
 begin
 {$IFDEF PACKET_DEBUG_MESSAGES}
@@ -650,6 +677,7 @@ begin
     packet.AddLong($9999);
     packet.AddLong(0);
     packet.AddString('');//negotiate with the master dispatcher
+ //   debug.log('PACKET**Context='+FContext);
     packet.AddString(FContext);
     packet.Addlong(SupportedPLatformOptions);//platform options that are desired from the server
 //    if (FContext = '') then begin
@@ -678,7 +706,7 @@ end;
 
 procedure TGenericRDTPClient.OnHello;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
 {$IFDEF PACKET_DEBUG_MESSAGES}
   Debug.ConsoleLog('********H*E*L*L*O*******');
@@ -753,13 +781,13 @@ begin
   raise exception.create('unimplemented');
 end;
 
-function TGenericRDTPClient.Transact(var Packet: TRDTPPacket;
+function TGenericRDTPClient.Transact(var Packet: TRDTPPacketAbstract;
   bForget: boolean): boolean;
 begin
   result := Transact(packet, FTIMEOUT, nil, bForget);
 end;
 
-function TGenericRDTPClient.Transact(var Packet: TRDTPPacket; iTimeOutMS: integer = -1; slDebug: TStringList = nil; bForget: boolean = false): boolean;
+function TGenericRDTPClient.Transact(var Packet: TRDTPPacketAbstract; iTimeOutMS: integer = -1; slDebug: TStringList = nil; bForget: boolean = false): boolean;
 //Accepts a packet and sends the packet as a transaction to the data-tier.
 //p: Packet: TRDTPPacket class.  Create a packet and pass it in.  It will be replaced with a response.
 //p: iTimeOutMS: The amount of time you want to wait for a response.  Defaults to 300000ms.
@@ -767,7 +795,7 @@ function TGenericRDTPClient.Transact(var Packet: TRDTPPacket; iTimeOutMS: intege
 var
   b: boolean;
   iCount : integer;
-  inPacket, outPacket: TRDTPPacket;
+  inPacket, outPacket: TRDTPPacketAbstract;
   bWasBusy: boolean;
 begin
 
@@ -856,7 +884,7 @@ begin
       if not bForget then begin
         if (not assigned(packet)) then begin
           Disconnect;
-          raise ETransportError.create('connection broken');
+          raise ETransportError.create('connection broken while expecting RDTP response, no packet was returned from Transact2');
         end;
 
         if slDebug <> nil then
@@ -907,7 +935,7 @@ end;
 
 
 
-procedure TGenericRDTPClient.WritePacket(packet: TRDTPPacket);
+procedure TGenericRDTPClient.WritePacket(packet: TRDTPPacketAbstract);
 var
   iLen: integer;
 begin
@@ -933,7 +961,7 @@ end;
 
 
 
-procedure TGenericRDTPClient.DoProgress(prog: TRDTPPacket);
+procedure TGenericRDTPClient.DoProgress(prog: TRDTPPacketAbstract);
 var
   sMessage: string;
   sDebugLog: string;
@@ -957,8 +985,8 @@ begin
 end;
 
 
-function TGenericRDTPClient.EndTransact2(inPacket: TRDTPPacket;
-  var outPacket: TRDTPPacket; sender: TObject;
+function TGenericRDTPClient.EndTransact2(inPacket: TRDTPPacketAbstract;
+  var outPacket: TRDTPPacketAbstract; sender: TObject;
   bForget: boolean): boolean;
 var
   buffer : PByte;
@@ -1136,7 +1164,7 @@ begin
   end;
 end;
 
-function TGenericRDTPClient.Transact2(inPacket: TRDTPPacket; var outPacket: TRDTPPacket; sender: TObject; iTimeOutMS: integer = 900000; bForget: boolean  = false):boolean;
+function TGenericRDTPClient.Transact2(inPacket: TRDTPPacketAbstract; var outPacket: TRDTPPacketAbstract; sender: TObject; iTimeOutMS: integer = 900000; bForget: boolean  = false):boolean;
 var
   buffer : PByte;
   length : integer;
@@ -1148,7 +1176,7 @@ var
   tmBegin: cardinal;
   iBytesPerSec: cardinal;
   iBytesThisRead: cardinal;
-//  bLegitResponse: boolean;
+  bLegitResponse: boolean;
   iMarker: cardinal;
 begin
   if iTimeoutMS = 0  then
@@ -1156,7 +1184,7 @@ begin
 
   Lock;
   try
-  //  bLegitResponse := false;
+    bLegitResponse := false;
     {$IFDEF BEEPS} beeper.beep(100, 25);{$ENDIF}
     //initializevariables
     result := false;
@@ -1169,9 +1197,6 @@ begin
       //Connect
       CheckConnected;
       if not Connect then begin
-  //      SetLastServerError(999, 'Unable to connect to server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
-              //raise ETransPortError.create('Unable to connect to Pathways server '''+self.HostName+''' endpoint '''+self.endpoint+''': '+GetLastServerErrorMessage);
-
         result := false;
         exit;
       end;
@@ -1199,7 +1224,7 @@ begin
         exit;
       end;
 
-  //    while not bLegitResponse do begin
+      while not bLegitResponse do begin
 
         //Wait
         if not FConnection.WaitForData(iTimeOutMS) then
@@ -1208,12 +1233,12 @@ begin
         //READ
 
         //allocate memory for header
-        getmem(pcHeader, 18);
+        getmem(pcHeader, PACKET_HEADER_SIZE);
         //Read Header
         iBytesRead := 0;
 
   {$IFDEF OLDCODE}
-        while iBytesRead < 18 do begin
+   xx   while iBytesRead < PACKET_HEADER_SIZE do begin
           if FConnection = nil then
             raise ETransportError.create('Connection dropped unexpectedly');
 
@@ -1254,7 +1279,9 @@ begin
         end;
 
         iLength := ord(pcHeader[4])+(ord(pcHeader[5])*256)+(ord(pcHeader[6])*65536)+(cardinal(ord(pcHeader[7]))*(256*65536));
-
+        if iLength > 16*BILLION then begin
+          raise ETransportError.Create('bad packed length '+commaize(iLength));
+        end;
         //Allocate buffer based on size reported in header
         //note: old buffer must be referenced and destroyed externally
         reallocmem(pcHeader, iLength);
@@ -1332,7 +1359,7 @@ begin
         end else begin
 
           DoProgressClose;
-  //        bLegitResponse := true;
+          bLegitResponse := true;
 
   {$IFDEF PACKET_DEBUG_MESSAGES}
           Debug.Log('******************Vanilla Response Packet');
@@ -1341,7 +1368,7 @@ begin
 
         end;
 
-  //    end;
+      end;
 
 
 
@@ -1364,7 +1391,7 @@ begin
 end;
 
 
-procedure TGenericRDTPClient.TransactThreadStart(Packet: TRDTPPacket;
+procedure TGenericRDTPClient.TransactThreadStart(Packet: TRDTPPacketAbstract;
   bForget: boolean);
 begin
 
@@ -1383,7 +1410,7 @@ begin
   inherited;
 end;
 
-function TRDTPCallback.GetResponse: TRDTPPacket;
+function TRDTPCallback.GetResponse: TRDTPPacketAbstract;
 begin
   if not assigned(FResponse) then
     FResponse := TRDTPPacket.create;
@@ -1391,7 +1418,7 @@ begin
   result := FResponse;
 end;
 
-procedure TRDTPCallback.SetResponse(const Value: TRDTPPacket);
+procedure TRDTPCallback.SetResponse(const Value: TRDTPPacketAbstract);
 begin
   if assigned(FResponse) then
     FResponse.free;

@@ -853,7 +853,7 @@ end;
 procedure TCustomConsole.PasteFromClipboard;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

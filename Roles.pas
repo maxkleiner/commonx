@@ -18,7 +18,7 @@ implementation
 //------------------------------------------------------------------------------
 procedure WRQ_Roles(rqInfo: TrequestInfo);
 begin
-  rqINfo.response.objectpool['roles'] := Query(rqInfo,'SELECT * from Role', true);
+  rqINfo.response.objectpool['roles'] := QueryX(rqInfo,'SELECT * from Role', true);
 
   LoadWebResourceAndMergeWithBestTemplate(rqInfo, 'roles.html','');
 

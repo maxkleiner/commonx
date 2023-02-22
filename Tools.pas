@@ -82,6 +82,9 @@ begin
   try  if FindRecursive(slash(DLLPath)+'..\..\..\..\tools\', sExe, sOut) then exit(sOut); except  end;
   if bExhaustive then begin
 {$IFDEF MSWINDOWS}
+    try  if FindRecursive(GetSystemDir(true), sExe, sOut) then exit(sOut); except  end;
+    try  if FindRecursive(GetSystemDir(false), sExe, sOut) then exit(sOut); except  end;
+
     try  if FindRecursive('c:\program files\', sExe, sOut) then exit(sOut); except  end;
     try  if FindRecursive('c:\program files (x86)\', sExe, sOut) then exit(sOut); except  end;
 {$ENDIF}

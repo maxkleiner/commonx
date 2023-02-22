@@ -28,7 +28,8 @@ end;
 
 procedure ofinal;
 begin
-  zl.free;
+  if assigned(zl) then
+    zl.free;
   zl := nil;
 end;
 

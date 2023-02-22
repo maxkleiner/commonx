@@ -2208,7 +2208,7 @@ begin
   if ((NumBits < 0) or (NumBits > 32)) then
   begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
   end;
   EnsureCapacity(Size + NumBits);

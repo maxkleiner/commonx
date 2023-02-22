@@ -378,7 +378,7 @@ begin
           sleep(random(700));
         end
         else begin
-          beeper.beep(700,300);
+//          beeper.beep(700,300);
           Debug.Log(self,reads.Params.Text);
           Debug.Log(self,reads.DriverName);
           Debug.Log(self,reads.LIbraryName);
@@ -621,7 +621,7 @@ begin
           reads.connected := false;
         end
         else begin
-          beeper.beep(700,300);
+//          beeper.beep(700,300);
           Debug.Log(self,reads.Params.Text);
           Debug.Log(self,reads.DriverName);
           Debug.Log(self,reads.LIbraryName);

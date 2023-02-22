@@ -43,8 +43,12 @@ end;
 
 procedure TStackTrace.Detach;
 begin
-  inherited;
+  if detached then
+    exit;
   FList.free;
+  FList := nil;
+  inherited;
+
 end;
 
 procedure TStackTrace.Init;

@@ -30,8 +30,9 @@ type
     procedure RQ_HANDLE_ListArchives(proc: TRDTPProcessor);
     procedure RQ_HANDLE_GetZoneChecksum_string_int64_int64_int64(proc: TRDTPProcessor);
     procedure RQ_HANDLE_GetZoneStackReport_string_int64_boolean(proc: TRDTPProcessor);
-    procedure RQ_HANDLE_NextZoneHint_string_int64(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_NextZoneHint_string_int64_TDateTime(proc: TRDTPProcessor);
     procedure RQ_HANDLE_GetArcVatCheckSum_string_int64_int64(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_GetZonePresenceHints_string_int64_int64(proc: TRDTPProcessor);
 
   protected
     
@@ -54,8 +55,9 @@ type
     function RQ_ListArchives():string;overload;virtual;abstract;
     function RQ_GetZoneChecksum(sArchive:string; z:int64; out iSum:int64; out iXor:int64):boolean;overload;virtual;abstract;
     function RQ_GetZoneStackReport(sArchive:string; z:int64; fullstack:boolean):string;overload;virtual;abstract;
-    procedure RQ_NextZoneHint(sArchive:string; z:int64);overload;virtual;abstract;
+    procedure RQ_NextZoneHint(sArchive:string; z:int64; pin:TDateTime);overload;virtual;abstract;
     function RQ_GetArcVatCheckSum(sArchive:string; zStart:int64; zCount:int64):int64;overload;virtual;abstract;
+    function RQ_GetZonePresenceHints(sArchive:string; zStart:int64; zCount:int64):TDynByteArray;overload;virtual;abstract;
 
 
     function Dispatch: boolean;override;
@@ -218,14 +220,16 @@ begin
   WritestringToPacket(proc.response, res);
 end;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
-procedure TRDTPArchiveServerBase.RQ_HANDLE_NextZoneHint_string_int64(proc: TRDTPProcessor);
+procedure TRDTPArchiveServerBase.RQ_HANDLE_NextZoneHint_string_int64_TDateTime(proc: TRDTPProcessor);
 var
   sArchive:string;
   z:int64;
+  pin:TDateTime;
 begin
   GetstringFromPacket(proc.request, sArchive);
   Getint64FromPacket(proc.request, z);
-  RQ_NextZoneHint(sArchive, z);
+  GetTDateTimeFromPacket(proc.request, pin);
+  RQ_NextZoneHint(sArchive, z, pin);
   proc.ForgetResult := true
 end;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
@@ -241,6 +245,20 @@ begin
   Getint64FromPacket(proc.request, zCount);
   res := RQ_GetArcVatCheckSum(sArchive, zStart, zCount);
   Writeint64ToPacket(proc.response, res);
+end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TRDTPArchiveServerBase.RQ_HANDLE_GetZonePresenceHints_string_int64_int64(proc: TRDTPProcessor);
+var
+  res: TDynByteArray;
+  sArchive:string;
+  zStart:int64;
+  zCount:int64;
+begin
+  GetstringFromPacket(proc.request, sArchive);
+  Getint64FromPacket(proc.request, zStart);
+  Getint64FromPacket(proc.request, zCount);
+  res := RQ_GetZonePresenceHints(sArchive, zStart, zCount);
+  WriteTDynByteArrayToPacket(proc.response, res);
 end;
 
 
@@ -430,7 +448,7 @@ begin
         LocalDebug('Begin Server Handling of NextZoneHint','RDTPCALLS');
 {$ENDIF}
         result := true;//set to true BEFORE calling in case of exception
-        RQ_HANDLE_NextZoneHint_string_int64(self);
+        RQ_HANDLE_NextZoneHint_string_int64_TDateTime(self);
 {$IFDEF RDTP_LOGGING}
         LocalDebug('End Server Handling of NextZoneHint','RDTPCALLS');
 {$ENDIF}
@@ -446,6 +464,19 @@ begin
         RQ_HANDLE_GetArcVatCheckSum_string_int64_int64(self);
 {$IFDEF RDTP_LOGGING}
         LocalDebug('End Server Handling of GetArcVatCheckSum','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //GetZonePresenceHints
+    $5512:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of GetZonePresenceHints','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_GetZonePresenceHints_string_int64_int64(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of GetZonePresenceHints','RDTPCALLS');
 {$ENDIF}
       end;
 

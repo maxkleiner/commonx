@@ -15,25 +15,25 @@ uses
 type
   TNetworkBuffer = class
   private
-    FAllocSize: integer;
+    FAllocSize: nativeint;
     FAssigned: boolean;
-    FLength: integer;
-    FSeqPos: integer;
+    FLength: nativeint;
+    FSeqPos: nativeint;
     slPrivateLog: TStringlist;
-    procedure GrowBuffer(iLength: cardinal);inline;
+    procedure GrowBuffer(iLength: nativeint);inline;
     procedure AlterIPos(var iPos: nativeint);inline;
 
   public
     FRealBuffer : PByte;
-    FSize: integer;
-    constructor Create(size: integer);reintroduce;virtual;
+    FSize: nativeint;
+    constructor Create(size: nativeint);reintroduce;virtual;
     destructor Destroy; override;
 
     procedure SaveDebugPacket(sErrorTag: string);
     procedure PrivateLog(sMessage: string);
 
 
-    procedure AssignBuffer(buffer: PByte; iLength: integer; iAllocatedLength: integer = -1);inline;
+    procedure AssignBuffer(buffer: PByte; iLength: nativeint; iAllocatedLength: nativeint = -1);inline;
     property RawBuffer: PByte read FRealBuffer;
     property IsAssigned: boolean read FAssigned write FAssigned;
 
@@ -41,7 +41,7 @@ type
     procedure PokeByte(b: byte; iPos: nativeint = -1);inline;
     procedure PokeDateTime(dt: TDateTime; iPos: nativeint = -1);inline;
     procedure PokeDouble(d: double; iPos: nativeint= -1);inline;
-    procedure PokeLong(l: integer; iPos: nativeint = -1);inline;
+    procedure PokeLong(l: nativeint; iPos: nativeint = -1);inline;
     procedure PokeLongLong(i: int64; iPos: nativeint = -1);inline;
     procedure PokeShort(i: smallint; iPos: nativeint = -1);inline;
     procedure PokeBoolean(b: boolean; iPos: nativeint = -1);inline;
@@ -56,7 +56,7 @@ type
     function PeekByte(iPos: nativeint): byte;
     function PeekDateTime(iPos: nativeint) : TDateTime;
     function PeekDouble(iPos: nativeint): double;
-    function PeekLong(iPos: nativeint): integer;
+    function PeekLong(iPos: nativeint): nativeint;
     function PeekLongLong(iPos: nativeint): int64;
     function PeekShort(iPos: nativeint): smallint;
     function PeekBoolean(iPos: nativeint): boolean;
@@ -66,13 +66,13 @@ type
     function PeekFmtBytes(iPos: nativeint; out iLength: int64): PByte;
 
     procedure Reset;
-    property Length: integer read FLength;
-    procedure AllocBuffer(iSize: integer);
+    property Length: nativeint read FLength;
+    procedure AllocBuffer(iSize: nativeint);
   end;
 
 type
   ConvertRecord = record
-    case integer of
+    case nativeint of
       0 : (ArraySide: array[1..8] of byte);
       1 : (dVal : double);
   end;
@@ -85,9 +85,9 @@ uses Debug;
 
 
 //------------------------------------------------------------------------------
-constructor TNetworkBuffer.create(size: integer);
+constructor TNetworkBuffer.create(size: nativeint);
 var
-  t: integer;
+  t: nativeint;
 begin
   inherited Create;
   slPrivateLog := TStringlist.Create;
@@ -114,7 +114,7 @@ end;
 procedure TNetworkbuffer.pokeByte(b: byte; iPos: nativeint);
 //puts a byte "b" into buffer at Position "iPos"
 begin
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke byte '+inttostr(b)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke byte '+inttostr(b)+'@'+inttostr(iPos), 'packet');
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke byte @'+inttohex(iPos, 4)+' '+inttostr(b));
 {$ENDIF}
@@ -134,7 +134,7 @@ begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke short @'+inttohex(iPos, 4)+' '+inttostr(i));
 {$ENDIF}
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke short '+inttostr(i)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke short '+inttostr(i)+'@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+2);
   FRealBuffer[iPos+1] := ((i and $FF00) shr 8);
@@ -142,13 +142,13 @@ begin
   inc(FSeqPos, 2);
 end;
 //------------------------------------------------------------------------------
-procedure TNetworkbuffer.pokeLong(l: integer; iPos: nativeint);
+procedure TNetworkbuffer.pokeLong(l: nativeint; iPos: nativeint);
 begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke long @'+inttohex(iPos, 4)+' '+inttostr(l));
 {$ENDIF}
 
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke long '+floattostr(l)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke long '+floattostr(l)+'@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+4);
   FRealBuffer[iPos+3] := ((l and $FF000000) shr 24);
@@ -168,7 +168,7 @@ end;
 procedure TNetworkbuffer.pokeRawString(s: string; iPos: nativeint);
 //puts a string (S) into buffer at Position (iPos)
 var
-  t: integer;
+  t: nativeint;
   pc: PWideChar;
   pb: PByte;
 begin
@@ -176,7 +176,7 @@ begin
   PrivateLog('Poke Raw String @'+inttohex(iPos, 4)+' '+s);
 {$ENDIF}
 
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke raw string "'+s+'"@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke raw string "'+s+'"@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+sizeof(char)+(system.length(s)*sizeof(char)));
   //we might be able to optomize this
@@ -198,7 +198,7 @@ begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke Formatted String @'+inttohex(iPos, 4)+' '+s);
 {$ENDIF}
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke fmt string "'+s+'"@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke fmt string "'+s+'"@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+8+(system.length(s)*sizeof(char)));
   PokeLongLong(system.length(s), iPos);
@@ -209,13 +209,13 @@ end;
 //------------------------------------------------------------------------------
 procedure TNetworkbuffer.pokeBytes(ptr: PByte;iPos: nativeint; lLength: nativeint);
 var
-  t: integer;
+  t: nativeint;
 begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke Bytes @'+inttohex(iPos, 4)+' length '+inttostr(lLength));
 {$ENDIF}
 
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke bytes('+inttostr(lLength), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke bytes('+inttostr(lLength), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+lLength);
 //  for t:= 0 to lLength-1 do begin
@@ -237,15 +237,15 @@ end;
 //------------------------------------------------------------------------------
 function TNetworkBuffer.PeekShort(iPos: nativeint): smallint;
 begin
-  result := (ord(FRealBuffer[iPos+1]) shl 8)+ord(FRealBuffer[iPos+0]);
+  result := smallint(cardinal((FRealBuffer[iPos+1]) shl 8)+(FRealBuffer[iPos+0]));
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Peek Short @'+inttohex(iPos, 4)+ 'got:'+inttostr(result)+' ('+inttohex(result,4)+')');
 {$ENDIF}
 end;
 //------------------------------------------------------------------------------
-function TNetworkBuffer.PeekLong(iPos: nativeint): integer;
+function TNetworkBuffer.PeekLong(iPos: nativeint): nativeint;
 begin
-  result := (ord(FRealBuffer[iPos+3]) shl 24)+(ord(FRealBuffer[iPos+2]) shl 16)+
+  result := (ord(FRealBuffer[iPos+3])  shl 24)+(ord(FRealBuffer[iPos+2]) shl 16)+
             (ord(FRealBuffer[iPos+1]) shl 8)+ord(FRealBuffer[iPos+0]);
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Peek Long @'+inttohex(iPos, 4)+ 'got:'+inttostr(result)+' ('+inttohex(result,8)+')');
@@ -256,7 +256,7 @@ function TNetworkBuffer.PeekRawString(iPos: nativeint; lLength: nativeint ): str
 var
   pc: PWideChar;
   ch: WideChar;
-  t: integer;
+  t: nativeint;
 begin
 
   SetLength(result, lLength);
@@ -320,7 +320,7 @@ begin
   end;
 end;
 //------------------------------------------------------------------------------
-procedure TNetworkBuffer.AssignBuffer(buffer: PByte; iLength: integer; iAllocatedLength: integer = -1);
+procedure TNetworkBuffer.AssignBuffer(buffer: PByte; iLength: nativeint; iAllocatedLength: nativeint = -1);
 begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Buffer ASSIGNED from external source length:'+inttostr(iLength));
@@ -339,7 +339,7 @@ end;
 function TNetworkBuffer.PeekDouble(iPos: nativeint): double;
 var
   DInst : ConvertRecord;
-  i     : integer;
+  i     : nativeint;
 begin
   for i := 0 to 7 do begin
     DInst.ArraySide[1 + i] := Ord(FRealBuffer[iPos + i]);
@@ -361,13 +361,13 @@ end;
 procedure TNetworkBuffer.PokeDouble(d: double; iPos: nativeint);
 var
   DInst : ConvertRecord;
-  i     : integer;
+  i     : nativeint;
 begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke double @'+inttohex(iPos, 4)+' '+floattostr(d));
 {$ENDIF}
 
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke double '+floattostr(d)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke double '+floattostr(d)+'@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+8);
   DInst.DVal := d;
@@ -392,7 +392,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TNetworkBuffer.PokeDateTime(dt: TDateTime; iPos: nativeint);
 begin
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke datetime '+datetimetostr(dt)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke datetime '+datetimetostr(dt)+'@'+inttostr(iPos), 'packet');
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke DateTime @'+inttohex(iPos, 4)+ 'dt '+datetimetostr(dt));
 {$ENDIF}
@@ -404,13 +404,13 @@ end;
 //------------------------------------------------------------------------------
 function TNetworkBuffer.PeekLongLong(iPos: nativeint): int64;
 var
-  iHigh: integer;
-  iLow: integer;
+  iHigh: nativeint;
+  iLow: nativeint;
 begin
   iHigh := peeklong(iPos+4);
   iLow := peeklong(iPos+0);
 
-  result := (int64(iHigh) shl 32) or cardinal(iLow);
+  result := (int64(iHigh) shl 32) or nativeint(iLow);
 
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Peek LongLong (int64) @'+inttohex(iPos, 4)+ 'got:'+inttostr(result)+' ('+inttohex(result,16)+')');
@@ -424,11 +424,11 @@ begin
   PrivateLog('Poke longlong @'+inttohex(iPos, 4)+' '+inttostr(i));
 {$ENDIF}
 
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke longlong '+inttostr(i)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke longlong '+inttostr(i)+'@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+8);
-  PokeLong(integer((i and $FFFFFFFF00000000) shr 32), iPos+4);
-  PokeLong(integer(i and $00000000FFFFFFFF), iPos);
+  PokeLong(nativeint((i and $FFFFFFFF00000000) shr 32), iPos+4);
+  PokeLong(nativeint(i and $00000000FFFFFFFF), iPos);
   inc(FSeqPos, 8);
 end;
 
@@ -443,7 +443,7 @@ end;
 
 procedure TNetworkBuffer.PokeBoolean(b: boolean; iPos: nativeint);
 begin
-  //glog.Debug('['+inttohex(integer(pointer(self)),8)+']Poke bool '+booltostr(b)+'@'+inttostr(iPos), 'packet');
+  //glog.Debug('['+inttohex(nativeint(pointer(self)),8)+']Poke bool '+booltostr(b)+'@'+inttostr(iPos), 'packet');
   AlterIPos(iPos);
   GrowBuffer(iPos+1+1);
   if b then
@@ -454,7 +454,7 @@ begin
   inc(FSeqPos, 1);
 end;
 
-procedure TNetworkBuffer.GrowBuffer(iLength: cardinal);
+procedure TNetworkBuffer.GrowBuffer(iLength: nativeint);
 var
   nc: Pchar;
 begin
@@ -474,7 +474,7 @@ end;
 
 
 
-procedure TNetworkBuffer.AllocBuffer(iSize: integer);
+procedure TNetworkBuffer.AllocBuffer(iSize: nativeint);
 begin
   system.GetMem(FRealBuffer, iSize);
   FAllocSize := iSize;
@@ -489,8 +489,8 @@ end;
 
 procedure TNetworkBuffer.PokeZeroString(s: string; iPos: nativeint);
 var
-  t: integer;
-  iLen: integer;
+  t: nativeint;
+  iLen: nativeint;
 begin
 {$IFDEF PRIVATE_LOG}
   PrivateLog('Poke Zero String @'+inttohex(iPos, 4)+' '+s);

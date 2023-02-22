@@ -20,6 +20,8 @@ type
     function GetConnected: boolean;override;
     function DoReadData(buffer: pbyte; length: integer): integer;override;
     function DoSendData(buffer: pbyte; length: integer): integer;override;
+    function GetUniqueID: Int64; override;
+
 
   end;
 
@@ -58,13 +60,20 @@ end;
 
 function TSimpleAbstractPrivateServerSocket.GetConnected: boolean;
 begin
+  if socket = nil then
+    exit(false);
   result := socket.Connected;
+end;
+
+function TSimpleAbstractPrivateServerSocket.GetUniqueID: Int64;
+begin
+  result := socket.Handle;
 end;
 
 function TSimpleAbstractPrivateServerSocket.DoWaitForData(
   timeout: cardinal): boolean;
 begin
-  result := BetterWaitForData(Socket, timeout);
+  result := socket.waitfordata(timeout);//  BetterWaitForData(Socket, timeout);
 end;
 
 end.

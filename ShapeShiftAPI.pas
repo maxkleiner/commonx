@@ -62,7 +62,7 @@ type
     function BeginShiftPart(): boolean;
     procedure waitForShift;
     procedure DoExecute;override;
-    procedure Log(s: string);
+    procedure Log(s: string);override;
     procedure Init; override;
     procedure Detach; override;
   end;

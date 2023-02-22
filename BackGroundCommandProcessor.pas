@@ -11,6 +11,7 @@ uses
 
 var
   BGCmd: TCommandProcessor = nil;
+  ForXCmds: TCommandProcessor = nil;
   KillFlag: boolean = false;
 
 {$ENDIF}
@@ -20,18 +21,31 @@ procedure oinit;
 begin
   KillFlag := false;
   BGCmd := TCommandProcessor.create(BackgroundThreadMan, 'BackGroundCommandProcessor.BGCmd');
+  ForXCmd := TCommandProcessor.create(BackgroundThreadMan, 'BackGroundCommandProcessor.ForXCmd');
 end;
 
 procedure ofinal;
 begin
-  BGCmd.CancelAll;
-  BGCmd.WaitforAll;
-  BGCmd.Detach;
-  //sleep(100);
   KillFlag := true;
+  if assigned(ForXCmd) then
+    ForXCmd.cancelall;
+  if assigned(BGCmd) then
+    BGCmd.CancelAll;
+  if assigned(ForXCmd) then
+    ForXCmd.WaitForAll;
+  if assigned(BGCmd) then
+    BGCmd.WaitforAll;
+  if assigned(ForXCmd) then
+    ForXCmd.Detach;
+  if assigned(BGCmd) then
+    BGCmd.Detach;
+  //sleep(100);
 
 
-  BGCmd.free;
+  if assigned(ForXCmd) then
+    ForXCmd.Free;
+  if assigned(BGCmd) then
+    BGCmd.free;
 
 end;
 {$ENDIF}

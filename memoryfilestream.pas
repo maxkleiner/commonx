@@ -513,7 +513,7 @@ end;
 
 procedure TTripleBufferMemoryFileStream.Init;
 begin
-  ics(sectSize);
+  ics(sectSize, classname+'-size');
   FPrimaryBuffer := @Buffers[0];
   FSecondaryBuffer := @Buffers[1];
   FTertiaryBuffer := @Buffers[2];
@@ -795,7 +795,9 @@ constructor TMemoryStringStream.Create(const AFileName: string; Mode: cardinal; 
 begin
   inherited Create(AFileName, Mode, rights,flags);
   if Mode = fmCreate then
-    FIndexBuilt := true;
+    FIndexBuilt := true
+  else
+    FIndexBuilt := false;
 
 end;
 

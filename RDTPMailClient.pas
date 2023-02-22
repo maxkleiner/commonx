@@ -10,7 +10,7 @@ interface
 
 
 uses
-  RDTPSpamPacketHelpers, packet, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
+  RDTPSpamPacketHelpers, packetabstract, betterobject, systemx, genericRDTPClient, variants, packethelpers, debug, typex, exceptions;
 
 
 
@@ -75,7 +75,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetBlacklistStatus(sIP:string; bFullCheck:boolean):integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -104,7 +104,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.GetBlacklistStatus_Async(sIP:string; bFullCheck:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -126,7 +126,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetBlacklistStatus_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -142,7 +142,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.Blacklist(sIP:string; sReason:string; iCode:integer; iDays:integer);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -170,7 +170,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.Blacklist_Async(sIP:string; sReason:string; iCode:integer; iDays:integer);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -194,7 +194,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetSpamProbability(sText:string):real;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -222,7 +222,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.GetSpamProbability_Async(sText:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -243,7 +243,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetSpamProbability_Response():real;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -259,7 +259,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.BayesianCommit(sText:string; bSpam:boolean; iMultiplier:real):boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -289,7 +289,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.BayesianCommit_Async(sText:string; bSpam:boolean; iMultiplier:real);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -312,7 +312,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.BayesianCommit_Response():boolean;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -328,7 +328,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.Debug(sText:string; bSay:boolean);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -354,7 +354,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.Debug_Async(sText:string; bSay:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -376,7 +376,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetBlacklistCountIncludingContent(sIP:string; sPLainText:string; sHTMLText:string; bFullCheck:boolean):integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -407,7 +407,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.GetBlacklistCountIncludingContent_Async(sIP:string; sPLainText:string; sHTMLText:string; bFullCheck:boolean);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -431,7 +431,7 @@ end;
 //------------------------------------------------------------------------------
 function TMailClient.GetBlacklistCountIncludingContent_Response():integer;
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   packet := nil;
   try
@@ -447,7 +447,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.SetWordCommonality(sWord:string; iCommonality:int64);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -473,7 +473,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.SetWordCommonality_Async(sWord:string; iCommonality:int64);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -495,7 +495,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.MailCommand(sSubject:string; sBody:string);
 var
-  packet: TRDTPPacket;
+  packet: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');
@@ -521,7 +521,7 @@ end;
 //------------------------------------------------------------------------------
 procedure TMailClient.MailCommand_Async(sSubject:string; sBody:string);
 var
-  packet,outpacket: TRDTPPacket;
+  packet,outpacket: TRDTPPacketAbstract;
 begin
   if not connect then
      raise ETransportError.create('Failed to connect');

@@ -3,18 +3,18 @@ unit GuiHelpers_DB;
 interface
 
 uses
-  typex, systemx, stringx, classes, controls, storageenginetypes, extctrls, stdctrls, variants, vcl.comctrls;
+  debug,sysutils, typex, systemx, stringx, classes, controls, storageenginetypes, extctrls, stdctrls, variants, vcl.comctrls;
 
 procedure SyncRowSetTocomboBox(rs: TSERowSet; cb: TComboBox; sField: string);
 procedure SyncRowSetToListView(rs: TSERowSet; lv: TListView);
-procedure SyncRowSetToListViewFilterColumns(rs: TSERowSet; lv: TListView);
+procedure SyncRowSetToListViewFilterColumns(rs: TSERowSet; lv: TListView; moarEval: TProc<int64> = nil);
 
 
 
 implementation
 
 uses
-  guihelpers, sysutils;
+  guihelpers;
 
 
 procedure SyncRowSetTocomboBox(rs: TSERowSet; cb: TComboBox; sField: string);
@@ -35,7 +35,7 @@ end;
 
 
 
-procedure SyncRowSetToListViewFilterColumns(rs: TSERowSet; lv: TListView);
+procedure SyncRowSetToListViewFilterColumns(rs: TSERowSet; lv: TListView; moarEval: TProc<int64> = nil);
 var
   t: ni;
   cx: ni;
@@ -48,16 +48,26 @@ begin
 
   lv.items.BeginUpdate;
   try
-    SyncListView(lv, rs.rowcount, lv.Columns.count);
+    SyncListView(lv, rs.rowcount, lv.Columns.count-1);
     while cx > 0 do begin
+      rs.cursor :=idx;
       lv.items[idx].Caption := inttostr(idx);
       for t:= 0 to rs.fieldcount-1 do begin
         ci := IndexOfListColumn(lv, rs.FieldDefs[t].sName)-1;
         if ci >=0 then begin
           v := rs.Values[t,idx];
           lv.Items[idx].SubItems[ci] := vartostrex(v);
+        end else
+        if ci = -1 then
+        begin
+          v := rs.Values[t,idx];
+          var s := vartostrex(v);
+          lv.Items[idx].caption := s;
+//          Debug.log(lv.Items[idx].caption);
         end;
       end;
+      if assigned(moareval) then
+        moareval(idx);
       dec(cx);
       inc(idx);
     end;

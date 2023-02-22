@@ -107,7 +107,7 @@ implementation
 
 
 var
-  FFIB: TFiberMAnager;
+  FFIB: TFiberMAnager = nil;
 
 
 

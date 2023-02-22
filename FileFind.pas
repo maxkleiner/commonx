@@ -233,6 +233,7 @@ end;
 {$IFDEF POSIX}
 begin
   Result := [];
+  exit;
 
   raise ECritical.create('unimplemented for posix');
 

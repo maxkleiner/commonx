@@ -27,7 +27,7 @@ function TBetterPaintBox.DoMouseWheelDown(Shift: TShiftState;
   MousePos: TPoint): Boolean;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 
@@ -35,7 +35,7 @@ function TBetterPaintBox.DoMouseWheelUp(Shift: TShiftState;
   MousePos: TPoint): Boolean;
 begin
 
-  raise ECritical.create('unimplemented');
+//  raise ECritical.create('unimplemented');
 //TODO -cunimplemented: unimplemented block
 end;
 

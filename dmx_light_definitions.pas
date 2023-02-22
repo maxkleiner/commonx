@@ -3,6 +3,7 @@ unit dmx_light_definitions;
 {$DEFINE ENABLE_ARTNET_LIGHTS}
 {$DEFINE SMALL_WASHES}
 {$DEFINE HOME_LIGHTS}
+{$DEFINE PIX_OFF}
 {x$DEFINE REMOTE_ARTNET}
 {x$DEFINE TWASH}
 
@@ -384,60 +385,95 @@ begin
   uv := TDMXUniverse.Create;
 {$IFDEF REMOTE_ARTNET}
   uv.Host := APGEt('DMXHost', '');
+{$ELSE}
+  uv.Transport := transArtNet;
 {$ENDIF}
   uv.ArtNetIP := '2.0.0.1';
+{$IFNDEF REMOTE_ARTNET}
+  uv.remote := false;
+{$ENDIF}
 
 
+  const left_pix_x :integer = -10;
+  const right_pix_x :integer = 10;
 {$IFDEF ENABLE_ARTNET_LIGHTS}
   //add a light at channel 1 of the artnet
-  l := uv.Add(TDMXPixellicious, {ch=} 1 , {x=} 10, {y=}-5 , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious;
+  //LIGHT POSITIONS ARE ****CENTERS****** to seamlessly
+  //connect you have to calculate the positions based on relative centers
+  //keep in mind that PIxelScale determines the relative size of pixels
+  l := uv.Add(TDMXPixellicious, {ch=} 1 , {x=} left_pix_x, {y=}(40/2)*pixel_scale , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious;
   Multiverse.Groups['Artnet'].Add(l);
   Multiverse.Groups['ArtnetBar'].Add(l);
-  l.orientation := lo90Left;
-  l.pixeloffset := point(4,12);
+  l.orientation := lo90Right;
+{$IFDEF PIX_OFF}
+  l.pixeloffset := point(4,12);//USED ONLY FOR STICHING SIMPLE BITMAPS, not the main coordinate!
+{$ENDIF}
 
 
   uv := TDMXUniverse.Create;
 {$IFDEF REMOTE_ARTNET}
   uv.Host := APGEt('DMXHost', '');
+{$ELSE}
+  uv.Transport := transArtNet;
 {$ENDIF}
   uv.ArtNetIP := '2.0.0.2';
+{$IFNDEF REMOTE_ARTNET}
+  uv.remote := false;
+{$ENDIF}
 
 
   //add a light at channel 1 of the artnet
-  l2 := uv.Add(TDMXPixellicious, {ch=} 1 , {x=} -10, {y=}-5 , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious;
+  l2 := uv.Add(TDMXPixellicious, {ch=} 1 , {x=} right_pix_x, {y=}(40/2)*pixel_scale , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious;
   Multiverse.Groups['Artnet'].Add(l2);
   Multiverse.Groups['ArtnetBar'].Add(l2);
   l2.orientation := lo90Left;
+{$IFDEF PIX_OFF}
   l2.pixeloffset := point(16,12);
+{$ENDIF}
 
 
   uv := TDMXUniverse.Create;
 {$IFDEF REMOTE_ARTNET}
   uv.Host := APGEt('DMXHost', '');
+{$ELSE}
+  uv.Transport := transArtNet;
 {$ENDIF}
   uv.ArtNetIP := '2.0.0.4';
+{$IFNDEF REMOTE_ARTNET}
+  uv.remote := false;
+{$ENDIF}
 
 
-  l3 := uv.Add(TDMXPixellicious2, {ch=} 1 , {x=} -10, {y=}5 , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious2;
+
+  l3 := uv.Add(TDMXPixellicious2, {ch=} 1 , {x=} left_pix_x, {y=}-6*PIXEL_SCALE , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious2;
   //l3.orientation := TLightOrientation.lo180;
   Multiverse.Groups['Artnet'].Add(l3);
   Multiverse.Groups['ArtnetSquare'].Add(l3);
+{$IFDEF PIX_OFF}
   l3.pixeloffset := point(0,0);
+{$ENDIF}
 
 
   uv := TDMXUniverse.Create;
 {$IFDEF REMOTE_ARTNET}
   uv.Host := APGEt('DMXHost', '');
+{$ELSE}
+  uv.Transport := transArtNet;
 {$ENDIF}
   uv.ArtNetIP := '2.0.0.3';
+{$IFNDEF REMOTE_ARTNET}
+  uv.remote := false;
+{$ENDIF}
 
 
-  l4 := uv.Add(TDMXPixellicious2, {ch=} 1 , {x=} 10, {y=}5 , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious2;
+
+  l4 := uv.Add(TDMXPixellicious2, {ch=} 1 , {x=} right_pix_x, {y=}-6*Pixel_Scale , {flags=} 0 , '' {artnet ip}) as TDMXPixellicious2;
   //l4.orientation := TLightOrientation.lo180;
   Multiverse.Groups['Artnet'].Add(l4);
   Multiverse.Groups['ArtnetSquare'].Add(l4);
+{$IFDEF PIX_OFF}
   l4.pixeloffset := point(12,0);
+{$ENDIF}
 {$ENDIF}
 
 end;

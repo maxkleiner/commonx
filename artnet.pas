@@ -1,5 +1,5 @@
 unit artnet;
-
+{$DEFINE SEQ_AT_ENDPOINT}
 interface
 
 uses
@@ -64,7 +64,6 @@ type
     function GetProtocolVersion: smallint;
     procedure SetProtocolVersion(const Value: smallint);
   public
-
     sequence: byte;
     physical: byte;
     universe: smallint;
@@ -85,6 +84,9 @@ type
     function GetIP: string;
     procedure SetIP(value: string);
   public
+{$IFDEF SEQ_AT_ENDPOINT}
+    seq: byte;
+{$ENDIF}
     reply: TArtPollReplyPacket;
     property IP: string read GetIP write SetIP;
 
@@ -95,7 +97,9 @@ type
   protected
     FKnownFixtures: TBetterList<TArtNetEndpoint>;
     udpc: TIdUDPServer;
+{$IFNDEF SEQ_AT_ENDPOINT}
     artseq: byte;
+{$ENDIF}
     procedure UDPDispatch(athread:TIdUDPListenerThread; const adata:tidbytes; abinding:tidsockethandle);
     procedure Dispatch_ArtPollReply(var head: TArtPAcket; athread:TIdUDPListenerThread; const adata:tidbytes; abinding:tidsockethandle);
     procedure UDPOnUDPRead(athread:TIdUDPListenerThread; const adata:tidbytes; abinding:tidsockethandle);
@@ -119,7 +123,7 @@ function art: TArtNetUDPHandler;
 implementation
 
 var
-  Fart: TArtnetUDPHandler;
+  Fart: TArtnetUDPHandler = nil;
 
 
 
@@ -258,8 +262,14 @@ var
   idb: TIDBytes;
 begin
   dmxp.Init;
+{$IFDEF SEQ_AT_ENDPOINT}
+  dmxp.sequence := ep.seq;
+  ep.seq := byte(integer(ep.seq)+1);
+{$ELSE}
   dmxp.sequence := artseq;
   artseq := byte(integer(artseq)+1);
+{$ENDIF}
+
   movemem32(@dmxp.Data[0], p, sz);
   idb := ToIDBytes(@dmxp, sizeof(dmxp));
   self.udpc.SendBuffer(ep.IP, 6454, idb);
@@ -397,7 +407,7 @@ begin
   protocolversion := 14;
   sequence := 0;
   physical := 0;
-  universe := 0;
+  universe := 1;
   length := 512;
 
 end;

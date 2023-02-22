@@ -20,8 +20,8 @@ type
   TFileServiceServerBase = class(TRDTPProcessor)
   private
     
-    procedure RQ_HANDLE_PutFile_TFileTransferReference(proc: TRDTPProcessor);
-    procedure RQ_HANDLE_GetFile_TFileTransferReference(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_PutFileDEPRECATED_TFileTransferReference(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_GetFileDEPRECATED_TFileTransferReference(proc: TRDTPProcessor);
     procedure RQ_HANDLE_OpenFile_string_TFileTransferReference_integer(proc: TRDTPProcessor);
     procedure RQ_HANDLE_CloseFile_TFileTransferReference(proc: TRDTPProcessor);
     procedure RQ_HANDLE_Dir_string(proc: TRDTPProcessor);
@@ -37,7 +37,7 @@ type
     procedure RQ_HANDLE_AppendTextFile_string_string(proc: TRDTPProcessor);
     procedure RQ_HANDLE_GetFileSize_string(proc: TRDTPProcessor);
     procedure RQ_HANDLE_ExecuteAndCapture_string_string_string(proc: TRDTPProcessor);
-    procedure RQ_HANDLE_GetFileList_string_string_integer_integer(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_GetFileListDEPRECATED_string_string_integer_integer(proc: TRDTPProcessor);
     procedure RQ_HANDLE_StartExeCommand_string_string_string_single_single(proc: TRDTPProcessor);
     procedure RQ_HANDLE_GetCommandStatus_int64_string_int64_int64_boolean(proc: TRDTPProcessor);
     procedure RQ_HANDLE_EndCommand_int64(proc: TRDTPProcessor);
@@ -52,6 +52,11 @@ type
     procedure RQ_HANDLE_StartExeCommandExFFMPEG_string_string_string_string_single_single_single(proc: TRDTPProcessor);
     procedure RQ_HANDLE_FileExists_string(proc: TRDTPProcessor);
     procedure RQ_HANDLE_PathExists_string(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_Sign_string_string(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_ReadyForEncoding(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_PutFile_TFileTransferReference(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_GetFile_TFileTransferReference(proc: TRDTPProcessor);
+    procedure RQ_HANDLE_GetFileList_string_string_integer_integer(proc: TRDTPProcessor);
 
   protected
     
@@ -63,8 +68,8 @@ type
     
 
     
-    function RQ_PutFile(oFile:TFileTransferReference):boolean;overload;virtual;abstract;
-    function RQ_GetFile(var oFile:TFileTransferReference):boolean;overload;virtual;abstract;
+    function RQ_PutFileDEPRECATED(oFile:TFileTransferReference):boolean;overload;virtual;abstract;
+    function RQ_GetFileDEPRECATED(var oFile:TFileTransferReference):boolean;overload;virtual;abstract;
     function RQ_OpenFile(sFile:string; out oFile:TFileTransferReference; iMode:integer):boolean;overload;virtual;abstract;
     function RQ_CloseFile(oFile:TFileTransferReference):boolean;overload;virtual;abstract;
     function RQ_Dir(sRemotePath:string):TDirectory;overload;virtual;abstract;
@@ -80,7 +85,7 @@ type
     function RQ_AppendTextFile(filename:string; text:string):boolean;overload;virtual;abstract;
     function RQ_GetFileSize(filename:string):int64;overload;virtual;abstract;
     function RQ_ExecuteAndCapture(sPath:string; sProgram:string; sParams:string):string;overload;virtual;abstract;
-    function RQ_GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;abstract;
+    function RQ_GetFileListDEPRECATED(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;abstract;
     function RQ_StartExeCommand(sPath:string; sProgram:string; sParams:string; cpus:single; memgb:single):int64;overload;virtual;abstract;
     function RQ_GetCommandStatus(handle:int64; out status:string; out step:int64; out stepcount:int64; out finished:boolean):boolean;overload;virtual;abstract;
     function RQ_EndCommand(handle:int64):boolean;overload;virtual;abstract;
@@ -95,6 +100,11 @@ type
     function RQ_StartExeCommandExFFMPEG(sPath:string; sProgram:string; sParams:string; sGPUParams:string; cpus:single; memgb:single; gpu:single):int64;overload;virtual;abstract;
     function RQ_FileExists(sFile:string):boolean;overload;virtual;abstract;
     function RQ_PathExists(sPath:string):boolean;overload;virtual;abstract;
+    function RQ_Sign(sFile:string; signconfig:string):boolean;overload;virtual;abstract;
+    function RQ_ReadyForEncoding():boolean;overload;virtual;abstract;
+    function RQ_PutFile(oFile:TFileTransferReference):boolean;overload;virtual;abstract;
+    function RQ_GetFile(var oFile:TFileTransferReference):boolean;overload;virtual;abstract;
+    function RQ_GetFileList(sRemotePath:string; sFileSpec:string; attrmask:integer; attrresult:integer):TRemoteFileArray;overload;virtual;abstract;
 
 
     function Dispatch: boolean;override;
@@ -106,23 +116,23 @@ implementation
 uses
   FileServiceServerImplib, ImpJunk;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
-procedure TFileServiceServerBase.RQ_HANDLE_PutFile_TFileTransferReference(proc: TRDTPProcessor);
+procedure TFileServiceServerBase.RQ_HANDLE_PutFileDEPRECATED_TFileTransferReference(proc: TRDTPProcessor);
 var
   res: boolean;
   oFile:TFileTransferReference;
 begin
   GetTFileTransferReferenceFromPacket(proc.request, oFile);
-  res := RQ_PutFile(oFile);
+  res := RQ_PutFileDEPRECATED(oFile);
   WritebooleanToPacket(proc.response, res);
 end;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
-procedure TFileServiceServerBase.RQ_HANDLE_GetFile_TFileTransferReference(proc: TRDTPProcessor);
+procedure TFileServiceServerBase.RQ_HANDLE_GetFileDEPRECATED_TFileTransferReference(proc: TRDTPProcessor);
 var
   res: boolean;
   oFile:TFileTransferReference;
 begin
   GetTFileTransferReferenceFromPacket(proc.request, oFile);
-  res := RQ_GetFile(oFile);
+  res := RQ_GetFileDEPRECATED(oFile);
   WritebooleanToPacket(proc.response, res);
   WriteTFileTransferReferenceToPacket(proc.response, oFile);
 end;
@@ -303,7 +313,7 @@ begin
   WritestringToPacket(proc.response, res);
 end;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
-procedure TFileServiceServerBase.RQ_HANDLE_GetFileList_string_string_integer_integer(proc: TRDTPProcessor);
+procedure TFileServiceServerBase.RQ_HANDLE_GetFileListDEPRECATED_string_string_integer_integer(proc: TRDTPProcessor);
 var
   res: TRemoteFileArray;
   sRemotePath:string;
@@ -315,7 +325,7 @@ begin
   GetstringFromPacket(proc.request, sFileSpec);
   GetintegerFromPacket(proc.request, attrmask);
   GetintegerFromPacket(proc.request, attrresult);
-  res := RQ_GetFileList(sRemotePath, sFileSpec, attrmask, attrresult);
+  res := RQ_GetFileListDEPRECATED(sRemotePath, sFileSpec, attrmask, attrresult);
   WriteTRemoteFileArrayToPacket(proc.response, res);
 end;
 //-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
@@ -514,6 +524,63 @@ begin
   res := RQ_PathExists(sPath);
   WritebooleanToPacket(proc.response, res);
 end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TFileServiceServerBase.RQ_HANDLE_Sign_string_string(proc: TRDTPProcessor);
+var
+  res: boolean;
+  sFile:string;
+  signconfig:string;
+begin
+  GetstringFromPacket(proc.request, sFile);
+  GetstringFromPacket(proc.request, signconfig);
+  res := RQ_Sign(sFile, signconfig);
+  WritebooleanToPacket(proc.response, res);
+end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TFileServiceServerBase.RQ_HANDLE_ReadyForEncoding(proc: TRDTPProcessor);
+var
+  res: boolean;
+begin
+  res := RQ_ReadyForEncoding();
+  WritebooleanToPacket(proc.response, res);
+end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TFileServiceServerBase.RQ_HANDLE_PutFile_TFileTransferReference(proc: TRDTPProcessor);
+var
+  res: boolean;
+  oFile:TFileTransferReference;
+begin
+  GetTFileTransferReferenceFromPacket(proc.request, oFile);
+  res := RQ_PutFile(oFile);
+  WritebooleanToPacket(proc.response, res);
+end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TFileServiceServerBase.RQ_HANDLE_GetFile_TFileTransferReference(proc: TRDTPProcessor);
+var
+  res: boolean;
+  oFile:TFileTransferReference;
+begin
+  GetTFileTransferReferenceFromPacket(proc.request, oFile);
+  res := RQ_GetFile(oFile);
+  WritebooleanToPacket(proc.response, res);
+  WriteTFileTransferReferenceToPacket(proc.response, oFile);
+end;
+//-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-xx-x-x-x-x-x-x-
+procedure TFileServiceServerBase.RQ_HANDLE_GetFileList_string_string_integer_integer(proc: TRDTPProcessor);
+var
+  res: TRemoteFileArray;
+  sRemotePath:string;
+  sFileSpec:string;
+  attrmask:integer;
+  attrresult:integer;
+begin
+  GetstringFromPacket(proc.request, sRemotePath);
+  GetstringFromPacket(proc.request, sFileSpec);
+  GetintegerFromPacket(proc.request, attrmask);
+  GetintegerFromPacket(proc.request, attrresult);
+  res := RQ_GetFileList(sRemotePath, sFileSpec, attrmask, attrresult);
+  WriteTRemoteFileArrayToPacket(proc.response, res);
+end;
 
 
 
@@ -552,29 +619,29 @@ begin
 //        beeper.Beep(100,100);
        end;
   
-    //PutFile
+    //PutFileDEPRECATED
     $6000:
       begin
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('Begin Server Handling of PutFile','RDTPCALLS');
+        LocalDebug('Begin Server Handling of PutFileDEPRECATED','RDTPCALLS');
 {$ENDIF}
         result := true;//set to true BEFORE calling in case of exception
-        RQ_HANDLE_PutFile_TFileTransferReference(self);
+        RQ_HANDLE_PutFileDEPRECATED_TFileTransferReference(self);
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('End Server Handling of PutFile','RDTPCALLS');
+        LocalDebug('End Server Handling of PutFileDEPRECATED','RDTPCALLS');
 {$ENDIF}
       end;
 
-    //GetFile
+    //GetFileDEPRECATED
     $6001:
       begin
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('Begin Server Handling of GetFile','RDTPCALLS');
+        LocalDebug('Begin Server Handling of GetFileDEPRECATED','RDTPCALLS');
 {$ENDIF}
         result := true;//set to true BEFORE calling in case of exception
-        RQ_HANDLE_GetFile_TFileTransferReference(self);
+        RQ_HANDLE_GetFileDEPRECATED_TFileTransferReference(self);
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('End Server Handling of GetFile','RDTPCALLS');
+        LocalDebug('End Server Handling of GetFileDEPRECATED','RDTPCALLS');
 {$ENDIF}
       end;
 
@@ -773,16 +840,16 @@ begin
 {$ENDIF}
       end;
 
-    //GetFileList
+    //GetFileListDEPRECATED
     $6017:
       begin
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('Begin Server Handling of GetFileList','RDTPCALLS');
+        LocalDebug('Begin Server Handling of GetFileListDEPRECATED','RDTPCALLS');
 {$ENDIF}
         result := true;//set to true BEFORE calling in case of exception
-        RQ_HANDLE_GetFileList_string_string_integer_integer(self);
+        RQ_HANDLE_GetFileListDEPRECATED_string_string_integer_integer(self);
 {$IFDEF RDTP_LOGGING}
-        LocalDebug('End Server Handling of GetFileList','RDTPCALLS');
+        LocalDebug('End Server Handling of GetFileListDEPRECATED','RDTPCALLS');
 {$ENDIF}
       end;
 
@@ -965,6 +1032,71 @@ begin
         RQ_HANDLE_PathExists_string(self);
 {$IFDEF RDTP_LOGGING}
         LocalDebug('End Server Handling of PathExists','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //Sign
+    $6032:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of Sign','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_Sign_string_string(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of Sign','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //ReadyForEncoding
+    $6033:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of ReadyForEncoding','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_ReadyForEncoding(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of ReadyForEncoding','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //PutFile
+    $6100:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of PutFile','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_PutFile_TFileTransferReference(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of PutFile','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //GetFile
+    $6101:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of GetFile','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_GetFile_TFileTransferReference(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of GetFile','RDTPCALLS');
+{$ENDIF}
+      end;
+
+    //GetFileList
+    $6117:
+      begin
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('Begin Server Handling of GetFileList','RDTPCALLS');
+{$ENDIF}
+        result := true;//set to true BEFORE calling in case of exception
+        RQ_HANDLE_GetFileList_string_string_integer_integer(self);
+{$IFDEF RDTP_LOGGING}
+        LocalDebug('End Server Handling of GetFileList','RDTPCALLS');
 {$ENDIF}
       end;
 
